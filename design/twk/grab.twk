@@ -1,0 +1,22 @@
+; =====================================================================
+; grab.twk — reconstructed designer tweak sheet (God of War 1, hero)
+; Data provenance: [real] = decoded from disc data, [inferred] = model
+; =====================================================================
+
+/Animation/goHero/grab/
+  clipId          113            ; [real] ANM_hero.bin act id
+  duration        1.1333s       ; [real] 34 frames @30
+  blendIn         0s        ; [real] act header +0x04 (hard cut)
+  keyframeRate    15Hz         ; [real] sample interval
+  anmHeader       0xB6E00       ; [real] offset in ANM_hero.bin
+  chainEnder      true          ; recovers to stance
+
+/Combat/goHero/grab/Windows/          ; [inferred] adjustable model —
+  ; exact per-move windows are compiled into engine code, not data
+  queueOpens      0.23s        ; input buffered from here
+  branchPoint     0.79s        ; queued branch executes
+  cancelOpens     0.57s        ; L1 block-cancel window
+
+/Combat/goHero/grab/Branches/
+  (none — recovers to stance)
+  cancel  input=L1             -> block            window=[0.57..1.13]s  [inferred]  ; block-cancel recovery

@@ -1,0 +1,21 @@
+; =====================================================================
+; berComboH3.twk — reconstructed designer tweak sheet (God of War 1, hero)
+; Data provenance: [real] = decoded from disc data, [inferred] = model
+; =====================================================================
+
+/Animation/goHero/berComboH3/
+  clipId          35            ; [real] ANM_hero.bin act id
+  duration        1.8333s       ; [real] 55 frames @30
+  blendIn         0.06s        ; [real] act header +0x04
+  keyframeRate    15Hz         ; [real] sample interval
+  anmHeader       0x329C0       ; [real] offset in ANM_hero.bin
+
+/Combat/goHero/berComboH3/Windows/          ; [inferred] adjustable model —
+  ; exact per-move windows are compiled into engine code, not data
+  queueOpens      0.37s        ; input buffered from here
+  branchPoint     1.28s        ; queued branch executes
+  cancelOpens     0.92s        ; L1 block-cancel window
+
+/Combat/goHero/berComboH3/Branches/
+  branch  input=SQUARE         -> berComboH4       queueWindow=[0.37..1.83]s  targetDur=2.167s  [real-topology]  ; rage H ender
+  cancel  input=L1             -> block            window=[0.92..1.83]s  [inferred]  ; block-cancel recovery

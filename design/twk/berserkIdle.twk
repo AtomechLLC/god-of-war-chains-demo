@@ -1,0 +1,23 @@
+; =====================================================================
+; berserkIdle.twk — reconstructed designer tweak sheet (God of War 1, hero)
+; Data provenance: [real] = decoded from disc data, [inferred] = model
+; =====================================================================
+
+/Animation/goHero/berserkIdle/
+  clipId          46            ; [real] ANM_hero.bin act id
+  duration        2.0000s       ; [real] 60 frames @30
+  blendIn         0.12s        ; [real] act header +0x04
+  keyframeRate    30Hz         ; [real] sample interval
+  anmHeader       0x40C40       ; [real] offset in ANM_hero.bin
+  looping         true          ; stance
+
+/Combat/goHero/berserkIdle/Windows/          ; [inferred] adjustable model —
+  ; exact per-move windows are compiled into engine code, not data
+  queueOpens      0.40s        ; input buffered from here
+  branchPoint     1.40s        ; queued branch executes
+  cancelOpens     1.00s        ; L1 block-cancel window
+
+/Combat/goHero/berserkIdle/Branches/
+  branch  input=SQUARE         -> berComboH1       queueWindow=[0.40..2.00]s  targetDur=1.900s  [real-topology]  ; rage horizontal chain
+  branch  input=TRIANGLE       -> berComboV1       queueWindow=[0.40..2.00]s  targetDur=1.833s  [real-topology]  ; rage vertical chain
+  branch  input=CROSS          -> berJumpAir       queueWindow=[0.40..2.00]s  targetDur=0.333s  [real-topology]  ; rage jump

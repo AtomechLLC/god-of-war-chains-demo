@@ -1,0 +1,22 @@
+; =====================================================================
+; airImpale.twk — reconstructed designer tweak sheet (God of War 1, hero)
+; Data provenance: [real] = decoded from disc data, [inferred] = model
+; =====================================================================
+
+/Animation/goHero/airImpale/
+  clipId          9            ; [real] ANM_hero.bin act id
+  duration        1.8667s       ; [real] 56 frames @30
+  blendIn         0.09s        ; [real] act header +0x04
+  keyframeRate    15Hz         ; [real] sample interval
+  anmHeader       0xB740       ; [real] offset in ANM_hero.bin
+  autoNext        airImpaleLand   ; follow-up clip
+
+/Combat/goHero/airImpale/Windows/          ; [inferred] adjustable model —
+  ; exact per-move windows are compiled into engine code, not data
+  queueOpens      0.37s        ; input buffered from here
+  branchPoint     1.31s        ; queued branch executes
+  cancelOpens     0.93s        ; L1 block-cancel window
+
+/Combat/goHero/airImpale/Branches/
+  (none — recovers to stance)
+  cancel  input=L1             -> block            window=[0.93..1.87]s  [inferred]  ; block-cancel recovery

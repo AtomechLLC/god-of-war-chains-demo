@@ -1,0 +1,22 @@
+; =====================================================================
+; combo4A.twk — reconstructed designer tweak sheet (God of War 1, hero)
+; Data provenance: [real] = decoded from disc data, [inferred] = model
+; =====================================================================
+
+/Animation/goHero/combo4A/
+  clipId          79            ; [real] ANM_hero.bin act id
+  duration        1.4333s       ; [real] 43 frames @30
+  blendIn         0s        ; [real] act header +0x04 (hard cut)
+  keyframeRate    30Hz         ; [real] sample interval
+  anmHeader       0x7C840       ; [real] offset in ANM_hero.bin
+
+/Combat/goHero/combo4A/Windows/          ; [inferred] adjustable model —
+  ; exact per-move windows are compiled into engine code, not data
+  queueOpens      0.29s        ; input buffered from here
+  branchPoint     1.00s        ; queued branch executes
+  cancelOpens     0.72s        ; L1 block-cancel window
+
+/Combat/goHero/combo4A/Branches/
+  branch  input=TRIANGLE       -> combo4B          queueWindow=[0.29..1.43]s  targetDur=1.533s  [real-topology]  ; heavy chain 2
+  branch  input=SQUARE         -> combo5A          queueWindow=[0.29..1.43]s  targetDur=1.133s  [inferred]  ; mixed string
+  cancel  input=L1             -> block            window=[0.72..1.43]s  [inferred]  ; block-cancel recovery

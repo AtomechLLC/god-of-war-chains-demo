@@ -1,0 +1,27 @@
+; =====================================================================
+; idleCombat.twk — reconstructed designer tweak sheet (God of War 1, hero)
+; Data provenance: [real] = decoded from disc data, [inferred] = model
+; =====================================================================
+
+/Animation/goHero/idleCombat/
+  clipId          132            ; [real] ANM_hero.bin act id
+  duration        1.4333s       ; [real] 43 frames @30
+  blendIn         0.09s        ; [real] act header +0x04
+  keyframeRate    15Hz         ; [real] sample interval
+  anmHeader       0xCC780       ; [real] offset in ANM_hero.bin
+  looping         true          ; stance
+
+/Combat/goHero/idleCombat/Windows/          ; [inferred] adjustable model —
+  ; exact per-move windows are compiled into engine code, not data
+  queueOpens      0.29s        ; input buffered from here
+  branchPoint     1.00s        ; queued branch executes
+  cancelOpens     0.72s        ; L1 block-cancel window
+
+/Combat/goHero/idleCombat/Branches/
+  branch  input=SQUARE         -> combo3A          queueWindow=[0.29..1.43]s  targetDur=1.500s  [real-topology]  ; light chain
+  branch  input=TRIANGLE       -> combo4A          queueWindow=[0.29..1.43]s  targetDur=1.433s  [real-topology]  ; heavy chain — Spirit of Hercules
+  branch  input=TRIANGLE(hold) -> blockLauncher    queueWindow=[0.29..1.43]s  targetDur=1.733s  [inferred]  ; launcher
+  branch  input=CIRCLE         -> grab             queueWindow=[0.29..1.43]s  targetDur=1.133s  [real-topology]  ; grab
+  branch  input=CROSS          -> jumpUp           queueWindow=[0.29..1.43]s  targetDur=0.467s  [real-topology]  ; jump
+  branch  input=L1+SQUARE      -> dashMultiStab    queueWindow=[0.29..1.43]s  targetDur=1.667s  [inferred]  ; Cyclone of Chaos
+  branch  input=L1+TRIANGLE    -> blockSlam        queueWindow=[0.29..1.43]s  targetDur=1.500s  [inferred]  ; block slam

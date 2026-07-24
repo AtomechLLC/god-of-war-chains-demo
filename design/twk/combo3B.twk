@@ -1,0 +1,22 @@
+; =====================================================================
+; combo3B.twk — reconstructed designer tweak sheet (God of War 1, hero)
+; Data provenance: [real] = decoded from disc data, [inferred] = model
+; =====================================================================
+
+/Animation/goHero/combo3B/
+  clipId          74            ; [real] ANM_hero.bin act id
+  duration        1.4667s       ; [real] 44 frames @30
+  blendIn         0.09s        ; [real] act header +0x04
+  keyframeRate    30Hz         ; [real] sample interval
+  anmHeader       0x69900       ; [real] offset in ANM_hero.bin
+
+/Combat/goHero/combo3B/Windows/          ; [inferred] adjustable model —
+  ; exact per-move windows are compiled into engine code, not data
+  queueOpens      0.29s        ; input buffered from here
+  branchPoint     1.03s        ; queued branch executes
+  cancelOpens     0.73s        ; L1 block-cancel window
+
+/Combat/goHero/combo3B/Branches/
+  branch  input=SQUARE         -> combo3C          queueWindow=[0.29..1.47]s  targetDur=1.567s  [real-topology]  ; light chain 3
+  branch  input=TRIANGLE       -> comboLR3         queueWindow=[0.29..1.47]s  targetDur=1.167s  [real-topology]  ; Plume of Prometheus (□ □ △)
+  cancel  input=L1             -> block            window=[0.73..1.47]s  [inferred]  ; block-cancel recovery

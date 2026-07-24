@@ -1,0 +1,22 @@
+; =====================================================================
+; airH1.twk — reconstructed designer tweak sheet (God of War 1, hero)
+; Data provenance: [real] = decoded from disc data, [inferred] = model
+; =====================================================================
+
+/Animation/goHero/airH1/
+  clipId          6            ; [real] ANM_hero.bin act id
+  duration        0.7333s       ; [real] 22 frames @30
+  blendIn         0.09s        ; [real] act header +0x04
+  keyframeRate    30Hz         ; [real] sample interval
+  anmHeader       0x7FC0       ; [real] offset in ANM_hero.bin
+
+/Combat/goHero/airH1/Windows/          ; [inferred] adjustable model —
+  ; exact per-move windows are compiled into engine code, not data
+  queueOpens      0.15s        ; input buffered from here
+  branchPoint     0.51s        ; queued branch executes
+  cancelOpens     0.37s        ; L1 block-cancel window
+
+/Combat/goHero/airH1/Branches/
+  branch  input=SQUARE         -> airH2            queueWindow=[0.15..0.73]s  targetDur=0.867s  [real-topology]  ; air chain 2
+  branch  input=TRIANGLE       -> airV1            queueWindow=[0.15..0.73]s  targetDur=0.933s  [real-topology]  ; air slam
+  cancel  input=L1             -> block            window=[0.37..0.73]s  [inferred]  ; block-cancel recovery

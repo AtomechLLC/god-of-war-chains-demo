@@ -1,0 +1,21 @@
+; =====================================================================
+; combo3E.twk — reconstructed designer tweak sheet (God of War 1, hero)
+; Data provenance: [real] = decoded from disc data, [inferred] = model
+; =====================================================================
+
+/Animation/goHero/combo3E/
+  clipId          77            ; [real] ANM_hero.bin act id
+  duration        1.6000s       ; [real] 48 frames @30
+  blendIn         0.09s        ; [real] act header +0x04
+  keyframeRate    30Hz         ; [real] sample interval
+  anmHeader       0x75800       ; [real] offset in ANM_hero.bin
+
+/Combat/goHero/combo3E/Windows/          ; [inferred] adjustable model —
+  ; exact per-move windows are compiled into engine code, not data
+  queueOpens      0.32s        ; input buffered from here
+  branchPoint     1.12s        ; queued branch executes
+  cancelOpens     0.80s        ; L1 block-cancel window
+
+/Combat/goHero/combo3E/Branches/
+  branch  input=SQUARE         -> combo3F          queueWindow=[0.32..1.60]s  targetDur=1.400s  [real-topology]  ; light chain ender
+  cancel  input=L1             -> block            window=[0.80..1.60]s  [inferred]  ; block-cancel recovery

@@ -1,0 +1,21 @@
+; =====================================================================
+; berAirV2Land.twk — reconstructed designer tweak sheet (God of War 1, hero)
+; Data provenance: [real] = decoded from disc data, [inferred] = model
+; =====================================================================
+
+/Animation/goHero/berAirV2Land/
+  clipId          26            ; [real] ANM_hero.bin act id
+  duration        1.0000s       ; [real] 30 frames @30
+  blendIn         0s        ; [real] act header +0x04 (hard cut)
+  keyframeRate    15Hz         ; [real] sample interval
+  anmHeader       0x29BC0       ; [real] offset in ANM_hero.bin
+
+/Combat/goHero/berAirV2Land/Windows/          ; [inferred] adjustable model —
+  ; exact per-move windows are compiled into engine code, not data
+  queueOpens      0.20s        ; input buffered from here
+  branchPoint     0.70s        ; queued branch executes
+  cancelOpens     0.50s        ; L1 block-cancel window
+
+/Combat/goHero/berAirV2Land/Branches/
+  (none — recovers to stance)
+  cancel  input=L1             -> block            window=[0.50..1.00]s  [inferred]  ; block-cancel recovery

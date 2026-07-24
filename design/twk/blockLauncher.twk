@@ -1,0 +1,22 @@
+; =====================================================================
+; blockLauncher.twk — reconstructed designer tweak sheet (God of War 1, hero)
+; Data provenance: [real] = decoded from disc data, [inferred] = model
+; =====================================================================
+
+/Animation/goHero/blockLauncher/
+  clipId          53            ; [real] ANM_hero.bin act id
+  duration        1.7333s       ; [real] 52 frames @30
+  blendIn         0.06s        ; [real] act header +0x04
+  keyframeRate    30Hz         ; [real] sample interval
+  anmHeader       0x4DC80       ; [real] offset in ANM_hero.bin
+  moveName        "Launcher"  ; [real] from msgs_en.txt move list
+
+/Combat/goHero/blockLauncher/Windows/          ; [inferred] adjustable model —
+  ; exact per-move windows are compiled into engine code, not data
+  queueOpens      0.35s        ; input buffered from here
+  branchPoint     1.21s        ; queued branch executes
+  cancelOpens     0.87s        ; L1 block-cancel window
+
+/Combat/goHero/blockLauncher/Branches/
+  branch  input=CROSS          -> jumpUp           queueWindow=[0.35..1.73]s  targetDur=0.467s  [inferred]  ; chase the launch
+  cancel  input=L1             -> block            window=[0.87..1.73]s  [inferred]  ; block-cancel recovery

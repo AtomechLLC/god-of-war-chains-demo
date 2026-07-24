@@ -1,0 +1,23 @@
+; =====================================================================
+; jumpDoubleAir.twk — reconstructed designer tweak sheet (God of War 1, hero)
+; Data provenance: [real] = decoded from disc data, [inferred] = model
+; =====================================================================
+
+/Animation/goHero/jumpDoubleAir/
+  clipId          136            ; [real] ANM_hero.bin act id
+  duration        0.4667s       ; [real] 14 frames @30
+  blendIn         0s        ; [real] act header +0x04 (hard cut)
+  keyframeRate    15Hz         ; [real] sample interval
+  anmHeader       0xD2FC0       ; [real] offset in ANM_hero.bin
+  looping         true          ; stance
+
+/Combat/goHero/jumpDoubleAir/Windows/          ; [inferred] adjustable model —
+  ; exact per-move windows are compiled into engine code, not data
+  queueOpens      0.09s        ; input buffered from here
+  branchPoint     0.33s        ; queued branch executes
+  cancelOpens     0.23s        ; L1 block-cancel window
+
+/Combat/goHero/jumpDoubleAir/Branches/
+  branch  input=SQUARE         -> airH1            queueWindow=[0.09..0.47]s  targetDur=0.733s  [real-topology]  ; air light chain
+  branch  input=TRIANGLE       -> airV1            queueWindow=[0.09..0.47]s  targetDur=0.933s  [real-topology]  ; air slam
+  branch  input=CIRCLE         -> airImpale        queueWindow=[0.09..0.47]s  targetDur=1.867s  [inferred]  ; air impale

@@ -1,0 +1,22 @@
+; =====================================================================
+; jumpUp.twk — reconstructed designer tweak sheet (God of War 1, hero)
+; Data provenance: [real] = decoded from disc data, [inferred] = model
+; =====================================================================
+
+/Animation/goHero/jumpUp/
+  clipId          237            ; [real] ANM_hero.bin act id
+  duration        0.4667s       ; [real] 14 frames @30
+  blendIn         2s        ; [real] act header +0x04
+  keyframeRate    15Hz         ; [real] sample interval
+  anmHeader       0x1580C0       ; [real] offset in ANM_hero.bin
+  autoNext        jumpAir   ; follow-up clip
+
+/Combat/goHero/jumpUp/Windows/          ; [inferred] adjustable model —
+  ; exact per-move windows are compiled into engine code, not data
+  queueOpens      0.09s        ; input buffered from here
+  branchPoint     0.33s        ; queued branch executes
+  cancelOpens     0.23s        ; L1 block-cancel window
+
+/Combat/goHero/jumpUp/Branches/
+  (none — recovers to stance)
+  cancel  input=L1             -> block            window=[0.23..0.47]s  [inferred]  ; block-cancel recovery

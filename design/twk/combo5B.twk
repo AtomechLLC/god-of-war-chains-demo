@@ -1,0 +1,22 @@
+; =====================================================================
+; combo5B.twk — reconstructed designer tweak sheet (God of War 1, hero)
+; Data provenance: [real] = decoded from disc data, [inferred] = model
+; =====================================================================
+
+/Animation/goHero/combo5B/
+  clipId          84            ; [real] ANM_hero.bin act id
+  duration        1.0667s       ; [real] 32 frames @30
+  blendIn         0.09s        ; [real] act header +0x04
+  keyframeRate    30Hz         ; [real] sample interval
+  anmHeader       0x88680       ; [real] offset in ANM_hero.bin
+  chainEnder      true          ; recovers to stance
+
+/Combat/goHero/combo5B/Windows/          ; [inferred] adjustable model —
+  ; exact per-move windows are compiled into engine code, not data
+  queueOpens      0.21s        ; input buffered from here
+  branchPoint     0.75s        ; queued branch executes
+  cancelOpens     0.53s        ; L1 block-cancel window
+
+/Combat/goHero/combo5B/Branches/
+  (none — recovers to stance)
+  cancel  input=L1             -> block            window=[0.53..1.07]s  [inferred]  ; block-cancel recovery
