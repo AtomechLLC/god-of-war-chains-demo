@@ -1,9 +1,12 @@
-# Game disc contents — multi-GB, re-derivable from user's own disc
+# Game disc contents — copyrighted, multi-GB, re-derivable from user's own disc.
+# NEVER push game data to the public repo.
 God of War (USA).iso
 God of War (USA)/
 ps2bios/
 
-# Raw WAD dumps (15MB, re-extractable from the ISO; the tool reads extracted/kratos|weapon|perm)
-extracted/wads/
+# Extracted game assets (models/textures/animations from the disc) — copyrighted
+# game content; local-only. The extraction docs (README) stay tracked.
+extracted/**
+!extracted/README.md
 
 node_modules/
