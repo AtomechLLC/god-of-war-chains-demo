@@ -1,0 +1,9 @@
+# Game disc contents — multi-GB, re-derivable from user's own disc
+God of War (USA).iso
+God of War (USA)/
+ps2bios/
+
+# Raw WAD dumps (15MB, re-extractable from the ISO; the tool reads extracted/kratos|weapon|perm)
+extracted/wads/
+
+node_modules/
