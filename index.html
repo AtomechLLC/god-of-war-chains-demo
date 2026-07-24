@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>God of War Chains — decode &amp; combo lab</title>
+<style>
+  body { background:#0d0b09; color:#e8ddcb; font-family: Georgia, serif; max-width: 760px; margin: 0 auto; padding: 48px 24px; line-height: 1.6; }
+  h1 { color:#c9a24b; letter-spacing: 3px; text-transform: uppercase; font-size: 26px; font-weight: normal; }
+  a { color:#e6a94b; }
+  .card { border:1px solid #33291f; border-radius:6px; background:#17130f; padding:16px 20px; margin:16px 0; }
+  .card h2 { margin:0 0 6px; font-size:16px; color:#e8ddcb; }
+  .card p { margin:0; color:#8a7d6a; font-size:14px; }
+  .note { font-size:13px; color:#8a7d6a; border-left:3px solid #b3202a; padding-left:12px; }
+  code { background:#1e1813; padding:1px 5px; border-radius:3px; font-size:13px; }
+</style>
+</head>
+<body>
+<h1>God of War Chains</h1>
+<p>Reverse-engineering God of War 1 (PS2, 2005): the Kratos model, animation
+system, combo chains, and Blades of Chaos — decoded from the disc and rebuilt
+as a browser lab.</p>
+
+<div class="card">
+  <h2><a href="tools/kratos-lab/">kratos-lab — model, animation &amp; combo tester</a></h2>
+  <p>Textured, skinned, animated Kratos with a PS2 button pad, real clip timing,
+  branch panel, and chain-simulated blades.</p>
+</div>
+
+<div class="card">
+  <h2><a href="design/twk/">Designer tweak sheets (.twk)</a></h2>
+  <p>One browsable sheet per combat animation: real clip data (id, duration,
+  blend-in, keyframe rate) + branch topology with inputs and windows,
+  provenance-tagged real vs inferred. <a href="design/twk/README.md">Index</a>.</p>
+</div>
+
+<p class="note"><strong>About game assets:</strong> this public build contains
+code and documentation only. The extracted game data (models, textures,
+animations) is copyrighted and is not distributed — the viewer will tell you
+so if you open it here. To see it live, clone the repo, extract assets from
+your own disc (see the repo docs), and run
+<code>node tools/kratos-lab/server.js</code>.</p>
+
+<p><a href="https://github.com/AtomechLLC/god-of-war-chains-demo">Source on GitHub</a></p>
+</body>
+</html>

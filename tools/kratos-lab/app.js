@@ -26,14 +26,14 @@
   };
 
   status("decoding hero_0.bin…");
-  const meshBuf = await Parsers.fetchBuf("/extracted/kratos/model/hero_0.bin");
+  const meshBuf = await Parsers.fetchBuf("../../extracted/kratos/model/hero_0.bin");
   const mesh = Parsers.parseMesh(meshBuf);
 
   status("decoding skeleton + animations…");
   let rig = null;
   try {
-    const objBuf = await Parsers.fetchBuf("/extracted/kratos/model/hero.bin");
-    const anmBuf = await Parsers.fetchBuf("/extracted/kratos/animations/ANM_hero.bin");
+    const objBuf = await Parsers.fetchBuf("../../extracted/kratos/model/hero.bin");
+    const anmBuf = await Parsers.fetchBuf("../../extracted/kratos/animations/ANM_hero.bin");
     rig = GowAnim.makeRig(objBuf, anmBuf);
   } catch (e) { console.error("rig", e); }
 
@@ -42,16 +42,16 @@
   try {
     const bladeAllMats = {};
     for (let i = 0; i < 16; i++) bladeAllMats[i] = 0;
-    const bmesh = Parsers.parseMesh(await Parsers.fetchBuf("/extracted/weapon/MAIBlade_0.bin"), bladeAllMats);
+    const bmesh = Parsers.parseMesh(await Parsers.fetchBuf("../../extracted/weapon/MAIBlade_0.bin"), bladeAllMats);
     const bImg = Parsers.decodeTexture(
-      await Parsers.fetchBuf("/extracted/weapon/GFX_stage1Btx.bin"),
-      await Parsers.fetchBuf("/extracted/weapon/PAL_stage1Btx.bin"));
+      await Parsers.fetchBuf("../../extracted/weapon/GFX_stage1Btx.bin"),
+      await Parsers.fetchBuf("../../extracted/weapon/PAL_stage1Btx.bin"));
     const trailImg = Parsers.decodeTexture(
-      await Parsers.fetchBuf("/extracted/weapon/GFX_swordtrail.bin"),
-      await Parsers.fetchBuf("/extracted/weapon/PAL_swordtrail.bin"));
+      await Parsers.fetchBuf("../../extracted/weapon/GFX_swordtrail.bin"),
+      await Parsers.fetchBuf("../../extracted/weapon/PAL_swordtrail.bin"));
     const chainImg = Parsers.decodeTexture(
-      await Parsers.fetchBuf("/extracted/weapon/GFX_chainlink.bin"),
-      await Parsers.fetchBuf("/extracted/weapon/PAL_chainlink.bin"));
+      await Parsers.fetchBuf("../../extracted/weapon/GFX_chainlink.bin"),
+      await Parsers.fetchBuf("../../extracted/weapon/PAL_chainlink.bin"));
     // blade long axis -> hilt (end nearer origin) and tip points in blade-local space
     const ext = [bmesh.mx[0] - bmesh.mn[0], bmesh.mx[1] - bmesh.mn[1], bmesh.mx[2] - bmesh.mn[2]];
     const ax = ext.indexOf(Math.max(...ext));
@@ -73,10 +73,10 @@
   const texImages = [];
   for (const [g, p, fb] of texPairs) {
     try {
-      const gfx = await Parsers.fetchBuf(`/extracted/kratos/textures/${g}.bin`);
+      const gfx = await Parsers.fetchBuf(`../../extracted/kratos/textures/${g}.bin`);
       let pal;
-      try { pal = await Parsers.fetchBuf(`/extracted/kratos/textures/${p}.bin`); }
-      catch { pal = await Parsers.fetchBuf(`/extracted/kratos/textures/${fb}.bin`); }
+      try { pal = await Parsers.fetchBuf(`../../extracted/kratos/textures/${p}.bin`); }
+      catch { pal = await Parsers.fetchBuf(`../../extracted/kratos/textures/${fb}.bin`); }
       const img = Parsers.decodeTexture(gfx, pal);
       texImages.push(img);
       const fig = document.createElement("figure");
@@ -338,7 +338,8 @@
     trans(x, y, z) { return new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]); },
   };
 
-  let yaw = 0.6, pitch = 0.15, dist = 3.6, userDist = 3.6, drag = null, autoSpin = true;
+  // start highly zoomed out (full figure + blade-path space); user wheel-zooms in
+  let yaw = 0.6, pitch = 0.15, dist = 9.0, userDist = 9.0, drag = null, autoSpin = true;
   canvas.addEventListener("mousedown", (e) => { drag = [e.clientX, e.clientY]; autoSpin = false; });
   window.addEventListener("mouseup", () => (drag = null));
   window.addEventListener("mousemove", (e) => {
@@ -823,6 +824,21 @@
     input,
   };
 })().catch((e) => {
-  document.getElementById("status").textContent = "ERROR: " + e.message;
+  const s = document.getElementById("status");
+  if (/fetch .*extracted/.test(e.message)) {
+    s.textContent = "game assets not present in this deployment";
+    const gl = document.getElementById("gl");
+    if (gl) {
+      const msg = document.createElement("div");
+      msg.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#8a7d6a;font-family:monospace;font-size:13px;padding:24px;";
+      msg.innerHTML = "This public build ships code only — the extracted game data is<br>" +
+        "copyrighted and not distributed. To run the lab: clone the repo,<br>" +
+        "extract assets from your own disc (see repo docs), then<br><br>" +
+        "<code>node tools/kratos-lab/server.js</code>";
+      gl.parentElement.appendChild(msg);
+    }
+  } else {
+    s.textContent = "ERROR: " + e.message;
+  }
   console.error(e);
 });
