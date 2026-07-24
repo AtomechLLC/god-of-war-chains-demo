@@ -61,11 +61,28 @@ Requirements for v1. Each requirement is testable and traceable to a phase.
 
 ## Traceability
 
-Filled by roadmap creation.
+Mapped by roadmap creation (2026-07-24). Every v1 requirement maps to exactly one phase.
 
-| REQ-ID | Phase |
-|--------|-------|
-| — | — |
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| VAL-01 | Phase 1 | Pending |
+| VAL-02 | Phase 7 | Pending |
+| DEC-01 | Phase 2 | Pending |
+| DEC-02 | Phase 5 | Pending |
+| DEC-03 | Phase 5 | Pending |
+| CHAIN-01 | Phase 3 | Pending |
+| CHAIN-02 | Phase 3 | Pending |
+| CHAIN-03 | Phase 6 | Pending |
+| MOT-01 | Phase 4 | Pending |
+| MOT-02 | Phase 4 | Pending |
+| FIRE-01 | Phase 6 | Pending |
+| FIRE-02 | Phase 6 | Pending |
+| TRL-01 | Phase 6 | Pending |
+| TRL-02 | Phase 6 | Pending |
+| REND-01 | Phase 2 | Pending |
+| REND-02 | Phase 6 | Pending |
+| REND-03 | Phase 2 | Pending |
 
 ---
 *Defined: 2026-07-24 — from research (.planning/research/) + user scoping*
+*Traceability filled: 2026-07-24 by roadmap creation*
