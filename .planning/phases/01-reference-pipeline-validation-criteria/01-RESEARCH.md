@@ -389,19 +389,22 @@ ffmpeg -ss 12 -t 2 -i reference/captures/idle-flames.mp4 reference/frames/idle/f
 | A6 | PCSX2 2.6.3 video capture records at the configured recording resolution independent of window size | Architecture diagram | LOW — clips are motion/timing truth only; resolution matters less there; verify in Recording settings tab |
 | A7 | Frame Advance hotkey exists (possibly unbound by default) in 2.6.3's Hotkeys settings | Pattern 1 | LOW — grouped with Toggle Pause per upstream PR; binding it is a setup step |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does the 480p prompt appear under PCSX2 fast boot?**
    - What we know: the trigger is game-level (works on hardware); `-slowboot` exists if boot-flow timing matters.
    - What's unclear: emulated boot timing vs. the hold window; whether GoW1's prompt needs the full boot sequence.
    - Recommendation: try fastboot-with-hold first, then slowboot; budget one 15-minute experiment; fall back per Pattern 3. Record the outcome in SETTINGS.md either way.
+   - **RESOLVED:** Adopted the Pattern-3 experiment-plus-fallback: try fastboot-with-hold, then `-slowboot`, else the 480i fallback (paused frame-advance stills; documented deinterlace for clips). The outcome is recorded in SETTINGS.md (plans 01-02/01-03).
 
 2. **What exact framings does the opening level offer?**
    - What we know: GoW's camera is authored per-location; the Aegean Sea sequence has deck (wide), interior corridors (mid/close).
    - What's unclear: whether a true close framing (Kratos ≥60% frame height) with active combat exists early.
    - Recommendation: during the first capture session, scout and save-state the best three spots; if a strict close framing doesn't exist in combat, relax the band and record actual measured Kratos-heights as the definition.
+   - **RESOLVED:** Adopted scout-and-save-state during the first capture session; if no strict close framing exists in combat, the band is relaxed and the actual measured Kratos-heights are recorded as the definition, labeled **inferred** (plan 01-03 Task 2 + the shot-list framing-relaxation rule).
 
 3. **Video capture color fidelity at max UI bitrate** — H.264 at the capture UI's max bitrate should be visually clean for motion judgment, but the "color from PNG only" rule makes this a non-blocking question. No action needed beyond keeping the rule.
+   - **RESOLVED:** Non-blocking — the colors-from-PNG-stills-only rule (TARGET-DEFINITION.md, enforced in plan 01-04 Task 2) makes clip color fidelity irrelevant to measurements; no further action.
 
 ## Validation Architecture
 
