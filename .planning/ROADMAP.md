@@ -32,7 +32,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. A freeze-frame library catalogs chain at rest, mid-swing, and fire close-ups at three framings, annotated for link pitch, glow hues, flame shapes, and trail geometry
   3. A written target definition exists ("GS output as captured, not CRT") plus measured on-screen link counts and flame flicker cadence from footage
   4. The 80–90% acceptance checklist that Phase 7 will judge against is written down
-**Plans**: TBD
+**Plans:** 4 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Capture-safe repo: gitignore media dirs, TARGET-DEFINITION.md, shot-list.md
+- [ ] 01-02-PLAN.md — PCSX2 software-renderer pipeline: official FFmpeg DLLs, SETTINGS.md, ini snapshot (human GUI checkpoint)
+- [ ] 01-03-PLAN.md — Human capture session, library ingest/rename, dimension calibration, git-safety gate
+- [ ] 01-04-PLAN.md — Measurements (link pitch, glow hues, trail geometry, flicker cadence) + zero-TBD ACCEPTANCE.md
 
 ### Phase 2: WAD/MAT Decode & Render-Pass Foundation
 **Goal**: Every FX draw uses its material's real decoded blend/depth state, and the PS2-authentic rendering conventions are locked before any visual tuning happens
@@ -119,7 +125,7 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Reference Pipeline & Validation Criteria | 0/TBD | Not started | - |
+| 1. Reference Pipeline & Validation Criteria | 0/4 | Planned | - |
 | 2. WAD/MAT Decode & Render-Pass Foundation | 0/TBD | Not started | - |
 | 3. Chain Link Ribbon & Glow | 0/TBD | Not started | - |
 | 4. Chain Motion | 0/TBD | Not started | - |
@@ -129,3 +135,4 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 
 ---
 *Created: 2026-07-24 — 7 phases, 17/17 v1 requirements mapped*
+*Phase 1 planned: 2026-07-24 — 4 plans, 3 waves*
