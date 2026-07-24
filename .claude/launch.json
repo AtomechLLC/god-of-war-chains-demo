@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "kratos-lab",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/kratos-lab/server.js"],
+      "port": 4173
+    }
+  ]
+}

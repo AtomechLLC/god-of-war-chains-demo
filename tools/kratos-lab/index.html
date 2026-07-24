@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kratos Lab — GoW (2005) previewer &amp; combo tester</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Kratos Lab</h1>
+  <div class="sub">God of War (2005, PS2) &mdash; hero model, animation chains &amp; combo tester</div>
+  <div class="status" id="status">loading&hellip;</div>
+</header>
+
+<div class="layout">
+  <div class="stage-col">
+    <div class="stage">
+      <canvas id="gl"></canvas>
+      <div class="move-card">
+        <div class="mc-fancy" id="mcFancy"></div>
+        <div class="mc-name" id="mcName">idleCombat</div>
+        <div class="mc-meta" id="mcMeta"></div>
+      </div>
+      <div class="hint">drag&nbsp;&mdash;&nbsp;orbit &nbsp;|&nbsp; wheel&nbsp;&mdash;&nbsp;zoom<br>real hero_0.bin geometry</div>
+      <div class="combo-counter"><div class="num" id="hitNum">0</div><div class="lbl">hits</div></div>
+    </div>
+
+    <div class="timeline">
+      <div class="tl-track" id="tlTrack">
+        <div class="tl-zone queue" id="tlQueue"></div>
+        <div class="tl-zone cancel" id="tlCancel"></div>
+        <div class="tl-zone blend" id="tlBlend"></div>
+        <div class="tl-branchpt" id="tlBranch"></div>
+        <div class="tl-head" id="tlHead"></div>
+      </div>
+      <div class="tl-legend">
+        <span><span class="sw" style="background:rgba(79,158,87,.55)"></span>blend-in (real ANM data)</span>
+        <span><span class="sw" style="background:rgba(79,127,174,.5)"></span>queue window (input buffered)</span>
+        <span><span class="sw" style="background:rgba(201,162,75,.5)"></span>block-cancel window</span>
+        <span><span class="sw" style="background:var(--gold)"></span>branch point</span>
+        <span><span class="sw" style="background:var(--red-hot)"></span>playhead</span>
+        <span id="tlFrames" style="margin-left:auto"></span>
+      </div>
+    </div>
+
+    <div class="pad">
+      <div class="shoulders">
+        <button class="btn mod-btn" id="btnL1">L1 &nbsp;block/orb</button>
+        <button class="btn rage-btn" id="btnRage">RAGE OF THE GODS</button>
+      </div>
+      <div class="diamond">
+        <div class="slot"></div>
+        <div class="slot"><button class="btn face-btn" id="btnT" title="Triangle — heavy"><span class="shape" style="color:#3fa66c">&#9651;</span></button></div>
+        <div class="slot"></div>
+        <div class="slot"><button class="btn face-btn" id="btnS" title="Square — light"><span class="shape" style="color:#d77bb6">&#9633;</span></button></div>
+        <div class="slot"></div>
+        <div class="slot"><button class="btn face-btn" id="btnC" title="Circle — grab"><span class="shape" style="color:#e5533f">&#9675;</span></button></div>
+        <div class="slot"></div>
+        <div class="slot"><button class="btn face-btn" id="btnX" title="X — jump"><span class="shape" style="color:#7a9cc6">&#10005;</span></button></div>
+        <div class="slot"></div>
+      </div>
+      <div class="keys">
+        <kbd>J</kbd> square &nbsp;<kbd>K</kbd> triangle &nbsp;<kbd>L</kbd> circle &nbsp;<kbd>space</kbd> X<br>
+        <kbd>shift</kbd> hold L1 &nbsp;&nbsp;<kbd>R</kbd> rage toggle
+      </div>
+    </div>
+
+    <div class="branches">
+      <h2>Branches from current animation</h2>
+      <div id="branchStack"></div>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="card">
+      <h2>Skin textures (decoded)</h2>
+      <div class="texgrid" id="texGrid"></div>
+    </div>
+    <div class="card">
+      <h2>Extraction stats</h2>
+      <div class="stat-rows" id="stats"></div>
+    </div>
+    <div class="card">
+      <h2>Move data <span style="color:#7ec786">(real)</span></h2>
+      <div class="stat-rows" id="moveData">&mdash;</div>
+    </div>
+    <div class="card">
+      <h2>TWK action events <span style="color:#7ec786">(real)</span></h2>
+      <div class="stat-rows" id="twkData" style="max-height:180px;overflow-y:auto">select a traversal move (jump, land&hellip;)</div>
+    </div>
+    <div class="card">
+      <h2>Timing model <span style="color:var(--dim)">(inferred, adjustable)</span></h2>
+      <div class="slider-row"><span>queue opens</span><input type="range" id="sQueue" min="0" max="90" value="20"><span class="val" id="vQueue">20%</span></div>
+      <div class="slider-row"><span>branch point</span><input type="range" id="sBranch" min="30" max="100" value="70"><span class="val" id="vBranch">70%</span></div>
+      <div class="slider-row"><span>cancel opens</span><input type="range" id="sCancel" min="10" max="100" value="50"><span class="val" id="vCancel">50%</span></div>
+      <div class="stat-rows" style="margin-top:6px">clip names, ids &amp; durations are real ANM data; window percentages are an inferred model of the baked branch tracks.</div>
+    </div>
+    <div class="card">
+      <h2>Input log</h2>
+      <div id="log" style="max-height:140px;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span class="real">green&nbsp;= real extracted data</span> (clip names, ids, durations from <code>ANM_hero.bin</code>; named moves from <code>msgs_en.txt</code>; geometry from <code>hero_0.bin</code>; textures from <code>GFX/PAL_MAI*</code>) &nbsp;&nbsp;
+  <span class="inf">blue&nbsp;= inferred</span> (input&rarr;branch mapping reconstructed from clip naming + the in-game move list; window timings are adjustable defaults &mdash; the game bakes these in binary event tracks inside each ANM clip block).
+</footer>
+
+<script src="parsers.js?v=15"></script>
+<script src="anim.js?v=15"></script>
+<script src="combat.js?v=15"></script>
+<script src="app.js?v=15"></script>
+</body>
+</html>
