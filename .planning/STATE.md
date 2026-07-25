@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Resumed via /gsd-resume-work --auto; proceeding to execute Phase 2 (4 plans, checker-verified). Phase 1 remains paused mid-01-03 by user directive (capture polish pass deferred; see 01-03-SESSION-LOG.md).
-last_updated: "2026-07-25T17:07:12.000Z"
-last_activity: 2026-07-25 -- Phase 03 plan 01 paused at Task 3 blocking human-verify checkpoint (Tasks 1 RED + 2 GREEN committed; all four Node suites green)
+stopped_at: Plan 03-01 complete (chain link-ribbon walker). Task 3 human-verify perceptual read DEFERRED to the post-03-02 combined visual check by user decision; geometry verified by automation + FX-isolation. Next: Wave 2 plan 03-02 (chainglow additive overlay). Phase 1 remains paused mid-01-03 by user directive.
+last_updated: "2026-07-25T18:00:00.000Z"
+last_activity: 2026-07-25 -- Phase 03 plan 01 finalized (SUMMARY written; Tasks 1 RED + 2 GREEN committed; all four Node suites green; perceptual verify deferred to 03-02 combined check)
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 10
-  completed_plans: 6
-  percent: 14
+  completed_plans: 7
+  percent: 70
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 ## Current Position
 
 Phase: 03 (chain-link-ribbon-glow) — EXECUTING
-Plan: 1 of 2 — AT BLOCKING CHECKPOINT (Task 3 human-verify)
-Status: Plan 03-01 in-progress — Tasks 1 (RED) + 2 (GREEN) committed; awaiting human perceptual verify at Task 3, then continuation agent writes SUMMARY
-Last activity: 2026-07-25 -- 03-01 paused at Task 3 blocking human-verify checkpoint
+Plan: 2 of 2 — NEXT (Wave 2, 03-02 chainglow additive overlay); 03-01 COMPLETE
+Status: Plan 03-01 complete — Tasks 1 (RED) + 2 (GREEN) committed, SUMMARY written. Task 3 perceptual human-verify DEFERRED to the post-03-02 combined visual check by user decision (geometry verified by automation + FX-isolation). Ready to plan/execute 03-02.
+Last activity: 2026-07-25 -- 03-01 finalized; perceptual read deferred to 03-02 combined check
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███████░░░] 70% (7/10 planned plans; phases 4-7 plan counts TBD)
 
 ## Performance Metrics
 
@@ -72,6 +72,9 @@ None yet.
 
 ### Blockers/Concerns
 
+- **03-01 perceptual verify DEFERRED (user decision):** the segmented-link "reads correct" human check was deferred to the post-03-02 COMBINED visual check (03-02's own Task 3 re-confirms the 03-01 links against the glow). 03-01 geometry is verified by automation + FX-isolation readback; bare chain is dark by design until 03-02 chainglow lands. NOT an independent perceptual approval.
+- **Phase 4 chain-span spike (carried from 03-01):** during fast combos the chain span reaches ~121u / ~135 links (should cap near CHAIN_LEN 14 → ~15-16). ROOT CAUSE is the PRE-EXISTING blade-sim (`driveBlade` / `rig.bladePos`), UNCHANGED by 03-01 — Phase 4 owns the real chain-motion solver. NOT a 03-01 defect.
+- **INFERRED values to re-judge vs footage (03-02 combined check):** LINK_PITCH=0.9 (A4; on-screen link-count calibration DEFERRED to Phase-1 01-04, one-constant recalibration) and TRAIL_INNER_T=0.6 trail tip-arc bias (A9).
 - Phase 5 is original reverse engineering with no public decode anywhere (FXC/PTC/MSH) — flagged for deeper research during planning: differential-decode protocol, PCSX2 GS-dump procedure, ELF-disassembly escalation path
 - Phase 4 chain-motion mechanism is footage-inferred, not data-backed — plan a short footage-measurement study from Phase-1 captures
 - TRL-02 dual-trail theory (BFT fire + BGT swoosh) is MEDIUM confidence — Phase 5 PTC decode confirms; fallback is a single crimson trail
@@ -87,5 +90,5 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-07-25
-Stopped at: Plan 03-01 Task 3 — blocking checkpoint:human-verify. Tasks 1 (RED chain.test.js, commit 3e86495) + 2 (GREEN chain.js walker + drawFx PASS 1 + trail tip-arc bias + chainInfo, commit 7ad2c08) done; all four Node suites green. Awaiting human perceptual approval of the segmented/twisted link read; continuation agent then writes 03-01-SUMMARY.md and advances the plan.
-Resume file: .planning/phases/03-chain-link-ribbon-glow/03-01-PLAN.md
+Stopped at: Plan 03-01 COMPLETE. Tasks 1 (RED chain.test.js, commit 3e86495) + 2 (GREEN chain.js walker + drawFx PASS 1 + trail tip-arc bias + chainInfo, commit 7ad2c08) committed; SUMMARY written (03-01-SUMMARY.md); all four Node suites green. Task 3 perceptual human-verify DEFERRED to the post-03-02 combined visual check by user decision (geometry verified by automation + FX-isolation). Next: Wave 2 plan 03-02 (chainglow additive overlay, CHAIN-02).
+Resume file: .planning/phases/03-chain-link-ribbon-glow/03-02-PLAN.md
