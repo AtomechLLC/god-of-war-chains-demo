@@ -19,7 +19,7 @@ created: 2026-07-25
 |----------|-------|
 | **Framework** | node:assert (built-in — zero external packages, per CLAUDE.md) |
 | **Config file** | none |
-| **Quick run command** | `node tools/kratos-lab/test/<suite>.test.js` (e.g. `fxc.test.js` / `ptc.test.js` / `fxdb.test.js`) |
+| **Quick run command** | `node tools/kratos-lab/test/<suite>.test.js` — the plans consolidate DEC-02 into a single `fxdb.test.js` (plans 01-04) plus `anm.test.js` (DEC-03, plan 05) |
 | **Full suite command** | `for f in tools/kratos-lab/test/*.test.js; do node "$f" || exit 1; done` |
 | **Estimated runtime** | ~5 seconds |
 
@@ -40,14 +40,14 @@ created: 2026-07-25
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
 | 05-01-T1 (RED MSH) | 05-01 | 1 | DEC-02 | T-05-01/02/03/04 | size-gate before field read; rec.size bound; resolve multi-copy | known-answer | `node tools/kratos-lab/test/fxdb.test.js` (RED) | ❌ created here | ⬜ pending |
 | 05-01-T2 (parseMsh+buildFxDb) | 05-01 | 1 | DEC-02 | T-05-01/02/04 | named throw; real/INFERRED tags | known-answer | `node tools/kratos-lab/test/fxdb.test.js` | ✅ after T1 | ⬜ pending |
-| 05-02-T1 (RED PTC) | 05-02 | 2 | DEC-02 | T-05-01/02/04 | color-provenance guard; variable-length bound | known-answer | `node tools/kratos-lab/test/fxdb.test.js` (RED) | ✅ | ⬜ pending |
-| 05-02-T2 (parsePtc) | 05-02 | 2 | DEC-02 | T-05-01/02/04 | magic 0x13 named throw; no real color from PTC | known-answer | `node tools/kratos-lab/test/fxdb.test.js` | ✅ | ⬜ pending |
-| 05-03-T1 (RED FXC) | 05-03 | 3 | DEC-02 | T-05-01/02/03/04 | subtype-branched offset; differential invariant | known-answer | `node tools/kratos-lab/test/fxdb.test.js` (RED) | ✅ | ⬜ pending |
-| 05-03-T2 (parseFxc+refs) | 05-03 | 3 | DEC-02 | T-05-01/02/03/04 | magic 0x1e named throw; resolve MSH_* or mark runtime | known-answer | `node tools/kratos-lab/test/fxdb.test.js` | ✅ | ⬜ pending |
+| 05-02-T1 (RED PTC) | 05-02 | 2 | DEC-02 | T-05-01/02/04 | color-provenance guard; variable-length bound; BFT/BGT-in-db.ptc | known-answer | `node tools/kratos-lab/test/fxdb.test.js` (RED) | ✅ | ⬜ pending |
+| 05-02-T2 (parsePtc + standalone 3rd arg) | 05-02 | 2 | DEC-02 | T-05-01/02/04 | magic 0x13 named throw; no real color from PTC; BFT/BGT real keys | known-answer | `node tools/kratos-lab/test/fxdb.test.js` | ✅ | ⬜ pending |
+| 05-03-T1 (RED FXC) | 05-03 | 3 | DEC-02 | T-05-01/02/03/04 | subtype-branched offset; differential invariant; guarded slot pair | known-answer | `node tools/kratos-lab/test/fxdb.test.js` (RED) | ✅ | ⬜ pending |
+| 05-03-T2 (parseFxc + refs + standalone) | 05-03 | 3 | DEC-02 | T-05-01/02/03/04 | magic 0x1e named throw; resolve MSH_* or mark runtime; skip placeholder slot 0x00/0xffff | known-answer | `node tools/kratos-lab/test/fxdb.test.js` | ✅ | ⬜ pending |
 | 05-04-T1 (color provenance) | 05-04 | 4 | DEC-02 | T-05-02/04/05 | size-bounded texture subarray; no fabricated color | known-answer | `node tools/kratos-lab/test/fxdb.test.js` | ✅ | ⬜ pending |
-| 05-04-T2 (corpus + evidence audit) | 05-04 | 4 | DEC-02 | T-05-04 | every field real-or-INFERRED with corrob | known-answer | `node tools/kratos-lab/test/fxdb.test.js && node tools/kratos-lab/test/wad.test.js` | ✅ | ⬜ pending |
+| 05-04-T2 (corpus + evidence audit) | 05-04 | 4 | DEC-02 | T-05-04 | BFT/BGT/CNG/FXCF actual keys; every field real-or-INFERRED with corrob | known-answer | `node tools/kratos-lab/test/fxdb.test.js && node tools/kratos-lab/test/wad.test.js` | ✅ | ⬜ pending |
 | 05-04-T3 (GS-dump decision) | 05-04 | 4 | DEC-02 | T-05-GS | recommended-not-blocking corroboration | checkpoint:decision (manual) | n/a — recorded in SUMMARY | n/a | ⬜ pending |
-| 05-05-T1 (RED type-5 locate) | 05-05 | 5 | DEC-03 | T-05-01/03/04 | differential-locate; per-field evidence table | known-answer | `node tools/kratos-lab/test/anm.test.js` (RED) | ❌ created here | ⬜ pending |
+| 05-05-T1 (RED type-5 locate) | 05-05 | 5 | DEC-03 | T-05-01/03/04 | differential-locate; type-5 identity confirmed; per-field evidence table | known-answer | `node tools/kratos-lab/test/anm.test.js` (RED) | ❌ created here | ⬜ pending |
 | 05-05-T2 (parseAnmType5) | 05-05 | 5 | DEC-03 | T-05-01/02/04 | size-gate; named throw; real/INFERRED | known-answer | `node tools/kratos-lab/test/anm.test.js` | ✅ after T1 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
@@ -58,10 +58,10 @@ created: 2026-07-25
 
 ## Wave 0 Requirements
 
-- [ ] `tools/kratos-lab/test/` decode suites (fxc/ptc/msh/fxdb) — node:assert known-answer scaffolds copying the `test/wad.test.js` idiom
+- [ ] `tools/kratos-lab/test/fxdb.test.js` (consolidated DEC-02 MSH+PTC+FXC known-answers, plans 01-04) and `tools/kratos-lab/test/anm.test.js` (DEC-03 type-5, plan 05) — node:assert known-answer scaffolds copying the `test/wad.test.js` idiom
 - [ ] No framework install needed (node:assert is built-in)
 
-*Existing node:assert infrastructure (loop.test.js, wad.test.js, chain.test.js, fx.test.js) covers the harness; new decode suites follow the same pattern.*
+*Existing node:assert infrastructure (loop.test.js, wad.test.js, chain.test.js, fx.test.js) covers the harness; the new decode suites (fxdb.test.js, anm.test.js) follow the same pattern.*
 
 ---
 
@@ -84,4 +84,5 @@ created: 2026-07-25
 - [x] Feedback latency < 5s (~5s full suite)
 - [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** approved by planner 2026-07-25
+**Approval:** approved by planner 2026-07-25 (revised: standalone-source 3rd-arg blocker fix + placeholder-slot guard + type-5 escalation note + suite-name alignment)
+</content>
