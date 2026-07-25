@@ -292,6 +292,8 @@ const FxParse = (() => {
     const evidence = [
       { field: "magic", offset: "+0x00", rawHex: hex32(base + 0x00), interp: "0x13 PTC magic (constant, all 10 PTC)", corrob: "RESEARCH PTC table", tag: "real" },
       { field: "slotId", offset: "+0x08", rawHex: "0x" + (slotId >>> 0).toString(16), interp: `slot ${slotId} — links FXC<->PTC via +0x08`, corrob: "PTC_BFTpart1 +0x08 == FXC_BFTemit1 +0x08 == 0x1d", tag: "real" },
+      { field: "index", offset: "+0x0a", rawHex: "0x" + (index >>> 0).toString(16), interp: `index / 0xffff field 0x${index.toString(16)} (+0x0a, byte-decoded)`, corrob: "RESEARCH PTC +0x0a; mirrors FXC +0x0a index", tag: "real" },
+      { field: "matrix", offset: "+0x10", rawHex: `row0 (${[matrix[0], matrix[1], matrix[2]].map((v) => v.toFixed(5)).join(", ")})`, interp: `4x4 placement matrix (same convention as FXC; often identity), row0 len ${Math.hypot(matrix[0], matrix[1], matrix[2]).toFixed(5)}`, corrob: "RESEARCH PTC +0x10 f32[16]; matches the FXC placement-matrix convention", tag: "real" },
       { field: "size", offset: "+0x50", rawHex: hex32(base + 0x50), interp: `${size} bytes (== record length)`, corrob: "equals rec.size", tag: "real" },
       { field: "shapeRef", offset: "+0x54", rawHex: `"${shapeRef}"`, interp: `runtime-handle shape name "${shapeRef}" (non-MSH_ -> no WAD record; resolved:false)`, corrob: "RESEARCH cross-ref chain; only MSH_*Shape names resolve", tag: "real" },
       { field: "params", offset: "+0x64", rawHex: `${params.length} f32`, interp: "raw param floats, bounded by rec.size — byte-decoded", corrob: "bounded by dataOff + rec.size (T-05-02)", tag: "real" },
