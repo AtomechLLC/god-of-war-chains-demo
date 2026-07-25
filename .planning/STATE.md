@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Plan 03-01 complete (chain link-ribbon walker). Task 3 human-verify perceptual read DEFERRED to the post-03-02 combined visual check by user decision; geometry verified by automation + FX-isolation. Next: Wave 2 plan 03-02 (chainglow additive overlay). Phase 1 remains paused mid-01-03 by user directive.
-last_updated: "2026-07-25T18:00:00.000Z"
-last_activity: 2026-07-25 -- Phase 03 plan 01 finalized (SUMMARY written; Tasks 1 RED + 2 GREEN committed; all four Node suites green; perceptual verify deferred to 03-02 combined check)
+stopped_at: Plan 03-02 IN PROGRESS — Tasks 1 (RED, 9f25b60) + 2 (GREEN, 355ff13) committed; PAUSED at Task 3 checkpoint:human-verify (gate=blocking) — the COMBINED chain+glow perceptual check (also re-confirms 03-01 links). Automated pre-proof green (4 suites exit 0 + depthFunc LEQUAL present). Awaiting human "approved". SUMMARY not yet written; plan NOT complete. Phase 1 remains paused mid-01-03 by user directive.
+last_updated: "2026-07-25T18:08:47.000Z"
+last_activity: 2026-07-25 -- Plan 03-02 Tasks 1 (RED) + 2 (GREEN) committed; chainglow additive overlay + WAD-sourced chain textures + LEQUAL coplanar depth wired; paused at the blocking human-verify checkpoint
 progress:
   total_phases: 7
   completed_phases: 1
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 ## Current Position
 
 Phase: 03 (chain-link-ribbon-glow) — EXECUTING
-Plan: 2 of 2 — NEXT (Wave 2, 03-02 chainglow additive overlay); 03-01 COMPLETE
-Status: Plan 03-01 complete — Tasks 1 (RED) + 2 (GREEN) committed, SUMMARY written. Task 3 perceptual human-verify DEFERRED to the post-03-02 combined visual check by user decision (geometry verified by automation + FX-isolation). Ready to plan/execute 03-02.
-Last activity: 2026-07-25 -- 03-01 finalized; perceptual read deferred to 03-02 combined check
+Plan: 2 of 2 — IN PROGRESS (Wave 2, 03-02 chainglow additive overlay); 03-01 COMPLETE
+Status: Plan 03-02 Tasks 1 (RED, 9f25b60) + 2 (GREEN, 355ff13) committed. PAUSED at Task 3 checkpoint:human-verify (gate=blocking) — the combined chain+glow perceptual check. Automated pre-proof green (4 suites exit 0 + depthFunc LEQUAL present). Awaiting human "approved"; SUMMARY not yet written, plan NOT complete.
+Last activity: 2026-07-25 -- 03-02 Tasks 1-2 committed; paused at blocking human-verify checkpoint
 
 Progress: [███████░░░] 70% (7/10 planned plans; phases 4-7 plan counts TBD)
 
@@ -90,5 +90,5 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-07-25
-Stopped at: Plan 03-01 COMPLETE. Tasks 1 (RED chain.test.js, commit 3e86495) + 2 (GREEN chain.js walker + drawFx PASS 1 + trail tip-arc bias + chainInfo, commit 7ad2c08) committed; SUMMARY written (03-01-SUMMARY.md); all four Node suites green. Task 3 perceptual human-verify DEFERRED to the post-03-02 combined visual check by user decision (geometry verified by automation + FX-isolation). Next: Wave 2 plan 03-02 (chainglow additive overlay, CHAIN-02).
-Resume file: .planning/phases/03-chain-link-ribbon-glow/03-02-PLAN.md
+Stopped at: Plan 03-02 IN PROGRESS. Tasks 1 (RED wad.test.js TXR + chain-texture known-answers, commit 9f25b60) + 2 (GREEN parseTxr + WAD-sourced chainlinkTex/chainglowTex + drawFx PASS 2 chainglow additive/dw-OFF sharing PASS 1 vertex bytes + gl.depthFunc(LEQUAL) + ?v=22 ×8, commit 355ff13) committed. All four Node suites green; automated pre-proof (4 suites exit 0 + depthFunc LEQUAL grep) passes. PAUSED at Task 3 checkpoint:human-verify (gate=blocking) — the COMBINED chain+glow perceptual check that also re-confirms the 03-01 links. SUMMARY NOT written; plan NOT complete — orchestrator drives the human checkpoint and finalizes on "approved". Deviation logged: 03-RESEARCH chainglow "black for x>=80 / blue===0" claims are perceptual — real background is CLUT (1,1,1) additive-black, blob extends to x=134; wad.test.js pins the true byte values.
+Resume file: .planning/phases/03-chain-link-ribbon-glow/03-02-PLAN.md (resume at Task 3 human-verify)
