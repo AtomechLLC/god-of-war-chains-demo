@@ -421,4 +421,126 @@ let bftMatrix;
   );
 }
 
-console.log("fxdb.test.js: MSH + PTC + FXC known-answers passed");
+// ---------------------------------------------------------------------------
+// --- swordtrail no-ramp + color provenance ---  (DEC-02 color clause, D-04)
+// ---------------------------------------------------------------------------
+// RESEARCH Open Q1 + Pitfall 4: effect color is NOT painted into GFX_swordtrail
+// and is NOT a static PTC RGBA. This block PINS both halves of that finding:
+//   1. GFX_swordtrail carries NO length-wise (U-axis) age->color ramp — the fire
+//      hue is a single amber family (uniform g/r) across the strip length, the hot
+//      region is a CROSS-strip (V) edge (a soft additive streak cross-section, like
+//      chainglow), and the hottest texel is amber — NOT the white-hot end a painted
+//      white->orange->ember ramp would require. So the ramp is RUNTIME (INFERRED).
+//   2. buildFxDb records the color provenance at db.meta.colorSource, tracing color
+//      to MAT_pticleMat.blendColor (a real MAT field) with the ramp tagged INFERRED.
+// Decode via the decodeFxTexture idiom (mirrors wad.test.js): MAT -> TXR -> GFX/PAL.
+function decodeFxTexture(matName, txrName) {
+  const matRec = recs.find((r) => r.name === matName && r.tag === 0x1e && r.size > 0);
+  assert.ok(matRec, `${matName} data-carrying record exists`);
+  const txrRec = Parsers.resolve(recs, txrName, matRec.idx);
+  assert.ok(txrRec, `${txrName} resolves`);
+  const t = FxParse.parseTxr(buf, txrRec);
+  const g = Parsers.resolve(recs, t.gfxName, txrRec.idx);
+  const p = Parsers.resolve(recs, t.palName, txrRec.idx);
+  assert.ok(g && g.size > 0, `${t.gfxName} resolves to a data-carrying record`);
+  assert.ok(p && p.size > 0, `${t.palName} resolves to a data-carrying record`);
+  return Parsers.decodeTexture(buf.subarray(g.dataOff, g.dataOff + g.size), buf.subarray(p.dataOff, p.dataOff + p.size));
+}
+
+{
+  const trail = decodeFxTexture("MAT_swordtrail", "TXR_swordtrail");
+  const W = trail.width, H = trail.height, d = trail.data;
+  assert.strictEqual(W, 64, "swordtrail width 64");
+  assert.strictEqual(H, 32, "swordtrail height 32");
+
+  // additive-black transparency (like chainglow): every alpha decodes to 255, and
+  // the (1,1,1) additive-black background dominates the strip.
+  let allAlpha255 = true, bg = 0;
+  for (let i = 0; i < W * H; i++) {
+    if (d[i * 4 + 3] !== 255) allAlpha255 = false;
+    if (d[i * 4] === 1 && d[i * 4 + 1] === 1 && d[i * 4 + 2] === 1) bg++;
+  }
+  assert.ok(allAlpha255, "swordtrail every alpha === 255 after decode (additive-black, not alpha)");
+  assert.strictEqual(bg, 1690, "swordtrail (1,1,1) additive-black background count === 1690");
+  assert.ok(bg > (W * H) / 2, "swordtrail background dominates the strip (soft streak, mostly empty)");
+
+  // (1) NO WHITE-HOT END: the global hottest texel is amber (243,176,18) — low blue,
+  // g/r ~0.72 — NOT the near-white (g/r~1, b/r~1) a painted white-hot ramp end needs.
+  let hotLum = -1, hot = [0, 0, 0];
+  for (let i = 0; i < W * H; i++) {
+    const l = d[i * 4] + d[i * 4 + 1] + d[i * 4 + 2];
+    if (l > hotLum) { hotLum = l; hot = [d[i * 4], d[i * 4 + 1], d[i * 4 + 2]]; }
+  }
+  assert.deepStrictEqual(hot, [243, 176, 18], "swordtrail hottest texel === (243,176,18) amber core");
+  assert.ok(hot[2] < 30, "swordtrail hottest texel is low-blue (no white-hot end painted)");
+  const hotGR = hot[1] / hot[0];
+  assert.ok(hotGR > 0.5 && hotGR < 0.85, `swordtrail hottest is amber (g/r=${hotGR.toFixed(3)} in [0.5,0.85], not white ~1)`);
+
+  // (2) NO LENGTH-WISE (U) HUE RAMP: every bright column's brightest pixel is the SAME
+  // amber hue family (g/r in a tight band, low blue), and the mean hue does NOT shift
+  // from one end of the strip to the other. A painted age->color ramp would put a white
+  // (g/r~1) end and an ember/red (g/r<0.4) end at opposite U — instead the hue is flat.
+  const bright = [];
+  for (let x = 0; x < W; x++) {
+    let bl = -1, bp = [0, 0, 0];
+    for (let y = 0; y < H; y++) {
+      const c = (y * W + x) * 4, l = d[c] + d[c + 1] + d[c + 2];
+      if (l > bl) { bl = l; bp = [d[c], d[c + 1], d[c + 2]]; }
+    }
+    if (bl > 20) bright.push({ x, gr: bp[1] / bp[0], br: bp[2] / bp[0] });
+  }
+  assert.ok(bright.length > 10, `swordtrail has bright fire columns to inspect (n=${bright.length})`);
+  for (const b of bright) {
+    assert.ok(b.gr > 0.45 && b.gr < 0.9, `col x=${b.x} amber hue g/r=${b.gr.toFixed(3)} (no white/deep-ember end)`);
+    assert.ok(b.br < 0.15, `col x=${b.x} low blue b/r=${b.br.toFixed(3)} (uniform amber, blue-poor)`);
+  }
+  const meanGR = (arr) => arr.reduce((s, b) => s + b.gr, 0) / arr.length;
+  const left = bright.filter((b) => b.x < W / 2), right = bright.filter((b) => b.x >= W / 2);
+  const hueShift = Math.abs(meanGR(left) - meanGR(right));
+  assert.ok(hueShift < 0.12, `swordtrail hue is flat along U (left vs right mean g/r shift ${hueShift.toFixed(3)} < 0.12 — no age->color ramp)`);
+
+  // Cross-strip (V) heat profile: the streak is hot at ONE edge (bottom row bright,
+  // top row background) — the soft additive streak cross-section, NOT a length ramp.
+  const rowLum = (y) => { let s = 0; for (let x = 0; x < W; x++) { const c = (y * W + x) * 4; s += d[c] + d[c + 1] + d[c + 2]; } return s / W; };
+  assert.ok(rowLum(0) < 5, `swordtrail top edge (row 0) is background (lum ${rowLum(0).toFixed(1)} < 5)`);
+  assert.ok(rowLum(H - 1) > 100, `swordtrail bottom edge (row ${H - 1}) is the hot streak edge (lum ${rowLum(H - 1).toFixed(1)} > 100)`);
+
+  // Color provenance: trace to MAT_pticleMat.blendColor via buildMats, and assert
+  // buildFxDb records it at db.meta.colorSource with the ramp tagged INFERRED.
+  const mats = FxParse.buildMats(recs, buf);
+  const pticle = mats.byName["MAT_pticleMat"];
+  assert.ok(pticle, "MAT_pticleMat decodes via buildMats");
+  assert.ok(Array.isArray(pticle.blendColor) && pticle.blendColor.length === 4, "MAT_pticleMat has a decodable blendColor");
+
+  const db = FxParse.buildFxDb(recs, buf);
+  assert.ok(db.meta.colorSource, "buildFxDb records db.meta.colorSource");
+  assert.strictEqual(db.meta.colorSource.record, "MAT_pticleMat", "colorSource.record === MAT_pticleMat");
+  assert.strictEqual(db.meta.colorSource.field, "blendColor", "colorSource.field === blendColor");
+  assert.strictEqual(
+    `${db.meta.colorSource.record}.${db.meta.colorSource.field}`,
+    "MAT_pticleMat.blendColor",
+    "color provenance === MAT_pticleMat.blendColor"
+  );
+  assert.deepStrictEqual(db.meta.colorSource.value, pticle.blendColor, "colorSource.value === MAT_pticleMat.blendColor (real byte value)");
+  assert.strictEqual(db.meta.colorSource.tag, "real", "colorSource.tag === real (blendColor is byte-decoded)");
+  assert.strictEqual(db.meta.colorSource.rampTag, "INFERRED", "colorSource.rampTag === INFERRED (runtime age->color tint)");
+
+  // PROVENANCE GUARD (T-05-04): NO FxDb field is a real-tagged effect color sourced
+  // from a PTC or the swordtrail texture. Walk every decoded record's evidence.
+  const dbFull = FxParse.buildFxDb(recs, buf, [
+    { name: "PTC_BFTpart1", buf: loadBin("PTC_BFTpart1").buf, tag: 0x1e },
+    { name: "PTC_BGTpart1", buf: loadBin("PTC_BGTpart1").buf, tag: 0x1e },
+  ]);
+  for (const sec of ["msh", "ptc", "fxc"]) {
+    for (const [k, v] of Object.entries(dbFull[sec])) {
+      for (const e of v.evidence) {
+        assert.ok(
+          !(/color|rgba|crimson|ember/i.test(e.field) && e.tag === "real"),
+          `${sec}.${k} evidence '${e.field}' is not a real-tagged effect color (color is MAT/runtime, not PTC/texture)`
+        );
+      }
+    }
+  }
+}
+
+console.log("fxdb.test.js: MSH + PTC + FXC + swordtrail-provenance known-answers passed");

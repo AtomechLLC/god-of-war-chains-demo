@@ -406,6 +406,32 @@ const FxParse = (() => {
       fxc: {},
       refs: [],
     };
+
+    // Color provenance (DEC-02 "colors come from these records" clause, closed
+    // HONESTLY; Pitfall 4 / A3 / RESEARCH Open Q1). Effect color is NOT a static
+    // PTC field (identity RGBA, byte-identical fire-vs-swoosh) and is NOT painted
+    // into GFX_swordtrail (a uniform additive streak with NO length-wise age->color
+    // ramp — verified this session: the hot region is a cross-strip edge, the fire
+    // hue is a single amber family with no white-hot->ember gradient along U). It is
+    // traced to the particle material MAT_pticleMat.blendColor, a REAL byte-decoded
+    // MAT field; its application as the runtime white-hot->orange->ember ramp is the
+    // INFERRED part (D-04). NO per-effect color is ever fabricated as `real`.
+    // Decode ONLY MAT_pticleMat (filter first) so buildFxDb's success never couples
+    // to decoding every unrelated MAT in the WAD.
+    const pmat = buildMats(records.filter((r) => r.name === "MAT_pticleMat"), wadBuf).byName["MAT_pticleMat"];
+    if (pmat) {
+      db.meta.colorSource = {
+        record: "MAT_pticleMat",
+        field: "blendColor",
+        value: pmat.blendColor.slice(), // real byte-decoded MAT blendColor
+        tag: "real", // the blendColor VALUE is byte-decoded (real)
+        rampTag: "INFERRED", // its use as the age->color ramp is a runtime tint
+        note:
+          "runtime tint applies MAT_pticleMat.blendColor; the white-hot->orange->ember " +
+          "age->color ramp is INFERRED (D-04) — GFX_swordtrail has no painted length-wise " +
+          "ramp and the static PTC RGBA is identity, byte-identical fire-vs-swoosh (Pitfall 4/A3)",
+      };
+    }
     for (const r of records) {
       if (r.tag !== 0x70 || r.size === 0) continue;
       if (!r.name.startsWith("MSH_") || !r.name.endsWith("Shape")) continue;
