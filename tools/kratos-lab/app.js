@@ -26,14 +26,14 @@
   };
 
   status("decoding hero_0.bin…");
-  const meshBuf = await Parsers.fetchBuf("../../extracted/kratos/model/hero_0.bin");
+  const meshBuf = await Parsers.fetchBuf("../../assets/kratos/model/hero_0.bin");
   const mesh = Parsers.parseMesh(meshBuf);
 
   status("decoding skeleton + animations…");
   let rig = null;
   try {
-    const objBuf = await Parsers.fetchBuf("../../extracted/kratos/model/hero.bin");
-    const anmBuf = await Parsers.fetchBuf("../../extracted/kratos/animations/ANM_hero.bin");
+    const objBuf = await Parsers.fetchBuf("../../assets/kratos/model/hero.bin");
+    const anmBuf = await Parsers.fetchBuf("../../assets/kratos/animations/ANM_hero.bin");
     rig = GowAnim.makeRig(objBuf, anmBuf);
   } catch (e) { console.error("rig", e); }
 
@@ -42,16 +42,16 @@
   try {
     const bladeAllMats = {};
     for (let i = 0; i < 16; i++) bladeAllMats[i] = 0;
-    const bmesh = Parsers.parseMesh(await Parsers.fetchBuf("../../extracted/weapon/MAIBlade_0.bin"), bladeAllMats);
+    const bmesh = Parsers.parseMesh(await Parsers.fetchBuf("../../assets/weapon/MAIBlade_0.bin"), bladeAllMats);
     const bImg = Parsers.decodeTexture(
-      await Parsers.fetchBuf("../../extracted/weapon/GFX_stage1Btx.bin"),
-      await Parsers.fetchBuf("../../extracted/weapon/PAL_stage1Btx.bin"));
+      await Parsers.fetchBuf("../../assets/weapon/GFX_stage1Btx.bin"),
+      await Parsers.fetchBuf("../../assets/weapon/PAL_stage1Btx.bin"));
     const trailImg = Parsers.decodeTexture(
-      await Parsers.fetchBuf("../../extracted/weapon/GFX_swordtrail.bin"),
-      await Parsers.fetchBuf("../../extracted/weapon/PAL_swordtrail.bin"));
+      await Parsers.fetchBuf("../../assets/weapon/GFX_swordtrail.bin"),
+      await Parsers.fetchBuf("../../assets/weapon/PAL_swordtrail.bin"));
     const chainImg = Parsers.decodeTexture(
-      await Parsers.fetchBuf("../../extracted/weapon/GFX_chainlink.bin"),
-      await Parsers.fetchBuf("../../extracted/weapon/PAL_chainlink.bin"));
+      await Parsers.fetchBuf("../../assets/weapon/GFX_chainlink.bin"),
+      await Parsers.fetchBuf("../../assets/weapon/PAL_chainlink.bin"));
     // blade long axis -> hilt (end nearer origin) and tip points in blade-local space
     const ext = [bmesh.mx[0] - bmesh.mn[0], bmesh.mx[1] - bmesh.mn[1], bmesh.mx[2] - bmesh.mn[2]];
     const ax = ext.indexOf(Math.max(...ext));
@@ -64,6 +64,20 @@
     console.log(`blade: ${bmesh.verts} verts ${bmesh.tris} tris, axis ${ax}, tip @ ${tip.map(v=>v.toFixed(1))}`);
   } catch (e) { console.warn("blade load", e); }
 
+  status("loading weapon WAD…");
+  // DEC-01 decode stage — deliberately NOT wrapped in try/catch: decode
+  // failures (bad magic, invalid flag combos) are the assert contract and
+  // must reach the outer catch, which surfaces them in #status.
+  const wadBuf = await Parsers.fetchBuf("../../assets/wads/R_WPN0_0.WAD");
+  const wadRecords = Parsers.parseWad(wadBuf);
+  const matDb = FxParse.buildMats(wadRecords, wadBuf);
+  const matTuples = FxParse.enumTuples(matDb.list);
+  for (const need of ["MAT_chainlink", "MAT_chainglow", "MAT_swordtrail"]) {
+    if (!matDb.byName[need]) throw new Error(`weapon WAD missing required MAT: ${need}`);
+  }
+  console.table(matTuples);
+  console.log(`weapon WAD: ${wadRecords.length} records, ${matDb.list.length} MATs, ${matTuples.length} blend tuples`);
+
   status("decoding textures…");
   const texPairs = [
     ["GFX_MAI01F", "PAL_MAI01F"],
@@ -73,10 +87,10 @@
   const texImages = [];
   for (const [g, p, fb] of texPairs) {
     try {
-      const gfx = await Parsers.fetchBuf(`../../extracted/kratos/textures/${g}.bin`);
+      const gfx = await Parsers.fetchBuf(`../../assets/kratos/textures/${g}.bin`);
       let pal;
-      try { pal = await Parsers.fetchBuf(`../../extracted/kratos/textures/${p}.bin`); }
-      catch { pal = await Parsers.fetchBuf(`../../extracted/kratos/textures/${fb}.bin`); }
+      try { pal = await Parsers.fetchBuf(`../../assets/kratos/textures/${p}.bin`); }
+      catch { pal = await Parsers.fetchBuf(`../../assets/kratos/textures/${fb}.bin`); }
       const img = Parsers.decodeTexture(gfx, pal);
       texImages.push(img);
       const fig = document.createElement("figure");
@@ -94,7 +108,10 @@
     `<b>${mesh.verts.toLocaleString()}</b> vertices, <b>${mesh.tris.toLocaleString()}</b> triangles in <b>${mesh.chunks}</b> strips<br>` +
     `<b>${clipsJson.clips.length}</b> animation clips decoded<br>` +
     `combat set: <b>combo3A–F, combo4A–D, 5–7,</b><br><b>LR2–4, airH1–3/V1, berH1–4/V1–4</b><br>` +
-    `source: R_HERO0.WAD / R_PERM.WAD`;
+    `source: R_HERO0.WAD / R_PERM.WAD<br>` +
+    `blend tuples: <b>${matTuples.length}</b> (` +
+    matTuples.map((t) => `${t.mode}/dw-${t.depthWrite ? "on" : "off"} ×${t.layerCount}`).join(", ") +
+    `)`;
 
   // ---------- WebGL textured mesh renderer ----------------------------------
   const canvas = $("gl");
@@ -820,12 +837,13 @@
   // test hooks (used by automated verification; harmless in normal use)
   window.KratosLab = {
     machine, mesh, step, rig, skin,
+    wadRecords, matDb, matTuples,
     setView(y, p, d) { yaw = y; pitch = p; dist = d; userDist = d; autoSpin = false; },
     input,
   };
 })().catch((e) => {
   const s = document.getElementById("status");
-  if (/fetch .*extracted/.test(e.message)) {
+  if (/fetch .*(extracted|assets)/.test(e.message)) {
     s.textContent = "game assets not present in this deployment";
     const gl = document.getElementById("gl");
     if (gl) {
