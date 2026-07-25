@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Roadmap and state initialized; ready to plan Phase 1
-last_updated: "2026-07-25T05:25:26.142Z"
-last_activity: 2026-07-25 -- Phase 01 execution started
+stopped_at: Resumed via /gsd-resume-work --auto; proceeding to execute Phase 2 (4 plans, checker-verified). Phase 1 remains paused mid-01-03 by user directive (capture polish pass deferred; see 01-03-SESSION-LOG.md).
+last_updated: "2026-07-25T06:22:24.615Z"
+last_activity: 2026-07-25 -- Phase 02 execution started
 progress:
   total_phases: 7
   completed_phases: 0
-  total_plans: 4
-  completed_plans: 0
+  total_plans: 8
+  completed_plans: 2
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-24)
 
 **Core value:** A GoW1 attack in kratos-lab reads 80–90% identical to real gameplay footage — chains, glow, and fire use the game's own decoded textures, particle definitions, colors, and values, not approximations.
-**Current focus:** Phase 01 — reference-pipeline-validation-criteria
+**Current focus:** Phase 02 — wad-mat-decode-render-pass-foundation
 
 ## Current Position
 
-Phase: 01 (reference-pipeline-validation-criteria) — EXECUTING
+Phase: 02 (wad-mat-decode-render-pass-foundation) — EXECUTING
 Plan: 1 of 4
-Status: Executing Phase 01
-Last activity: 2026-07-25 -- Phase 01 execution started
+Status: Executing Phase 02
+Last activity: 2026-07-25 -- Phase 02 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -87,5 +87,5 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-07-24
-Stopped at: Roadmap and state initialized; ready to plan Phase 1
-Resume file: None
+Stopped at: Resumed via /gsd-resume-work --auto; proceeding to execute Phase 2 (4 plans, checker-verified). Phase 1 remains paused mid-01-03 by user directive (capture polish pass deferred; see 01-03-SESSION-LOG.md).
+Resume file: .planning/phases/01-reference-pipeline-validation-criteria/01-03-SESSION-LOG.md
