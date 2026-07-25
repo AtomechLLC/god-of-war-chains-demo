@@ -6,6 +6,8 @@
 // Node built-ins only; exit code is the pass/fail signal.
 
 const assert = require("node:assert");
+const fs = require("node:fs");
+const path = require("node:path");
 const Loop = require("../loop.js");
 
 // --- API shape -------------------------------------------------------------
@@ -61,6 +63,24 @@ assert.strictEqual(typeof Loop.makeAccumulator, "function", "Loop.makeAccumulato
 {
   const acc = Loop.makeAccumulator({ step: 0.1, maxFrame: 0.3 });
   assert.strictEqual(acc.advance(1.0), 3, "step 0.1, maxFrame 0.3: advance(1.0) must be 3 (clamped to 0.3)");
+}
+
+// --- CR-01 regression guard: simStep must SNAPSHOT the pose, never alias it -
+// rig.computePose fills and returns ONE internal buffer reused across calls
+// (anim.js makeRig closure); `skin.lastWorld = world` aliased it, and the
+// blend-window prev-pose call in uploadSkinnedVerts clobbered it (frozen pose
+// + stale chain anchors for every blend window). app.js is a browser-only
+// IIFE, so this is a static source check on the REND-03 sim-side consumer.
+{
+  const appSrc = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
+  assert.ok(
+    !/skin\.lastWorld\s*=\s*world\b/.test(appSrc),
+    "CR-01: app.js must not alias computePose's shared buffer (skin.lastWorld = world)"
+  );
+  assert.ok(
+    /skin\.lastWorld\.set\(world\)/.test(appSrc),
+    "CR-01: app.js simStep must copy the pose via skin.lastWorld.set(world)"
+  );
 }
 
 console.log("loop.test.js: all accumulator known-answer tests passed");

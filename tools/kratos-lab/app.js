@@ -929,7 +929,14 @@
     heat = Math.max(machine.st.rage ? 0.45 : 0, heat - STEP * 0.8);
     if (rig && skin) {
       const world = rig.computePose(machine.st.current, machine.st.t);
-      skin.lastWorld = world;
+      // CR-01: computePose fills and returns ONE internal buffer reused across
+      // calls (anim.js makeRig closure). Aliasing it here let the blend-window
+      // prev-pose call in uploadSkinnedVerts clobber it — freezing the rendered
+      // pose AND the drawFx chain anchors at the stale pose for every blend
+      // window. Snapshot instead. The local `world` stays valid for driveBlade
+      // below: the next computePose call happens after this tick completes.
+      if (!skin.lastWorld) skin.lastWorld = new Float32Array(world.length);
+      skin.lastWorld.set(world);
       // authored blade tracks + swing trail recording — per sim tick, NOT per
       // rendered frame: TRL-01's stepped-60Hz trail extrusion depends on the
       // trail history being sampled at exactly 60Hz.
