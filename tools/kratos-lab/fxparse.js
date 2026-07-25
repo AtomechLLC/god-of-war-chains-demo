@@ -172,6 +172,88 @@ const FxParse = (() => {
     };
   }
 
+  // parseMsh — decode an MSH_BDepoly*Shape record (WAD tag 0x70 "raw data", the
+  // record mogaika treats as opaque TAG_GOW1_FILE_RAW_DATA). Layout recovered
+  // first-party by differential decode this session (DEC-02; 05-RESEARCH
+  // "Record Structure -> MSH_BDepoly shape"):
+  //   +0x00 u32     vertex count       (24 for the 768-B level-1 copy)
+  //   +0x04 u32     index/strip count  (22 — MEANING inferred (A5); raw is real)
+  //   +0x08 u32     0xffffffff sentinel (constant)
+  //   +0x0c u32     0xffffffff sentinel (constant)
+  //   +0x10.. f32   interleaved (pos vec3, nrm vec3) per vertex, 0x18 B each;
+  //                 decoded normals are unit-length -> confirms the interleave.
+  // MSH has NO magic — size-gate FIRST (WR-01): a short record must fail loud
+  // and name itself BEFORE any field read, never spilling into the next record.
+  // Variable-length record (768 vs 1008 copies): bound EVERY read by rec.size.
+  function parseMsh(buf, rec) {
+    if (rec.size < 0x10) {
+      throw new Error(`MSH ${rec.name}: size ${rec.size} < 0x10 header`);
+    }
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    const base = rec.dataOff;
+    const end = base + rec.size; // hard upper bound — never read past (V5 control)
+    const hex32 = (off) => "0x" + (dv.getUint32(off, true) >>> 0).toString(16).padStart(8, "0");
+
+    const vertCount = dv.getUint32(base + 0x00, true);
+    const idxCount = dv.getUint32(base + 0x04, true);
+
+    // Walk interleaved (pos, nrm) f32 pairs from +0x10, BOUNDED by the record.
+    const verts = [];
+    let off = base + 0x10;
+    for (let i = 0; i < vertCount; i++) {
+      if (off + 0x18 > end) break; // never read past dataOff + rec.size
+      verts.push({
+        pos: [dv.getFloat32(off + 0x00, true), dv.getFloat32(off + 0x04, true), dv.getFloat32(off + 0x08, true)],
+        nrm: [dv.getFloat32(off + 0x0c, true), dv.getFloat32(off + 0x10, true), dv.getFloat32(off + 0x14, true)],
+      });
+      off += 0x18;
+    }
+
+    // Data-first evidence: raw values are byte-decoded (real). idxCount's MEANING
+    // is inferred (A5) though its raw value is real. The 0xffffffff sentinels are
+    // recorded verbatim, never acted on. NO color is read from a shape (Pitfall 4).
+    const p0 = verts.length ? verts[0].pos : [0, 0, 0];
+    const evidence = [
+      { field: "vertCount", offset: "+0x00", rawHex: hex32(base + 0x00), interp: `${vertCount} vertices`, corrob: "RESEARCH MSH table; unit-length normals confirm interleave", tag: "real" },
+      { field: "idxCount", offset: "+0x04", rawHex: hex32(base + 0x04), interp: `${idxCount} — suspected index/strip/triangle count (raw real, meaning INFERRED, A5)`, corrob: "RESEARCH MSH +0x04", tag: "INFERRED" },
+      { field: "sentinel0", offset: "+0x08", rawHex: hex32(base + 0x08), interp: "0xffffffff sentinel (constant; verbatim, never acted on)", corrob: "constant across all copies", tag: "real" },
+      { field: "sentinel1", offset: "+0x0c", rawHex: hex32(base + 0x0c), interp: "0xffffffff sentinel (constant; verbatim, never acted on)", corrob: "constant across all copies", tag: "real" },
+      { field: "verts[0].pos", offset: "+0x10", rawHex: `${hex32(base + 0x10)} ${hex32(base + 0x14)} ${hex32(base + 0x18)}`, interp: `first vertex position (${p0.map((v) => v.toFixed(3)).join(", ")})`, corrob: "RESEARCH: (0, 2.982, -13.684)", tag: "real" },
+    ];
+
+    return { vertCount, idxCount, verts, size: rec.size, evidence };
+  }
+
+  // buildFxDb — assemble the decoded FX records into a queryable, JSON-dumpable
+  // FxDb (05-RESEARCH "FxDb Shape"; the Phase-6 hand-off boundary). This slice
+  // populates meta + msh only; ptc/fxc/refs are empty placeholders the later
+  // decode slices fill. Pure: no GL/DOM handles, so JSON.stringify round-trips
+  // (same purity discipline as buildMats' { byName, list }).
+  function buildFxDb(records, wadBuf) {
+    const db = {
+      // region/tick are byte-corroborated from the disc serial SCUS-97399
+      // (D-05, NTSC-U 60Hz) — tagged real, not hand-picked.
+      meta: { region: "NTSC-U", tickHz: 60, source: "R_WPN0_0.WAD" },
+      msh: {},
+      ptc: {},
+      fxc: {},
+      refs: [],
+    };
+    for (const r of records) {
+      if (r.tag !== 0x70 || r.size === 0) continue;
+      if (!r.name.startsWith("MSH_") || !r.name.endsWith("Shape")) continue;
+      // KEEP-FIRST per name: the WAD stores the level-1 copy (768 B) BEFORE the
+      // god-tier copy (1008 B). Level 1 is the project target; god-tier is out
+      // of scope (PROJECT.md), so the first (level-1) copy wins. Deviation from
+      // the plan's "last-copy-wins" note — required by the size-768 known answer
+      // and correct for the Level-1 target. The resolve-based per-referrer copy
+      // selection is exercised by the callers/tests, not this bulk index.
+      if (r.name in db.msh) continue;
+      db.msh[r.name] = parseMsh(wadBuf, r);
+    }
+    return db;
+  }
+
   // One-pass blend-tuple inventory over ALL decoded materials.
   // Tuple key = (mode, depthWrite, filter); layerCount sums every layer of
   // every material in the tuple (duplicate names count — they are distinct
@@ -192,7 +274,7 @@ const FxParse = (() => {
     return [...tuples.values()];
   }
 
-  return { decodeFlags, buildMats, enumTuples, parseTxr };
+  return { decodeFlags, buildMats, enumTuples, parseTxr, parseMsh, buildFxDb };
 })();
 
 // dual-environment guard: browser <script> global + Node require (no build step)
