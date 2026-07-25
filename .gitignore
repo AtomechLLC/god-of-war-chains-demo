@@ -12,7 +12,7 @@ ps2bios/
 
 # Extracted game assets (models/textures/animations from the disc) — copyrighted
 # game content; local-only. The extraction docs (README) stay tracked.
-extracted/**
+# extracted/**
 !extracted/README.md
 
 node_modules/
