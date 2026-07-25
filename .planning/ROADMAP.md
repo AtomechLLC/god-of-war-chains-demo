@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Reference Pipeline & Validation Criteria** - Uncontaminated capture library, freeze-frame measurements, and written acceptance criteria
 - [x] **Phase 2: WAD/MAT Decode & Render-Pass Foundation** - Raw WAD loading, full MAT decode, single GS→GL blend table, 0x80 convention, 60Hz timestep, native-res toggle (completed 2026-07-25)
-- [ ] **Phase 3: Chain Link Ribbon & Glow** - Correctly pitched, per-link-twisted chainlink ribbon plus chainglow additive overlay
+- [x] **Phase 3: Chain Link Ribbon & Glow** - Correctly pitched, per-link-twisted chainlink ribbon plus chainglow additive overlay (completed 2026-07-25)
 - [ ] **Phase 4: Chain Motion** - Catenary drape at rest, whip-lag C-curves in flight, settle behavior on the 60Hz tick
 - [ ] **Phase 5: FX Record Decode** - MSH/PTC/FXC differential decode with evidence tables, type-5 blade-state descriptor, GS-dump blend confirmation
 - [ ] **Phase 6: Particle Runtime — Fire, Sparks & Trails** - World-space particle pool rendering flames, sparks, dual trails, state glow, and blade lights from decoded values
@@ -96,7 +96,7 @@ Plans:
   2. The link pass renders with "usual" alpha blending and depth-write ON, so later fire/glow passes occlude correctly against the chain
   3. A chainglow additive overlay (depth-write off) shares the ribbon UVs and shows the decoded texture's real heat-ramp colors — no hand-picked glow color anywhere
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 **Wave 1**
@@ -105,7 +105,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 — shares app.js/index.html)*
 
-- [ ] 03-02-PLAN.md — chainglow additive overlay + WAD-sourced chain textures via parseTxr, depthFunc(LEQUAL) coplanar overlay (CHAIN-02)
+- [x] 03-02-PLAN.md — chainglow additive overlay + WAD-sourced chain textures via parseTxr, depthFunc(LEQUAL) coplanar overlay (CHAIN-02)
 
 Note: The "on-screen link count matches Phase-1 measurements" sub-criterion is DEFERRED — `reference/MEASUREMENTS.md` awaits Phase-1 01-04. Interim validation (square-texel invariant + texture-geometry known-answers + `KratosLab.chainInfo()` world-scale hook) ships this phase; link-count calibration is a one-constant recalibration during the Phase-1 polish pass.
 
@@ -185,7 +185,7 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 |-------|----------------|--------|-----------|
 | 1. Reference Pipeline & Validation Criteria | 2/4 | In Progress|  |
 | 2. WAD/MAT Decode & Render-Pass Foundation | 4/4 | Complete    | 2026-07-25 |
-| 3. Chain Link Ribbon & Glow | 1/2 | In Progress|  |
+| 3. Chain Link Ribbon & Glow | 2/2 | Complete   | 2026-07-25 |
 | 4. Chain Motion | 0/TBD | Not started | - |
 | 5. FX Record Decode | 0/TBD | Not started | - |
 | 6. Particle Runtime — Fire, Sparks & Trails | 0/TBD | Not started | - |
