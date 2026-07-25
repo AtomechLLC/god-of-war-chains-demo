@@ -963,12 +963,23 @@
   const accum = Loop.makeAccumulator({ step: Loop.STEP, maxFrame: 0.25 });
   let last = performance.now();
   function loop(now) {
-    const wallDt = (now - last) / 1000;
-    last = now;
-    const n = accum.advance(wallDt); // 0..15 fixed steps owed this frame
-    for (let i = 0; i < n; i++) simStep();
-    renderFrame(wallDt); // render every rAF — camera/autospin stay smooth
-    renderTimeline();
+    // WR-04: the load-time fail-loud contract (#status) must also cover the
+    // render-time half of the DEC-01 assert — Fx.applyMaterial throws fire
+    // inside this rAF callback, long after the IIFE's .catch resolved. Route
+    // loop-time exceptions to #status and halt cleanly instead of freezing
+    // on the last frame with a stale "ready" status.
+    try {
+      const wallDt = (now - last) / 1000;
+      last = now;
+      const n = accum.advance(wallDt); // 0..15 fixed steps owed this frame
+      for (let i = 0; i < n; i++) simStep();
+      renderFrame(wallDt); // render every rAF — camera/autospin stay smooth
+      renderTimeline();
+    } catch (e) {
+      status("ERROR: " + e.message);
+      console.error(e);
+      return; // halt loudly — no further frames are scheduled
+    }
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
