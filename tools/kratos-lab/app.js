@@ -451,8 +451,13 @@
     ];
   }
 
-  function updateSkinning(dt) {
-    if (!rig || !skin) return;
+  // Render-side derived state (REND-03 split): CPU skinning of the current
+  // sim pose + GPU upload. Runs once per RENDERED frame — never per sim tick;
+  // skinning 7.4k verts is the expensive half, and an unchanged pose costs
+  // nothing extra on a 144Hz display. Reads skin.blendLeft but never
+  // decrements it — sim time is owned exclusively by simStep().
+  function uploadSkinnedVerts() {
+    if (!rig || !skin || !skin.lastWorld) return;
     let prevOut = null;
     if (skin.blendLeft > 0 && skin.prevAct) {
       const saved = skin.out;
@@ -461,34 +466,14 @@
       prevOut = skin.out;
       skin.out = saved;
     }
-    const world = rig.computePose(machine.st.current, machine.st.t);
-    skin.lastWorld = world;
-    skinPose(world);
+    skinPose(skin.lastWorld);
     const outPos = skin.out;
     if (prevOut) {
       const f = 1 - skin.blendLeft / skin.blendDur;
       for (let i = 0; i < outPos.length; i++) outPos[i] = prevOut[i] * (1 - f) + outPos[i] * f;
-      skin.blendLeft -= dt;
     }
     gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, outPos);
-    // authored blade tracks + swing trail recording
-    if (blade) {
-      const attacking = !machine.isIdle();
-      const track = rig.bladePos(machine.st.current, machine.st.t);
-      for (const [key, hand, s0] of [["l", JID.lWeapIH, 0], ["r", JID.rWeapIH, 3]]) {
-        const hst = trailHist[key];
-        for (const e of hst) e.age += dt;
-        while (hst.length && hst[0].age > TRAIL_AGE) hst.shift();
-        if (hand === undefined) continue;
-        const tp = track ? [track[s0], track[s0 + 1], track[s0 + 2]] : null;
-        const bm = driveBlade(bladeSim[key], world, hand, tp, Math.max(dt, 1e-3));
-        if (attacking) {
-          hst.push({ tip: xformM(bm, blade.tip), hilt: xformM(bm, blade.hilt), age: 0 });
-          if (hst.length > 26) hst.shift();
-        }
-      }
-    }
   }
 
   function pushRibbon(rows, out) {
@@ -585,13 +570,16 @@
     gl.useProgram(prog);
   }
 
-  function render(dt) {
+  // Presentation (wall-clock): autospin yaw + camera-distance easing consume
+  // the real frame delta so camera FEEL is identical on every refresh rate —
+  // deliberately NOT sim time (02-RESEARCH Pitfall 5).
+  function renderFrame(wallDt) {
     const w = canvas.clientWidth, h = canvas.clientHeight;
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     gl.viewport(0, 0, w, h);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    if (autoSpin) yaw += dt * 0.25;
-    updateSkinning(dt);
+    if (autoSpin) yaw += wallDt * 0.25;
+    uploadSkinnedVerts();
     // auto-frame: pull back so flying blades stay in view, ease back in after
     let reach = 0;
     for (const key of ["l", "r"]) {
@@ -602,7 +590,7 @@
     }
     const required = reach > 1.1 ? reach * 1.5 + 1.4 : 0;
     const target = Math.max(userDist, required);
-    dist += (target - dist) * Math.min(1, dt * (target > dist ? 10 : 2.5));
+    dist += (target - dist) * Math.min(1, wallDt * (target > dist ? 10 : 2.5));
     const rot = M.mul(M.rotX(pitch), M.rotY(yaw));
     const mvp = M.mul(M.persp(0.9, w / h, 0.05, 50), M.mul(M.trans(0, 0, -dist), rot));
     gl.useProgram(prog);
@@ -850,25 +838,69 @@
   updateMoveCard();
   pushBranchBlock("idleCombat");
   status(`ready — ${mesh.verts.toLocaleString()} verts, ${clipsJson.clips.length} clips`);
-  let last = performance.now();
-  function step(dt) {
+  // Fixed-timestep sim (REND-03): everything time-authored — combat machine,
+  // heat, pose, blade tracks, trail history, blend window — advances in exact
+  // Loop.STEP (1/60s) ticks. Phases 4-6 author rates/lifetimes per-tick
+  // against this cadence; on a 144Hz display the sim still runs 60 steps/s.
+  let simStepCount = 0;
+  function simStep() {
+    const STEP = Loop.STEP;
     lastState = { name: machine.st.current, t: machine.st.t };
-    machine.tick(dt);
-    heat = Math.max(machine.st.rage ? 0.45 : 0, heat - dt * 0.8);
-    render(dt);
-    renderTimeline();
+    machine.tick(STEP);
+    heat = Math.max(machine.st.rage ? 0.45 : 0, heat - STEP * 0.8);
+    if (rig && skin) {
+      const world = rig.computePose(machine.st.current, machine.st.t);
+      skin.lastWorld = world;
+      // authored blade tracks + swing trail recording — per sim tick, NOT per
+      // rendered frame: TRL-01's stepped-60Hz trail extrusion depends on the
+      // trail history being sampled at exactly 60Hz.
+      if (blade) {
+        const attacking = !machine.isIdle();
+        const track = rig.bladePos(machine.st.current, machine.st.t);
+        for (const [key, hand, s0] of [["l", JID.lWeapIH, 0], ["r", JID.rWeapIH, 3]]) {
+          const hst = trailHist[key];
+          for (const e of hst) e.age += STEP;
+          while (hst.length && hst[0].age > TRAIL_AGE) hst.shift();
+          if (hand === undefined) continue;
+          const tp = track ? [track[s0], track[s0 + 1], track[s0 + 2]] : null;
+          const bm = driveBlade(bladeSim[key], world, hand, tp, STEP);
+          if (attacking) {
+            hst.push({ tip: xformM(bm, blade.tip), hilt: xformM(bm, blade.hilt), age: 0 });
+            if (hst.length > 26) hst.shift();
+          }
+        }
+      }
+      // blend-window bookkeeping: sim owns time; uploadSkinnedVerts only reads
+      if (skin.blendLeft > 0) skin.blendLeft -= STEP;
+    }
+    simStepCount++;
   }
+  const accum = Loop.makeAccumulator({ step: Loop.STEP, maxFrame: 0.25 });
+  let last = performance.now();
   function loop(now) {
-    const dt = Math.min(0.05, (now - last) / 1000);
+    const wallDt = (now - last) / 1000;
     last = now;
-    step(dt);
+    const n = accum.advance(wallDt); // 0..15 fixed steps owed this frame
+    for (let i = 0; i < n; i++) simStep();
+    renderFrame(wallDt); // render every rAF — camera/autospin stay smooth
+    renderTimeline();
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
 
   // test hooks (used by automated verification; harmless in normal use)
   window.KratosLab = {
-    machine, mesh, step, rig, skin,
+    machine, mesh, rig, skin,
+    // step(): exactly ONE fixed sim step + one render + timeline — the
+    // deterministic pump for automated verification (hidden tabs get no rAF
+    // ticks, so scripts drive frames through this). The old variable-dt
+    // parameter is GONE: sim always advances by exactly Loop.STEP (1/60s),
+    // and the render's presentation dt is pinned to STEP for determinism.
+    step() { simStep(); renderFrame(Loop.STEP); renderTimeline(); },
+    // independent 60Hz witness: scripts can sample this across wall time to
+    // prove the sim cadence (60±1 steps/s on any display).
+    get simStepCount() { return simStepCount; },
+    STEP: Loop.STEP,
     wadRecords, matDb, matTuples,
     gl, fxLog,
     // Sampled between frames (console), fxState proves the per-frame restore
