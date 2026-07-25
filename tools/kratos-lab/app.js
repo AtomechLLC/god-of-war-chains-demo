@@ -543,7 +543,6 @@
     const chainV = [], trailV = [];
     for (const [key, handN, chainN] of [["l", "lWeapIH", "lChain"], ["r", "rWeapIH", "rChain"]]) {
       const hand = JID[handN], chainJ = JID[chainN];
-      const key = handN[0];
       if (hand !== undefined && chainJ !== undefined && bladeSim[key].pos) {
         // chain ribbon: forearm chain joint -> simulated blade pommel;
         // taut when the blade flies, saggy when gripped
@@ -943,12 +942,12 @@
       if (blade) {
         const attacking = !machine.isIdle();
         const track = rig.bladePos(machine.st.current, machine.st.t);
-        for (const [key, hand, s0] of [["l", JID.lWeapIH, 0], ["r", JID.rWeapIH, 3]]) {
+        for (const [key, hand, trackOff] of [["l", JID.lWeapIH, 0], ["r", JID.rWeapIH, 3]]) {
           const hst = trailHist[key];
           for (const e of hst) e.age += STEP;
           while (hst.length && hst[0].age > TRAIL_AGE) hst.shift();
           if (hand === undefined) continue;
-          const tp = track ? [track[s0], track[s0 + 1], track[s0 + 2]] : null;
+          const tp = track ? [track[trackOff], track[trackOff + 1], track[trackOff + 2]] : null;
           const bm = driveBlade(bladeSim[key], world, hand, tp, STEP);
           if (attacking) {
             hst.push({ tip: xformM(bm, blade.tip), hilt: xformM(bm, blade.hilt), age: 0 });
