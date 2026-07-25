@@ -20,6 +20,17 @@ const FxParse = require("../fxparse.js");
 const WAD_PATH = path.join(__dirname, "..", "..", "..", "assets", "wads", "R_WPN0_0.WAD");
 const buf = new Uint8Array(fs.readFileSync(WAD_PATH));
 
+// Node has no ImageData — Parsers.decodeTexture constructs `new ImageData(w,h)`
+// (parsers.js), so the texture known-answers below need this shim (Pitfall 8).
+// Must exist before any decodeTexture call.
+global.ImageData = class ImageData {
+  constructor(w, h) {
+    this.width = w;
+    this.height = h;
+    this.data = new Uint8ClampedArray(w * h * 4);
+  }
+};
+
 // ---------------------------------------------------------------------------
 // parseWad: container walk (283 records; u16 tag + u16 flags header split)
 // ---------------------------------------------------------------------------
@@ -185,6 +196,196 @@ assert.throws(
   const bogusRecs = Parsers.parseWad(bogus);
   assert.strictEqual(bogusRecs.length, 1);
   assert.throws(() => FxParse.buildMats(bogusRecs, bogus), /MAT_bogus/, "bad magic names the record");
+}
+
+// ===========================================================================
+// CHAIN-01 / CHAIN-02: parseTxr + chain-texture known answers
+// ---------------------------------------------------------------------------
+// TXR record layout verified first-party (03-RESEARCH "TXR record layout",
+// size 88): u32 magic=7 @+0, gfx name[24] @+0x04, pal name[24] @+0x1C, u16
+// tail flags @+0x56 (0x0001 strip / 0x0051 additive — semantics UNKNOWN,
+// recorded verbatim, never acted on; Open Q2).
+// NOTE (deviation from 03-RESEARCH "Decoded Asset Facts", verified against the
+// bytes 2026-07-25): the chainglow strip's background is CLUT entry (1,1,1) —
+// additive-black, NOT literal (0,0,0). So "blue===0 everywhere" and "black for
+// x>=80" from the research narrative are perceptual, not literal. The real,
+// byte-exact facts are asserted below: max blue anywhere is 1 (the (1,1,1)
+// background); every FIRE color has blue 0; the hot blob's rightmost bright
+// column is x=134 (u≈0.26), the strip tail is uniform (1,1,1). These pin the
+// same intent (blue-free fire hues + blob confined to the strip start) with
+// values that actually hold — required for the Task-2 GREEN decode to pass.
+// ===========================================================================
+
+// Decode a MAT's FX texture through the decoded texName -> TXR -> GFX/PAL chain
+// (the production path app.js's load stage will use). parseTxr is exported by
+// Task 2 — until then these references throw (RED).
+function decodeFxTexture(matName, txrName) {
+  const matRec = recs.find((r) => r.name === matName && r.tag === 0x1e && r.size > 0);
+  assert.ok(matRec, `${matName} data-carrying record exists`);
+  const txrRec = Parsers.resolve(recs, txrName, matRec.idx);
+  assert.ok(txrRec, `${txrName} resolves`);
+  const t = FxParse.parseTxr(buf, txrRec);
+  const g = Parsers.resolve(recs, t.gfxName, txrRec.idx);
+  const p = Parsers.resolve(recs, t.palName, txrRec.idx);
+  assert.ok(g && g.size > 0, `${t.gfxName} resolves to a data-carrying record`);
+  assert.ok(p && p.size > 0, `${t.palName} resolves to a data-carrying record`);
+  return Parsers.decodeTexture(
+    buf.subarray(g.dataOff, g.dataOff + g.size),
+    buf.subarray(p.dataOff, p.dataOff + p.size)
+  );
+}
+
+// --- parseTxr round-trip: all three weapon TXRs (names + verbatim tail) -----
+{
+  const cases = [
+    { mat: "MAT_chainlink", txr: "TXR_chainlink", gfx: "GFX_chainlink", pal: "PAL_chainlink", tail: 0x0001 },
+    { mat: "MAT_chainglow", txr: "TXR_chainglow", gfx: "GFX_chainglow", pal: "PAL_chainglow", tail: 0x0051 },
+    { mat: "MAT_swordtrail", txr: "TXR_swordtrail", gfx: "GFX_swordtrail", pal: "PAL_swordtrail", tail: 0x0051 },
+  ];
+  for (const c of cases) {
+    const matRec = recs.find((r) => r.name === c.mat && r.tag === 0x1e && r.size > 0);
+    assert.ok(matRec, `${c.mat} record exists`);
+    const txrRec = Parsers.resolve(recs, c.txr, matRec.idx);
+    assert.ok(txrRec, `${c.txr} resolves`);
+    const t = FxParse.parseTxr(buf, txrRec); // RED: parseTxr not exported until Task 2
+    assert.strictEqual(t.gfxName, c.gfx, `${c.txr} gfxName`);
+    assert.strictEqual(t.palName, c.pal, `${c.txr} palName`);
+    assert.strictEqual(t.tailFlags, c.tail, `${c.txr} tailFlags 0x${c.tail.toString(16).padStart(4, "0")}`);
+    // resolve round-trip: parseTxr's names land on data-carrying records
+    const g = Parsers.resolve(recs, t.gfxName, txrRec.idx);
+    const p = Parsers.resolve(recs, t.palName, txrRec.idx);
+    assert.ok(g && g.size > 0, `${c.gfx} resolves to a data-carrying record`);
+    assert.ok(p && p.size > 0, `${c.pal} resolves to a data-carrying record`);
+  }
+}
+
+// --- parseTxr fail-loud: bad magic + short size both throw naming the record -
+{
+  // Synthetic TXR: 32B WAD header + 0x58 data body (copy the MAT_bogus pattern).
+  const bogus = new Uint8Array(32 + 0x58);
+  const bdv = new DataView(bogus.buffer);
+  bdv.setUint16(0, 0x1e, true); // tag
+  bdv.setUint16(2, 0x0, true); // flags
+  bdv.setUint32(4, 0x58, true); // size (>= 0x58 so it passes the size gate)
+  const bname = "TXR_bogus";
+  for (let i = 0; i < bname.length; i++) bogus[8 + i] = bname.charCodeAt(i);
+  // magic u32 @ data+0 left 0 (!= 7)
+  const brecs = Parsers.parseWad(bogus);
+  assert.strictEqual(brecs.length, 1);
+  assert.throws(() => FxParse.parseTxr(bogus, brecs[0]), /TXR_bogus/, "bad TXR magic names the record");
+
+  // size-bound throw: a record shorter than 0x58 throws BEFORE any field read.
+  const shortRec = { name: "TXR_short", dataOff: 0, size: 0x10 };
+  assert.throws(() => FxParse.parseTxr(bogus, shortRec), /TXR_short/, "short TXR size throws named (before magic)");
+}
+
+// --- no hand-picked glow color: MAT_chainglow carries identity colors so the
+//     MODULATE shader passes decoded texels through unchanged -----------------
+{
+  const cg = matDb.byName["MAT_chainglow"];
+  assert.ok(cg, "MAT_chainglow decoded");
+  assert.deepStrictEqual(cg.materialColor, [1, 1, 1], "MAT_chainglow identity materialColor (no picked color)");
+  assert.deepStrictEqual(cg.blendColor, [1, 1, 1, 1], "MAT_chainglow identity blendColor (no picked color)");
+}
+
+// --- chainlink texture ground truth (CHAIN-01 pixel proof) -----------------
+{
+  const link = decodeFxTexture("MAT_chainlink", "TXR_chainlink");
+  assert.strictEqual(link.width, 512, "chainlink width 512");
+  assert.strictEqual(link.height, 32, "chainlink height 32");
+  const d = link.data, W = link.width, H = link.height;
+
+  let opaque = 0, nonBinary = 0;
+  for (let i = 0; i < W * H; i++) {
+    const a = d[i * 4 + 3];
+    if (a === 255) opaque++;
+    else if (a !== 0) nonBinary++;
+  }
+  assert.strictEqual(nonBinary, 0, "chainlink alpha is binary (only 0 or 255)");
+  assert.strictEqual(opaque, 7408, "chainlink opaque pixel count === 7408");
+
+  // exact 32px U-periodicity: all 16 link cells byte-identical to the first
+  // 32px cell => 32px/link, 16 links/tile (the CHAIN-01 pitch criterion, pixel-
+  // verified). The alternating link read must come from geometry (the twist).
+  let cellsIdentical = true;
+  for (let x = 0; x < W && cellsIdentical; x++) {
+    for (let y = 0; y < H; y++) {
+      const b = (y * W + (x % 32)) * 4, c = (y * W + x) * 4;
+      if (d[c] !== d[b] || d[c + 1] !== d[b + 1] || d[c + 2] !== d[b + 2] || d[c + 3] !== d[b + 3]) {
+        cellsIdentical = false;
+        break;
+      }
+    }
+  }
+  assert.ok(cellsIdentical, "chainlink: all 16 link cells byte-identical (32px/link, 16 links/tile)");
+
+  // U-autocorrelation of the per-column opaque-count signal peaks at lag 32.
+  const col = new Array(W).fill(0);
+  for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) if (d[(y * W + x) * 4 + 3] === 255) col[x]++;
+  const mean = col.reduce((s, v) => s + v, 0) / W;
+  const cen = col.map((v) => v - mean);
+  const ac = (lag) => {
+    let n = 0, dn = 0;
+    for (let x = 0; x < W; x++) { dn += cen[x] * cen[x]; n += cen[x] * cen[(x + lag) % W]; }
+    return n / dn;
+  };
+  assert.ok(ac(32) > 0.999, `chainlink U-autocorr peak at lag 32 (r=${ac(32).toFixed(4)})`);
+  assert.ok(ac(32) > ac(16), "chainlink autocorr: lag 32 exceeds lag 16 (32px-periodic, not 16px)");
+}
+
+// --- chainglow texture ground truth (CHAIN-02 heat-ramp proof) -------------
+{
+  const glow = decodeFxTexture("MAT_chainglow", "TXR_chainglow");
+  assert.strictEqual(glow.width, 512, "chainglow width 512");
+  assert.strictEqual(glow.height, 32, "chainglow height 32");
+  const d = glow.data, W = glow.width, H = glow.height;
+
+  // every alpha 255 after decode (CLUT alpha 0x80 -> 255 via the >=0x80 rule);
+  // the glow "transparency" is additive black, not alpha.
+  let allAlpha255 = true;
+  for (let i = 0; i < W * H; i++) if (d[i * 4 + 3] !== 255) { allAlpha255 = false; break; }
+  assert.ok(allAlpha255, "chainglow every alpha === 255 after decode");
+
+  // hottest texel is the yellow core (254,229,0) and it is painted into the strip.
+  let hot = [0, 0, 0], hotLum = -1, hotCount = 0;
+  for (let i = 0; i < W * H; i++) {
+    const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2], lum = r + g + b;
+    if (lum > hotLum) { hotLum = lum; hot = [r, g, b]; }
+    if (r === 254 && g === 229 && b === 0) hotCount++;
+  }
+  assert.deepStrictEqual(hot, [254, 229, 0], "chainglow hottest texel === (254,229,0) yellow core");
+  assert.ok(hotCount > 0, "chainglow yellow core is present in the strip");
+
+  // pure fire hues: the heat ramp is blue-free. The ONLY nonzero blue anywhere
+  // is 1, from the (1,1,1) additive-black background; every actual fire color
+  // (luminance > 3, i.e. brighter than that background) has blue 0.
+  let maxBlue = 0, fireBlueViolation = false;
+  for (let i = 0; i < W * H; i++) {
+    const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
+    if (b > maxBlue) maxBlue = b;
+    if (r + g + b > 3 && b !== 0) fireBlueViolation = true;
+  }
+  assert.strictEqual(maxBlue, 1, "chainglow max blue === 1 (only the (1,1,1) additive-black background)");
+  assert.ok(!fireBlueViolation, "chainglow heat ramp is blue-free (every fire color has blue 0)");
+
+  // single hot spot confined to the strip START: the rightmost column brighter
+  // than the (1,1,1) background is x=134 (u≈0.26); the rest of the strip is the
+  // additive-black background, so a CLAMP sampler lands the blob ONCE near u=0
+  // (Pattern 4 / Pitfall 5 — REPEAT would re-tile it every 16 links).
+  let rightmostBright = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const c = (y * W + x) * 4;
+    if (d[c] > 1 || d[c + 1] > 1 || d[c + 2] > 1) { if (x > rightmostBright) rightmostBright = x; }
+  }
+  assert.strictEqual(rightmostBright, 134, "chainglow hot blob rightmost bright column === 134 (confined near u=0)");
+
+  // the strip tail (x >= 200) is uniform (1,1,1) additive-black background.
+  let tailAllBg = true;
+  for (let y = 0; y < H && tailAllBg; y++) for (let x = 200; x < W; x++) {
+    const c = (y * W + x) * 4;
+    if (!(d[c] === 1 && d[c + 1] === 1 && d[c + 2] === 1)) { tailAllBg = false; break; }
+  }
+  assert.ok(tailAllBg, "chainglow strip tail (x>=200) is uniform (1,1,1) additive-black background");
 }
 
 console.log("wad.test.js: all known-answer assertions passed");
