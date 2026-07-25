@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-01-PLAN.md (MSH decoder + FxDb skeleton)
-last_updated: "2026-07-25T21:19:11.327Z"
+stopped_at: Completed 05-02-PLAN.md (PTC decoder + FxDb ptc-section)
+last_updated: "2026-07-25T21:33:06.516Z"
 last_activity: 2026-07-25
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 15
-  completed_plans: 9
+  completed_plans: 10
   percent: 29
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 ## Current Position
 
 Phase: 05 (fx-record-decode) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-07-25
 
-Progress: [██████░░░░] 60%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [██████░░░░] 60%
 
 *Updated after each plan completion*
 | Phase 05 P01 | 15min | 2 tasks | 2 files |
+| Phase 05 P02 | 10min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,7 @@ Recent decisions affecting current work:
 - (init): Level 1 blade tier only; god-tier deferred
 - **(03-02, user, explicit): FAST-TRACK the particle/fire system (roadmap Phases 5 decode + 6 render) as the real path to the footage look.** At the combined chain+glow checkpoint the user judged the glow "VERY subtle" and the sword trails thin ("should be thick, rich and full of particles — we are way off") vs reference footage. Phase 3's chain + glow are ACCEPTED as the functional foundation (CHAIN-02 automated-verified); footage-fidelity of the FX is deferred to the particle work rather than pushing Phase 3 further. Do NOT claim Phase-3 FX visually match footage.
 - [Phase 05]: (05-01) buildFxDb keeps the FIRST (level-1, 768-B) same-name MSH copy; god-tier 1008-B out of scope — deviation from the plan's last-copy-wins note, required by the RED size-768 known answer
+- [Phase 05]: (05-02) PTC decoded (parsePtc + buildFxDb 3rd-arg standaloneRecs): BFT/BGT trail defs are real db.ptc keys at slot 0x1d; no color read from PTC (identity RGBA byte-identical fire-vs-swoosh, Pitfall 4); DEC-02 still Pending until FXC (05-03)
 
 ### Pending Todos
 
@@ -96,6 +98,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-25T21:19:11.317Z
-Stopped at: Completed 05-01-PLAN.md (MSH decoder + FxDb skeleton)
+Last session: 2026-07-25T21:33:06.507Z
+Stopped at: Completed 05-02-PLAN.md (PTC decoder + FxDb ptc-section)
 Resume file: None
