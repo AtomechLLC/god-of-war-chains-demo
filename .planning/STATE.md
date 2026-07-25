@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: ready_to_plan
-stopped_at: Phase 03 complete (2/2) — ready to discuss Phase 4
-last_updated: 2026-07-25T18:34:18.469Z
-last_activity: 2026-07-25 -- Plan 03-02 finalized: SUMMARY + tracking written; CHAIN-02 marked complete; user pivot to fast-track the particle/fire system recorded
+status: planning
+stopped_at: Phase 5 context gathered
+last_updated: "2026-07-25T19:49:22.713Z"
+last_activity: 2026-07-25
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 10
   completed_plans: 8
-  percent: 14
+  percent: 29
 ---
 
 # Project State
@@ -94,6 +94,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-25
-Stopped at: Plan 03-02 COMPLETE. Tasks 1 (RED, 9f25b60) + 2 (GREEN, 355ff13) committed; Task 3 blocking human-verify RESOLVED at the combined chain+glow live check — CHAIN-02 functionally delivered + automated-verified (three-pass FX order, glow readback ≈(255,255,64) matching decoded (254,229,0), restore discipline intact, LEQUAL present, identity MAT colors). FX footage-fidelity (glow intensity, trail richness) INTENTIONALLY DEFERRED to the fast-tracked particle/fire work (roadmap Phases 5 decode + 6 render) by explicit user decision — NOT claimed as footage-matching. 03-02-SUMMARY.md written; both Phase-3 plans done. Phase-level close is the orchestrator's job (do NOT run phase.complete here). Note: current cache-buster is ?v=23 (Task 2 set ?v=22; tooling commit 672e5de bumped to 23).
-Resume file: none — Phase 3 execution complete; next real work is the fast-tracked particle/fire system (roadmap Phases 5 decode + 6 render). Phase 1 remains paused mid-01-03 by user directive.
+Last session: 2026-07-25T19:49:22.703Z
+Stopped at: Phase 5 context gathered
+Resume file: .planning/phases/05-fx-record-decode/05-CONTEXT.md
