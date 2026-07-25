@@ -65,12 +65,12 @@ Plans:
   3. Stacked additive layers saturate to flat white in clamped LDR gamma space — 0x80=1.0 conversion applied at texture/CLUT/modulate/blend stages, canvas `alpha: false`, no bloom/tonemap/soft-particles anywhere
   4. Simulation runs on a fixed 60Hz accumulator decoupled from rAF, and a native-res (512×448-class) render-target toggle works
 
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — WAD decode slice: parseWad + nearest-preceding resolve + MAT decode + 2-tuple inventory in the stats card, RED-first known-answer suite, assets/ path migration
+- [x] 02-01-PLAN.md — WAD decode slice: parseWad + nearest-preceding resolve + MAT decode + 2-tuple inventory in the stats card, RED-first known-answer suite, assets/ path migration
 
 **Wave 2** *(blocked on Wave 1 — shares app.js/index.html)*
 
@@ -173,7 +173,7 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Reference Pipeline & Validation Criteria | 2/4 | In Progress|  |
-| 2. WAD/MAT Decode & Render-Pass Foundation | 0/4 | Planned | - |
+| 2. WAD/MAT Decode & Render-Pass Foundation | 1/4 | In Progress|  |
 | 3. Chain Link Ribbon & Glow | 0/TBD | Not started | - |
 | 4. Chain Motion | 0/TBD | Not started | - |
 | 5. FX Record Decode | 0/TBD | Not started | - |
