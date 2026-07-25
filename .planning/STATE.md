@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Plan 03-02 COMPLETE — Tasks 1 (RED, 9f25b60) + 2 (GREEN, 355ff13) committed; Task 3 blocking human-verify RESOLVED at the combined chain+glow live check — CHAIN-02 functionally delivered + automated-verified, FX footage-fidelity (glow intensity, trail richness) INTENTIONALLY DEFERRED to the fast-tracked particle/fire work (roadmap Phases 5 decode + 6 render) by explicit user decision. SUMMARY written; both Phase-3 plans done. Phase 1 remains paused mid-01-03 by user directive. Orchestrator handles phase-level close.
-last_updated: "2026-07-25T18:40:00.000Z"
+status: ready_to_plan
+stopped_at: Phase 03 complete (2/2) — ready to discuss Phase 4
+last_updated: 2026-07-25T18:34:18.469Z
 last_activity: 2026-07-25 -- Plan 03-02 finalized: SUMMARY + tracking written; CHAIN-02 marked complete; user pivot to fast-track the particle/fire system recorded
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 10
   completed_plans: 8
-  percent: 80
+  percent: 14
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-24)
 
 **Core value:** A GoW1 attack in kratos-lab reads 80–90% identical to real gameplay footage — chains, glow, and fire use the game's own decoded textures, particle definitions, colors, and values, not approximations.
-**Current focus:** Phase 03 — chain-link-ribbon-glow
+**Current focus:** Phase 4 — chain motion
 
 ## Current Position
 
-Phase: 03 (chain-link-ribbon-glow) — both plans executed; orchestrator handles phase-level close
-Plan: 2 of 2 — COMPLETE (Wave 2, 03-02 chainglow additive overlay); 03-01 COMPLETE
-Status: Plan 03-02 COMPLETE. Tasks 1 (RED, 9f25b60) + 2 (GREEN, 355ff13) committed; Task 3 blocking human-verify RESOLVED at the combined chain+glow live check. CHAIN-02 functionally delivered + automated-verified (three-pass FX order chainlink->chainglow->swordtrail, glow readback ≈(255,255,64) matching decoded (254,229,0), restore discipline intact, LEQUAL present, identity MAT colors). FX footage-fidelity (glow intensity, trail richness) INTENTIONALLY DEFERRED to the fast-tracked particle/fire work by user decision — NOT claimed as footage-matching. SUMMARY written.
-Last activity: 2026-07-25 -- 03-02 finalized (SUMMARY + tracking); user pivot to fast-track the particle/fire system recorded
+Phase: 4
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-07-25
 
 Progress: [████████░░] 80% (8/10 planned plans; phases 4-7 plan counts TBD)
 
@@ -36,7 +36,7 @@ Progress: [████████░░] 80% (8/10 planned plans; phases 4-7 p
 
 **Velocity:**
 
-- Total plans completed: 4
+- Total plans completed: 6
 - Average duration: —
 - Total execution time: 0.0 hours
 
@@ -45,6 +45,7 @@ Progress: [████████░░] 80% (8/10 planned plans; phases 4-7 p
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 2 | 4 | - | - |
+| 03 | 2 | - | - |
 
 **Recent Trend:**
 
