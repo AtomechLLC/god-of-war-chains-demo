@@ -36,13 +36,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A written target definition exists ("GS output as captured, not CRT") plus measured on-screen link counts and flame flicker cadence from footage
   4. The 80–90% acceptance checklist that Phase 7 will judge against is written down
 
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 
 Plans:
 **Wave 1**
 
 - [x] 01-01-PLAN.md — Capture-safe repo: gitignore media dirs, TARGET-DEFINITION.md, shot-list.md
-- [ ] 01-02-PLAN.md — PCSX2 software-renderer pipeline: official FFmpeg DLLs, SETTINGS.md, ini snapshot (human GUI checkpoint)
+- [x] 01-02-PLAN.md — PCSX2 software-renderer pipeline: official FFmpeg DLLs, SETTINGS.md, ini snapshot (human GUI checkpoint)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -155,7 +155,7 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Reference Pipeline & Validation Criteria | 1/4 | In Progress|  |
+| 1. Reference Pipeline & Validation Criteria | 2/4 | In Progress|  |
 | 2. WAD/MAT Decode & Render-Pass Foundation | 0/TBD | Not started | - |
 | 3. Chain Link Ribbon & Glow | 0/TBD | Not started | - |
 | 4. Chain Motion | 0/TBD | Not started | - |
