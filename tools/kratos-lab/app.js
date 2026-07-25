@@ -49,9 +49,10 @@
     const trailImg = Parsers.decodeTexture(
       await Parsers.fetchBuf("../../assets/weapon/GFX_swordtrail.bin"),
       await Parsers.fetchBuf("../../assets/weapon/PAL_swordtrail.bin"));
-    const chainImg = Parsers.decodeTexture(
-      await Parsers.fetchBuf("../../assets/weapon/GFX_chainlink.bin"),
-      await Parsers.fetchBuf("../../assets/weapon/PAL_chainlink.bin"));
+    // chainlink is no longer fetched from assets/weapon here — it (and the new
+    // chainglow) are WAD-sourced below via the decoded texName -> TXR -> GFX/PAL
+    // chain (02-REVIEW IN-01; bytes verified byte-identical to the extracted
+    // files). See fxTexFromMat / chainlinkTex / chainglowTex.
     // blade long axis -> hilt (end nearer origin) and tip points in blade-local space
     const ext = [bmesh.mx[0] - bmesh.mn[0], bmesh.mx[1] - bmesh.mn[1], bmesh.mx[2] - bmesh.mn[2]];
     const ax = ext.indexOf(Math.max(...ext));
@@ -60,7 +61,7 @@
     endA[ax] = bmesh.mn[ax]; endB[ax] = bmesh.mx[ax];
     const dA = Math.hypot(...endA), dB = Math.hypot(...endB);
     const hilt = dA < dB ? endA : endB, tip = dA < dB ? endB : endA;
-    blade = { mesh: bmesh, bImg, trailImg, chainImg, hilt, tip };
+    blade = { mesh: bmesh, bImg, trailImg, hilt, tip };
     console.log(`blade: ${bmesh.verts} verts ${bmesh.tris} tris, axis ${ax}, tip @ ${tip.map(v=>v.toFixed(1))}`);
   } catch (e) { console.warn("blade load", e); }
 
@@ -285,19 +286,55 @@
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  function makeTex(src) {
+  // makeTex(src, opts?) — opts.wrapS/wrapT default to REPEAT-S / CLAMP-T (the
+  // legacy strip defaults, so bladeTex/trailTex stay byte-for-byte unchanged);
+  // opts.filter comes from the decoded MAT.filter ("linear" -> LINEAR, else
+  // NEAREST). No mipmaps EVER (CLAUDE.md: GS FX draws were bilinear at most;
+  // mipping the 512x32 chainlink strip smears the links).
+  function makeTex(src, opts) {
+    const o = opts || {};
+    const wrapS = o.wrapS !== undefined ? o.wrapS : gl.REPEAT;
+    const wrapT = o.wrapT !== undefined ? o.wrapT : gl.CLAMP_TO_EDGE;
+    const filt = o.filter === "nearest" ? gl.NEAREST : gl.LINEAR;
     const t = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, t);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filt);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filt);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
     return t;
   }
   const bladeTex = blade ? makeTex(blade.bImg) : null;
   const trailTex = blade ? makeTex(blade.trailImg) : null;
-  const chainTex = blade ? makeTex(blade.chainImg) : null;
+
+  // WAD-sourced FX textures via the decoded texName -> TXR -> GFX/PAL chain
+  // (02-REVIEW IN-01: consume the decoded texName/filter fields). WAD record
+  // bytes are byte-identical to the extracted assets/weapon files (verified
+  // 2026-07-25), so this is a data-first re-source with zero visual risk. Fails
+  // loud (named throws), un-caught by design so the outer catch surfaces it.
+  function fxTexFromMat(mat, opts) {
+    const matRec = wadRecords.find((r) => r.off === mat.off); // mats carry off, not idx
+    if (!matRec) throw new Error(`FX texture: no WAD record for MAT ${mat.name} @0x${mat.off.toString(16)}`);
+    const txrRec = Parsers.resolve(wadRecords, mat.texName, matRec.idx);
+    if (!txrRec) throw new Error(`FX texture: ${mat.name} texName ${mat.texName} did not resolve`);
+    const txr = FxParse.parseTxr(wadBuf, txrRec);
+    const g = Parsers.resolve(wadRecords, txr.gfxName, txrRec.idx);
+    if (!g) throw new Error(`FX texture: ${txr.gfxName} (from ${mat.texName}) did not resolve`);
+    const p = Parsers.resolve(wadRecords, txr.palName, txrRec.idx);
+    if (!p) throw new Error(`FX texture: ${txr.palName} (from ${mat.texName}) did not resolve`);
+    const img = Parsers.decodeTexture(
+      wadBuf.subarray(g.dataOff, g.dataOff + g.size),
+      wadBuf.subarray(p.dataOff, p.dataOff + p.size));
+    return makeTex(img, { wrapS: opts.wrapS, wrapT: opts.wrapT, filter: mat.filter });
+  }
+  // chainlink: REPEAT on U (the 16-link strip tiles along the chain), CLAMP on V
+  // (single strip height). chainglow: CLAMP on BOTH — the glow's single hot blob
+  // lives at u∈[0,~0.26] with the rest additive-black; REPEAT would re-tile the
+  // hot spot every 16 links (Pitfall 5). [INFERRED wrap choice — A2; the real
+  // heat-ramp colors sample regardless, Phase-5 GS dump confirms placement.]
+  const chainlinkTex = fxTexFromMat(matDb.byName.MAT_chainlink, { wrapS: gl.REPEAT, wrapT: gl.CLAMP_TO_EDGE });
+  const chainglowTex = fxTexFromMat(matDb.byName.MAT_chainglow, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE });
 
   const uMVP = gl.getUniformLocation(prog, "uMVP");
   const uRot = gl.getUniformLocation(prog, "uRot");
@@ -355,6 +392,14 @@
   gl.uniformMatrix4fv(uModel, false, modelMat);
   gl.clearColor(0, 0, 0, 1); // opaque clear — FBO-path clears must also be opaque
   gl.enable(gl.DEPTH_TEST);
+  // LEQUAL (not the GL default LESS): the chainglow overlay (drawFx PASS 2) is
+  // coplanar with the depth-writing chain links, so equal-depth glow fragments
+  // must PASS or the glow vanishes exactly where links wrote depth (Pitfall 1).
+  // GS ZTST=2 GEQUAL passes equal depths [CITED: psi-rockin.github.io/ps2tek];
+  // that GoW1 uses ZTST=2 for these draws is [ASSUMED] until the Phase-5 GS dump
+  // (A1) — LEQUAL is the required GL-convention analog regardless. Hero/blade
+  // opaque rendering is unaffected (distinct depths).
+  gl.depthFunc(gl.LEQUAL);
 
   // ---- native-res render target (REND-03): 512×448 offscreen FBO -----------
   // 4:3 stretched display of the 512×448 GS target (02-RESEARCH A2 / Open Q1 —
@@ -602,21 +647,42 @@
     // Every FX pass takes its FULL blend/depth state from its decoded MAT via
     // Fx.applyMaterial — no hardcoded blendFunc/depthMask here (DEC-01).
     if (chainV.length) {
-      // Intentional visual change vs the old hardcoded path: the chain now renders
-      // with its real decoded state — usual alpha blend + depth-write ON
-      // (MAT_chainlink 0x44010080); it previously had no blending at all.
-      const mat = matDb.byName.MAT_chainlink;
-      Fx.applyMaterial(gl, mat);
-      fxLog.push({ name: mat.name, mode: mat.mode, depthWrite: !mat.disableDepthWrite });
+      // Convert the chain verts to a Float32Array ONCE so PASS 1 (links) and
+      // PASS 2 (glow) draw bit-identical bytes -> bit-identical depth. That is
+      // what makes the coplanar LEQUAL glow overlay exact (Pattern 5 / Pitfall 1).
+      const chainVerts = new Float32Array(chainV);
+      const chainVertCount = chainV.length / 6;
+
+      // PASS 1 — links: real decoded state = usual alpha blend + depth-write ON
+      // (MAT_chainlink 0x44010080). The ONLY pass that uploads.
+      const matL = matDb.byName.MAT_chainlink;
+      Fx.applyMaterial(gl, matL);
+      fxLog.push({ name: matL.name, mode: matL.mode, depthWrite: !matL.disableDepthWrite });
       // __fxBright (debug): overbright the dark metal so the segmented link
-      // geometry is legible WITHOUT the Phase-3 chainglow (03-02). Inspection
-      // aid only — real visibility comes from the glow overlay.
-      gl.uniform3fv(fxLocs.uMaterialColor, window.__fxBright ? [8, 8, 8] : mat.materialColor);
-      gl.uniform4fv(fxLocs.uLayerColor, mat.blendColor);
+      // geometry is legible WITHOUT the chainglow. Inspection aid only — real
+      // visibility comes from the PASS-2 glow overlay below.
+      gl.uniform3fv(fxLocs.uMaterialColor, window.__fxBright ? [8, 8, 8] : matL.materialColor);
+      gl.uniform4fv(fxLocs.uLayerColor, matL.blendColor);
       gl.uniform1f(fxLocs.uCutoff, 0.35); // INFERRED cutout threshold (02-RESEARCH A3)
-      gl.bindTexture(gl.TEXTURE_2D, chainTex);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(chainV), gl.DYNAMIC_DRAW);
-      gl.drawArrays(gl.TRIANGLES, 0, chainV.length / 6);
+      gl.bindTexture(gl.TEXTURE_2D, chainlinkTex);
+      gl.bufferData(gl.ARRAY_BUFFER, chainVerts, gl.DYNAMIC_DRAW);
+      gl.drawArrays(gl.TRIANGLES, 0, chainVertCount);
+
+      // PASS 2 — chainglow: additive + depth-write OFF (MAT_chainglow 0x48090080),
+      // drawing the SAME vertex bytes (NO re-upload -> bit-identical depth). The
+      // heat-ramp colors come straight from the decoded texture: MAT_chainglow
+      // carries identity material/blend colors, so the MODULATE shader passes
+      // texels through unchanged — there is NO hand-picked glow color anywhere.
+      // Visible over the links because depthFunc(LEQUAL) (set once at init)
+      // admits the coplanar equal-depth fragments.
+      const matG = matDb.byName.MAT_chainglow;
+      Fx.applyMaterial(gl, matG);
+      fxLog.push({ name: matG.name, mode: matG.mode, depthWrite: !matG.disableDepthWrite });
+      gl.uniform3fv(fxLocs.uMaterialColor, matG.materialColor); // identity — texels pass through
+      gl.uniform4fv(fxLocs.uLayerColor, matG.blendColor); // identity RGBA
+      gl.uniform1f(fxLocs.uCutoff, 0.0); // additive: alpha ≡ 1, no cutout (a 0.35 copy would be wrong by construction)
+      gl.bindTexture(gl.TEXTURE_2D, chainglowTex);
+      gl.drawArrays(gl.TRIANGLES, 0, chainVertCount); // SAME bytes — no bufferData
     }
     if (trailV.length) {
       // MAT_swordtrail decodes additive + depth-write OFF (0x48090080) — the

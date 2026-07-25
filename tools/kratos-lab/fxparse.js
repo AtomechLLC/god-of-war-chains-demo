@@ -145,6 +145,33 @@ const FxParse = (() => {
     return { byName, list };
   }
 
+  // parseTxr — decode a TXR record (WAD tag 0x1E, size 88). Layout verified
+  // first-party against all 3 weapon TXRs (03-RESEARCH "TXR record layout"):
+  //   +0x00 u32       magic — must equal 7
+  //   +0x04 char[24]  GFX record name, NUL-terminated (e.g. "GFX_chainlink")
+  //   +0x1C char[24]  PAL record name, NUL-terminated (e.g. "PAL_chainlink")
+  //   +0x56 u16       tail flags: 0x0001 (strip) / 0x0051 (additive sprite) —
+  //                   semantics UNKNOWN (Open Q2); recorded verbatim, NEVER
+  //                   acted on (revisit when Phase-5 cross-references TXRs).
+  // Fail-loud (WR-01): size gate BEFORE magic, both naming the record —
+  // parseWad guarantees the record fits the BUFFER, not that the decoder stays
+  // inside the RECORD; a short size would silently read the next record.
+  function parseTxr(buf, rec) {
+    if (rec.size < 0x58) {
+      throw new Error(`TXR ${rec.name}: size ${rec.size} < 0x58 (88-byte TXR record)`);
+    }
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    const magic = dv.getUint32(rec.dataOff, true);
+    if (magic !== 7) {
+      throw new Error(`TXR ${rec.name}: bad magic 0x${magic.toString(16)} (expected 7)`);
+    }
+    return {
+      gfxName: readName(buf, rec.dataOff + 0x04, 24), // TXR gfx record name
+      palName: readName(buf, rec.dataOff + 0x1c, 24), // TXR pal record name
+      tailFlags: dv.getUint16(rec.dataOff + 0x56, true), // verbatim (Open Q2)
+    };
+  }
+
   // One-pass blend-tuple inventory over ALL decoded materials.
   // Tuple key = (mode, depthWrite, filter); layerCount sums every layer of
   // every material in the tuple (duplicate names count — they are distinct
@@ -165,7 +192,7 @@ const FxParse = (() => {
     return [...tuples.values()];
   }
 
-  return { decodeFlags, buildMats, enumTuples };
+  return { decodeFlags, buildMats, enumTuples, parseTxr };
 })();
 
 // dual-environment guard: browser <script> global + Node require (no build step)
