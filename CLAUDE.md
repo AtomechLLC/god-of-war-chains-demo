@@ -18,7 +18,8 @@ definitions, colors, and values, not approximations.
 - **Budget**: Explicitly unconstrained — "spend as many hours and credits as needed";
   favor decoding real data over quick approximations every time
 - **Tech stack**: Vanilla WebGL1 + JS in kratos-lab — no build step, no external
-  libraries; all assets loaded from `extracted/` raw game files
+  libraries; all assets loaded from the git-tracked `assets/` curated subset (same raw
+  game bytes; the full `extracted/` set is local-only/gitignored — see assets/README.md)
 - **Data-first**: Where the game stores a value (color, rate, size, blend mode),
   the renderer must use it; hand-tuning only where the game computes at runtime,
   and such cases must be labeled inferred

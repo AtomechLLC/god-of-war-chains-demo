@@ -460,13 +460,13 @@ if (typeof module !== "undefined" && module.exports) module.exports = Parsers;
 | A5 | Wrap modes for FX strips (REPEAT-U chainlink/swordtrail, CLAMP flame/glow) are convention, not decoded — TXR records (88 B, unparsed this phase) may encode them `[ASSUMED]` | Texture state | Visual seam artifacts if wrong; current code already uses this convention and it renders plausibly; TXR parse can be added via mogaika txr.go if Phase 3 footage comparison disputes it |
 | A6 | Hero-side MATs (Csmoke, firesploch1 in `extracted/kratos/materials/`) may contain tuples beyond the weapon-WAD two (e.g., subtract) `[ASSUMED — not decoded this session]` | Pitfall 7 | None for this phase (criteria scope = weapon MATs); the assert path is the protection |
 
-## Open Questions
+## Open Questions (RESOLVED — adopted by the Phase 2 plans)
 
-1. **Native-res display aspect: 8:7 raw or 4:3 stretched?**
+1. **Native-res display aspect: 8:7 raw or 4:3 stretched?** — RESOLVED: 02-04-PLAN.md encodes the recommendation verbatim (4:3 letterbox default, 8:7 as one constant, non-blocking; revisit when Phase-1 stills land).
    - What we know: GS renders 512×448; NTSC displays stretched it to 4:3. PCSX2 software-renderer screenshots at native internal res are 512×448-class raw dumps; its display applies aspect correction. Phase-1 capture stills (the comparison partner) don't exist yet — Phase 1 paused mid-capture.
    - What's unclear: which presentation Phase 7's side-by-side will use.
    - Recommendation: render FBO at 512×448; blit stretched to 4:3 by default with an 8:7 raw option (one constant). Revisit when Phase-1 stills exist; don't block on it.
-2. **Should the opaque hero/blade mesh draws route through matgl this phase?**
+2. **Should the opaque hero/blade mesh draws route through matgl this phase?** — RESOLVED: no; 02-02-PLAN.md scopes matgl to chain/trail draws only (mesh materials deferred to Phase 3).
    - What we know: criterion 2 names "existing chain/trail draws"; blade-surface MATs decode as usual/dw-on which the current opaque draw approximates (it ignores blending entirely).
    - Recommendation: no — scope creep. Enumerate ALL weapon MATs (required), apply state to chain + trail draws (required), leave mesh materials to Phase 3 where the chainlink ribbon is rebuilt anyway.
 3. **Where does the tuple inventory surface?**
