@@ -100,9 +100,17 @@ const FxParse = (() => {
       if (r.size < 0x38 + layerCount * 0x40) {
         throw new Error(`MAT ${r.name}: size ${r.size} too small for ${layerCount} layer(s)`);
       }
+      // WR-02: only layer 0 is decoded below, and enumTuples attributes the
+      // FULL layerCount to layer 0's mode/depthWrite/filter tuple. A
+      // multi-layer MAT with differing per-layer modes would silently claim
+      // inventory coverage it doesn't have — the exact silent-mistranslation
+      // failure DEC-01's throw-on-unknown exists to prevent. Enforce the
+      // single-layer assumption loudly until per-layer decode exists.
+      if (layerCount !== 1) {
+        throw new Error(`MAT ${r.name}: ${layerCount} layers — only single-layer decode implemented`);
+      }
 
-      // layer 0 (all 24 weapon MATs have exactly one layer; layerCount is
-      // still read from the header, never assumed)
+      // layer 0 (all 24 weapon MATs have exactly one layer, enforced above)
       const l0 = base + 0x38;
       const rawFlags0 = dv.getUint32(l0 + 0x00, true) >>> 0; // mat.go Flags[0]
       const texName = readName(buf, l0 + 0x10, 24); // mat.go TextureName
