@@ -483,12 +483,12 @@ function parseTxr(buf, rec) {
 | A8 | uCutoff 0.35 for the link pass (inherited INFERRED value from Phase 2; Phase-5 GS dump reads the real TEST-register AREF) | Pattern 5 | Slightly fatter/thinner link edges |
 | A9 | TRAIL_INNER_T = 0.6 tip-arc bias (footage analysis in the todo, not a decoded value) | Pattern 7 | Trail width reads wrong; single INFERRED constant |
 
-## Open Questions
+## Open Questions (RESOLVED — adopted by the Phase 3 plans)
 
-1. **Does the game place/animate the chainglow beyond the static shared-UV overlay?** (CHAIN-03's FXC_CNGemit candidate.) What we know: MAT gameFlags=0 → no material UV animation; the texture is a single blob. Unclear: whether the runtime slides it (hot streak) via emitter. Recommendation: ship the static overlay this phase (CHAIN-02's letter), leave the mechanism to Phase 5/6 — the INFERRED labels on A2/A3 mark the seam.
-2. **TXR tail flags 0x01 vs 0x51** — pattern matches strip-vs-additive-sprite split (wrap? alpha handling?). Recommendation: record verbatim in parseTxr, revisit when Phase 5 cross-references more TXRs or the GS dump shows sampler state.
-3. **Twist phase at the pommel** (does link 0 start face-on or edge-on, and is there a 45° global roll?). Recommendation: pick face-on at link 0, expose as a named constant; the 12-frame mid-swing burst can informally arbitrate at the checkpoint.
-4. **Intra-link subdivision count** (1 vs 2 rows inside a link for sag smoothness). Recommendation: start with 2; it's a walker parameter, not an architecture question.
+1. **Does the game place/animate the chainglow beyond the static shared-UV overlay?** (CHAIN-03's FXC_CNGemit candidate.) What we know: MAT gameFlags=0 → no material UV animation; the texture is a single blob. Unclear: whether the runtime slides it (hot streak) via emitter. RESOLVED: ship the static overlay this phase (CHAIN-02's letter), defer the mechanism to Phase 5/6 — the INFERRED labels on A2/A3 mark the seam (adopted by 03-02).
+2. **TXR tail flags 0x01 vs 0x51** — pattern matches strip-vs-additive-sprite split (wrap? alpha handling?). RESOLVED: record verbatim in parseTxr, never act on them; revisit when Phase 5 cross-references more TXRs or the GS dump shows sampler state (adopted by 03-02 parseTxr).
+3. **Twist phase at the pommel** (does link 0 start face-on or edge-on, and is there a 45° global roll?). RESOLVED: link 0 face-on, exposed as a named constant; the 12-frame mid-swing burst can informally arbitrate at the checkpoint (adopted by 03-01).
+4. **Intra-link subdivision count** (1 vs 2 rows inside a link for sag smoothness). RESOLVED: SUBROWS=2, a walker parameter not an architecture question (adopted by 03-01).
 
 ## Environment Availability
 
