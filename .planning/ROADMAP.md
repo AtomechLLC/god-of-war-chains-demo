@@ -173,7 +173,7 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Reference Pipeline & Validation Criteria | 2/4 | In Progress|  |
-| 2. WAD/MAT Decode & Render-Pass Foundation | 4/4 | Complete   | 2026-07-25 |
+| 2. WAD/MAT Decode & Render-Pass Foundation | 4/4 | Complete    | 2026-07-25 |
 | 3. Chain Link Ribbon & Glow | 0/TBD | Not started | - |
 | 4. Chain Motion | 0/TBD | Not started | - |
 | 5. FX Record Decode | 0/TBD | Not started | - |

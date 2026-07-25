@@ -11,7 +11,7 @@ Requirements for v1. Each requirement is testable and traceable to a phase.
 
 ### Decode (data-first mandate)
 
-- [ ] **DEC-01**: MAT records fully decoded (blend mode bits, depth-write, filtering) and every FX draw uses its material's real blend/depth state via the GS→WebGL blend mapping
+- [x] **DEC-01**: MAT records fully decoded (blend mode bits, depth-write, filtering) and every FX draw uses its material's real blend/depth state via the GS→WebGL blend mapping
 - [ ] **DEC-02**: FXC emitter configs, PTC particle definitions, and MSH_BDepoly shapes decoded with a per-field evidence table (differential comparison across instances; ELF as tiebreaker); colors/rates/sizes/lifetimes come from these records
 - [ ] **DEC-03**: The type-5 ANM descriptor (blade show/hide state) decoded and driving in-hand vs on-back blade presentation
 
@@ -38,9 +38,9 @@ Requirements for v1. Each requirement is testable and traceable to a phase.
 
 ### Renderer Authenticity
 
-- [ ] **REND-01**: The renderer enforces PS2-authentic compositing: clamped LDR gamma-space additive blending saturating to flat white, 0x80=1.0 conventions applied at texture/CLUT/modulate/blend stages, no bloom/tonemap/soft-particles (locked invariant)
+- [x] **REND-01**: The renderer enforces PS2-authentic compositing: clamped LDR gamma-space additive blending saturating to flat white, 0x80=1.0 conventions applied at texture/CLUT/modulate/blend stages, no bloom/tonemap/soft-particles (locked invariant)
 - [ ] **REND-02**: Per-blade warm point lights use the decoded LeftBladeLight/RightBladeLight values (color 1.0/0.622/0.288, intensity 2.5, range 160), vertex-lit, no shadows
-- [ ] **REND-03**: Fixed 60Hz simulation timestep and a native-res (512×448-class) render-target toggle exist before formal footage comparison begins
+- [x] **REND-03**: Fixed 60Hz simulation timestep and a native-res (512×448-class) render-target toggle exist before formal footage comparison begins
 
 ## v2 Requirements (deferred)
 
@@ -67,7 +67,7 @@ Mapped by roadmap creation (2026-07-24). Every v1 requirement maps to exactly on
 |-------------|-------|--------|
 | VAL-01 | Phase 1 | Pending |
 | VAL-02 | Phase 7 | Pending |
-| DEC-01 | Phase 2 | Pending |
+| DEC-01 | Phase 2 | Complete |
 | DEC-02 | Phase 5 | Pending |
 | DEC-03 | Phase 5 | Pending |
 | CHAIN-01 | Phase 3 | Pending |
@@ -79,9 +79,9 @@ Mapped by roadmap creation (2026-07-24). Every v1 requirement maps to exactly on
 | FIRE-02 | Phase 6 | Pending |
 | TRL-01 | Phase 6 | Pending |
 | TRL-02 | Phase 6 | Pending |
-| REND-01 | Phase 2 | Pending |
+| REND-01 | Phase 2 | Complete |
 | REND-02 | Phase 6 | Pending |
-| REND-03 | Phase 2 | Pending |
+| REND-03 | Phase 2 | Complete |
 
 ---
 *Defined: 2026-07-24 — from research (.planning/research/) + user scoping*
