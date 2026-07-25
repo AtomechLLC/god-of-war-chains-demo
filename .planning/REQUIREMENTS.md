@@ -12,7 +12,7 @@ Requirements for v1. Each requirement is testable and traceable to a phase.
 ### Decode (data-first mandate)
 
 - [x] **DEC-01**: MAT records fully decoded (blend mode bits, depth-write, filtering) and every FX draw uses its material's real blend/depth state via the GS→WebGL blend mapping
-- [ ] **DEC-02**: FXC emitter configs, PTC particle definitions, and MSH_BDepoly shapes decoded with a per-field evidence table (differential comparison across instances; ELF as tiebreaker); colors/rates/sizes/lifetimes come from these records
+- [x] **DEC-02**: FXC emitter configs, PTC particle definitions, and MSH_BDepoly shapes decoded with a per-field evidence table (differential comparison across instances; ELF as tiebreaker); colors/rates/sizes/lifetimes come from these records
 - [ ] **DEC-03**: The type-5 ANM descriptor (blade show/hide state) decoded and driving in-hand vs on-back blade presentation
 
 ### Chain Visuals
@@ -68,7 +68,7 @@ Mapped by roadmap creation (2026-07-24). Every v1 requirement maps to exactly on
 | VAL-01 | Phase 1 | Pending |
 | VAL-02 | Phase 7 | Pending |
 | DEC-01 | Phase 2 | Complete |
-| DEC-02 | Phase 5 | Pending |
+| DEC-02 | Phase 5 | Complete |
 | DEC-03 | Phase 5 | Pending |
 | CHAIN-01 | Phase 3 | Complete |
 | CHAIN-02 | Phase 3 | Complete |
