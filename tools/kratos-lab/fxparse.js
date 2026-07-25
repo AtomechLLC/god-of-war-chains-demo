@@ -78,6 +78,13 @@ const FxParse = (() => {
     for (const r of records) {
       if (r.tag !== 0x1e || r.size === 0 || !r.name.startsWith("MAT_")) continue;
 
+      // WR-01: parseWad only guarantees the record fits the BUFFER, not that
+      // the decoder stays inside the RECORD — a short size would silently
+      // decode the next record's bytes. Fail loud, name the record.
+      if (r.size < 0x38) {
+        throw new Error(`MAT ${r.name}: size ${r.size} < 0x38 header`);
+      }
+
       const base = r.dataOff;
       const magic = dv.getUint32(base, true); // mat.go Magic @+0
       if (magic !== 0x8) {
@@ -90,6 +97,9 @@ const FxParse = (() => {
       ];
       const layerCount = dv.getUint32(base + 0x34, true); // mat.go LayersCount
       if (layerCount === 0) throw new Error(`MAT ${r.name}: zero layers`);
+      if (r.size < 0x38 + layerCount * 0x40) {
+        throw new Error(`MAT ${r.name}: size ${r.size} too small for ${layerCount} layer(s)`);
+      }
 
       // layer 0 (all 24 weapon MATs have exactly one layer; layerCount is
       // still read from the header, never assumed)
