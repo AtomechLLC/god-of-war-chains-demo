@@ -543,4 +543,83 @@ function decodeFxTexture(matName, txrName) {
   }
 }
 
-console.log("fxdb.test.js: MSH + PTC + FXC + swordtrail-provenance known-answers passed");
+// ---------------------------------------------------------------------------
+// --- full priority corpus + evidence audit ---  (DEC-02 closeout, slice-2)
+// ---------------------------------------------------------------------------
+// The full priority corpus enters the FxDb as ACTUAL KEYS via the generic decoders
+// (no new decoder code): WAD-native fire flame5/EG through the WAD loop, and the
+// standalone-only fire (FXCF) + chain-glow (CNG) + trails (BFT/BGT) through the
+// standaloneRecs 3rd arg. Every decoded field must be real (byte-exact) or INFERRED
+// (labelled + corroborated) — the data-first discipline (CLAUDE.md / D-04).
+{
+  // FULL standalone source: both PTC_* and FXC_* names for BFT/BGT/CNG/FXCF.
+  const standaloneNames = [
+    "PTC_BFTpart1", "PTC_BGTpart1", "PTC_CNGpart", "PTC_FXCFpart",
+    "FXC_BFTemit1", "FXC_BGTemit1", "FXC_CNGemit", "FXC_FXCFemit",
+  ];
+  const standaloneRecs = standaloneNames.map((n) => ({ name: n, buf: loadBin(n).buf, tag: 0x1e }));
+  const db = FxParse.buildFxDb(recs, buf, standaloneRecs);
+
+  // WAD-native fire particles are real keys with byte-exact fields.
+  assert.ok(db.ptc["PTC_flame5"], "db.ptc['PTC_flame5'] present (WAD-native fire)");
+  assert.strictEqual(db.ptc["PTC_flame5"].magic, 0x13, "PTC_flame5 magic === 0x13");
+  assert.strictEqual(db.ptc["PTC_flame5"].size, 568, "PTC_flame5 size@0x50 === 568");
+  assert.strictEqual(db.ptc["PTC_flame5"].shapeRef, "flame5Shape", "PTC_flame5 shapeRef === flame5Shape");
+  assert.ok(db.ptc["PTC_EGpart"], "db.ptc['PTC_EGpart'] present (WAD-native EG fire)");
+  assert.strictEqual(db.ptc["PTC_EGpart"].shapeRef, "EGpartShape", "PTC_EGpart shapeRef === EGpartShape");
+  assert.ok(db.fxc["FXC_EGemit"], "db.fxc['FXC_EGemit'] present (WAD-native EG emitter)");
+  assert.ok(db.fxc["FXC_EGgrav"], "db.fxc['FXC_EGgrav'] present (WAD-native EG grav, subtype 0xc)");
+
+  // CORPUS-KEY ASSERTION (the plan-04 Blocker fix): the standalone chain-glow + fire
+  // + trail families are ALL ACTUAL KEYS in the built FxDb — not merely proven via
+  // loadBin in isolation.
+  assert.ok(db.fxc["FXC_CNGemit"], "db.fxc['FXC_CNGemit'] present (standalone chain-glow emitter)");
+  assert.ok(db.ptc["PTC_CNGpart"], "db.ptc['PTC_CNGpart'] present (standalone chain-glow particle)");
+  assert.strictEqual(db.ptc["PTC_CNGpart"].slotId, 0x1, "PTC_CNGpart slot@0x08 === 0x1");
+  assert.strictEqual(db.ptc["PTC_CNGpart"].shapeRef, "CNGpartShape", "PTC_CNGpart shapeRef === CNGpartShape");
+  assert.ok(db.fxc["FXC_FXCFemit"], "db.fxc['FXC_FXCFemit'] present (standalone fire emitter)");
+  assert.ok(db.ptc["PTC_FXCFpart"], "db.ptc['PTC_FXCFpart'] present (standalone fire particle)");
+  assert.strictEqual(db.ptc["PTC_FXCFpart"].shapeRef, "FXCFpartShape", "PTC_FXCFpart shapeRef === FXCFpartShape");
+  assert.ok(db.fxc["FXC_BFTemit1"] && db.ptc["PTC_BFTpart1"], "BFT trail family present as actual keys");
+  assert.ok(db.fxc["FXC_BGTemit1"] && db.ptc["PTC_BGTpart1"], "BGT trail family present as actual keys");
+
+  // EVIDENCE-COMPLETENESS AUDIT: every FxDb entry carries a non-empty evidence array;
+  // every entry is tagged real|INFERRED; every INFERRED entry has a non-empty corrob/note.
+  for (const sec of ["msh", "ptc", "fxc"]) {
+    for (const [k, v] of Object.entries(db[sec])) {
+      assert.ok(Array.isArray(v.evidence) && v.evidence.length > 0, `${sec}.${k} carries a non-empty evidence array`);
+      for (const e of v.evidence) {
+        assert.ok(e.tag === "real" || e.tag === "INFERRED", `${sec}.${k} field '${e.field}' tagged real|INFERRED (got ${e.tag})`);
+        if (e.tag === "INFERRED") {
+          const note = e.corrob || e.note;
+          assert.ok(note && String(note).trim().length > 0, `${sec}.${k} INFERRED field '${e.field}' carries a non-empty corroboration note`);
+        }
+      }
+    }
+  }
+
+  // Every DECODED PTC field must be attested (must-have truth #4): the placement
+  // matrix (+0x10) and the index (+0x0a) are byte-decoded, so they require real
+  // evidence entries alongside magic/slot/size/shapeRef/params (parseFxc already
+  // attests both; parsePtc must too — closed in this task's GREEN).
+  for (const k of ["PTC_BFTpart1", "PTC_CNGpart", "PTC_FXCFpart", "PTC_flame5"]) {
+    const ev = db.ptc[k].evidence;
+    assert.ok(
+      ev.some((e) => e.field === "matrix" && e.tag === "real"),
+      `${k} evidence attests the decoded placement matrix (real)`
+    );
+    assert.ok(
+      ev.some((e) => e.field === "index" && e.tag === "real"),
+      `${k} evidence attests the decoded index (real)`
+    );
+  }
+
+  // The full corpus still JSON.stringify-round-trips (the Phase-6 hand-off boundary).
+  let json;
+  assert.doesNotThrow(() => { json = JSON.stringify(db); }, "full-corpus FxDb is JSON.stringify-able");
+  for (const k of ["FXC_CNGemit", "PTC_CNGpart", "FXC_FXCFemit", "PTC_FXCFpart", "PTC_flame5"]) {
+    assert.ok(json.includes(k), `JSON dump contains ${k}`);
+  }
+}
+
+console.log("fxdb.test.js: MSH + PTC + FXC + swordtrail-provenance + full-corpus known-answers passed");
