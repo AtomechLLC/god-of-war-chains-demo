@@ -10,3 +10,9 @@ extracted/**
 !extracted/README.md
 
 node_modules/
+
+# Reference captures (PCSX2 screenshots/clips of the game) — copyrighted game
+# output; local-only. The measurement/criteria docs in reference/ stay tracked.
+reference/captures/
+reference/frames/
+reference/annotated/
