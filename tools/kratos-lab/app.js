@@ -115,7 +115,11 @@
 
   // ---------- WebGL textured mesh renderer ----------------------------------
   const canvas = $("gl");
-  const gl = canvas.getContext("webgl", { antialias: true, preserveDrawingBuffer: true });
+  // alpha:false — opaque canvas: page compositing can never tint/wash out the
+  // additive FX passes (REND-01; verify with the magenta-background test).
+  // Gamma stance: naive 8-bit gamma-space math IS the target — no sRGB, no
+  // tonemap (authority: reference/TARGET-DEFINITION.md).
+  const gl = canvas.getContext("webgl", { alpha: false, antialias: true, preserveDrawingBuffer: true });
   const vsrc = `
     attribute vec3 aPos; attribute vec2 aUV; attribute vec3 aNrm; attribute vec3 aCol;
     uniform mat4 uMVP; uniform mat4 uRot; uniform mat4 uModel;
@@ -310,14 +314,22 @@
     uniform mat4 uMVP; uniform mat4 uM;
     varying vec3 vT;
     void main() { gl_Position = uMVP * (uM * vec4(aP, 1.0)); vT = aT; }`));
+  // TFX MODULATE shape (02-RESEARCH Pattern 4): tex × layer blend color ×
+  // material color, multiplied in-shader BEFORE blending so decoded overbright
+  // values (e.g. 2.0 on the untextured lambert MATs) survive into the blend.
   gl.attachShader(fxProg, shader(gl.FRAGMENT_SHADER, `
     precision mediump float;
     varying vec3 vT;
-    uniform sampler2D uTex; uniform float uAdd;
+    uniform sampler2D uTex;
+    uniform vec3 uMaterialColor; uniform vec4 uLayerColor; uniform float uCutoff;
     void main() {
       vec4 c = texture2D(uTex, vT.xy);
-      if (uAdd < 0.5 && c.a < 0.35) discard;
-      gl_FragColor = vec4(c.rgb * vT.z, uAdd > 0.5 ? vT.z * c.a : c.a);
+      vec3 rgb = c.rgb * uLayerColor.rgb * uMaterialColor;
+      float a = c.a * uLayerColor.a * vT.z;
+      // cutout 0.35 is INFERRED — GS TEST-register alpha test is not in MAT
+      // records (02-RESEARCH A3); Phase 5's GS dump reads the real value.
+      if (a < uCutoff) discard;
+      gl_FragColor = vec4(rgb, a);
     }`));
   gl.linkProgram(fxProg);
   const fxLocs = {
@@ -326,16 +338,22 @@
     uMVP: gl.getUniformLocation(fxProg, "uMVP"),
     uM: gl.getUniformLocation(fxProg, "uM"),
     uTex: gl.getUniformLocation(fxProg, "uTex"),
-    uAdd: gl.getUniformLocation(fxProg, "uAdd"),
+    uMaterialColor: gl.getUniformLocation(fxProg, "uMaterialColor"),
+    uLayerColor: gl.getUniformLocation(fxProg, "uLayerColor"),
+    uCutoff: gl.getUniformLocation(fxProg, "uCutoff"),
   };
   const fxBuf = gl.createBuffer();
+  // per-frame FX pass log: rewritten at the top of each drawFx call; one entry
+  // per applyMaterial'd pass — console-visible proof of per-pass state without
+  // mid-frame GL reads (exposed on window.KratosLab.fxLog).
+  const fxLog = [];
   const s0 = mesh.scale;
   const modelMat = new Float32Array([
     s0, 0, 0, 0, 0, s0, 0, 0, 0, 0, s0, 0,
     -mesh.ctr[0] * s0, -mesh.ctr[1] * s0, -mesh.ctr[2] * s0, 1,
   ]);
   gl.uniformMatrix4fv(uModel, false, modelMat);
-  gl.clearColor(0, 0, 0, 0);
+  gl.clearColor(0, 0, 0, 1); // opaque clear — FBO-path clears must also be opaque
   gl.enable(gl.DEPTH_TEST);
 
   // tiny mat4
@@ -485,6 +503,7 @@
   }
 
   function drawFx(mvp) {
+    fxLog.length = 0;
     if (!blade || !skin || !skin.lastWorld) return;
     const world = skin.lastWorld;
     const chainV = [], trailV = [];
@@ -533,23 +552,36 @@
     gl.vertexAttribPointer(fxLocs.aP, 3, gl.FLOAT, false, 24, 0);
     gl.vertexAttribPointer(fxLocs.aT, 3, gl.FLOAT, false, 24, 12);
     gl.disable(gl.CULL_FACE);
+    // Every FX pass takes its FULL blend/depth state from its decoded MAT via
+    // Fx.applyMaterial — no hardcoded blendFunc/depthMask here (DEC-01).
     if (chainV.length) {
-      gl.uniform1f(fxLocs.uAdd, 0);
+      // Intentional visual change vs the old hardcoded path: the chain now renders
+      // with its real decoded state — usual alpha blend + depth-write ON
+      // (MAT_chainlink 0x44010080); it previously had no blending at all.
+      const mat = matDb.byName.MAT_chainlink;
+      Fx.applyMaterial(gl, mat);
+      fxLog.push({ name: mat.name, mode: mat.mode, depthWrite: !mat.disableDepthWrite });
+      gl.uniform3fv(fxLocs.uMaterialColor, mat.materialColor);
+      gl.uniform4fv(fxLocs.uLayerColor, mat.blendColor);
+      gl.uniform1f(fxLocs.uCutoff, 0.35); // INFERRED cutout threshold (02-RESEARCH A3)
       gl.bindTexture(gl.TEXTURE_2D, chainTex);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(chainV), gl.DYNAMIC_DRAW);
       gl.drawArrays(gl.TRIANGLES, 0, chainV.length / 6);
     }
     if (trailV.length) {
-      gl.uniform1f(fxLocs.uAdd, 1);
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-      gl.depthMask(false);
+      // MAT_swordtrail decodes additive + depth-write OFF (0x48090080) — the
+      // former hardcoded guess, now data-confirmed.
+      const mat = matDb.byName.MAT_swordtrail;
+      Fx.applyMaterial(gl, mat);
+      fxLog.push({ name: mat.name, mode: mat.mode, depthWrite: !mat.disableDepthWrite });
+      gl.uniform3fv(fxLocs.uMaterialColor, mat.materialColor);
+      gl.uniform4fv(fxLocs.uLayerColor, mat.blendColor);
+      gl.uniform1f(fxLocs.uCutoff, 0.0);
       gl.bindTexture(gl.TEXTURE_2D, trailTex);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(trailV), gl.DYNAMIC_DRAW);
       gl.drawArrays(gl.TRIANGLES, 0, trailV.length / 6);
-      gl.depthMask(true);
-      gl.disable(gl.BLEND);
     }
+    Fx.restoreFxState(gl);
     gl.useProgram(prog);
   }
 
@@ -838,6 +870,19 @@
   window.KratosLab = {
     machine, mesh, step, rig, skin,
     wadRecords, matDb, matTuples,
+    gl, fxLog,
+    // Sampled between frames (console), fxState proves the per-frame restore
+    // discipline: blendEnabled false, blendEquation FUNC_ADD, depthMask true.
+    fxState() {
+      return {
+        alpha: gl.getContextAttributes().alpha,
+        blendEnabled: gl.isEnabled(gl.BLEND),
+        blendEquation: gl.getParameter(gl.BLEND_EQUATION_RGB),
+        blendSrcRGB: gl.getParameter(gl.BLEND_SRC_RGB),
+        blendDstRGB: gl.getParameter(gl.BLEND_DST_RGB),
+        depthMask: gl.getParameter(gl.DEPTH_WRITEMASK),
+      };
+    },
     setView(y, p, d) { yaw = y; pitch = p; dist = d; userDist = d; autoSpin = false; },
     input,
   };
