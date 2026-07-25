@@ -65,7 +65,24 @@ Plans:
   3. Stacked additive layers saturate to flat white in clamped LDR gamma space — 0x80=1.0 conversion applied at texture/CLUT/modulate/blend stages, canvas `alpha: false`, no bloom/tonemap/soft-particles anywhere
   4. Simulation runs on a fixed 60Hz accumulator decoupled from rAF, and a native-res (512×448-class) render-target toggle works
 
-**Plans**: TBD
+**Plans:** 4 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — WAD decode slice: parseWad + nearest-preceding resolve + MAT decode + 2-tuple inventory in the stats card, RED-first known-answer suite, assets/ path migration
+
+**Wave 2** *(blocked on Wave 1 — shares app.js/index.html)*
+
+- [ ] 02-02-PLAN.md — Real MAT state on every FX draw: fx.js matgl table (throw-on-unknown), alpha:false + MODULATE shader, state-restore discipline (human checkpoint: magenta test, fxLog, saturation)
+
+**Wave 3** *(blocked on Wave 2 — shares app.js)*
+
+- [ ] 02-03-PLAN.md — Fixed 60Hz accumulator: pure loop.js + Node test, simStep/renderFrame split, per-tick trail recording, deterministic KratosLab.step
+
+**Wave 4** *(blocked on Wave 3 — shares app.js)*
+
+- [ ] 02-04-PLAN.md — Native-res 512×448 → 4:3 toggle: FBO + blit program + N keybind (human checkpoint: softness, letterbox, 60±1 sim counter, phase regressions)
 
 ### Phase 3: Chain Link Ribbon & Glow
 
@@ -156,7 +173,7 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Reference Pipeline & Validation Criteria | 2/4 | In Progress|  |
-| 2. WAD/MAT Decode & Render-Pass Foundation | 0/TBD | Not started | - |
+| 2. WAD/MAT Decode & Render-Pass Foundation | 0/4 | Planned | - |
 | 3. Chain Link Ribbon & Glow | 0/TBD | Not started | - |
 | 4. Chain Motion | 0/TBD | Not started | - |
 | 5. FX Record Decode | 0/TBD | Not started | - |
@@ -166,3 +183,4 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 ---
 *Created: 2026-07-24 — 7 phases, 17/17 v1 requirements mapped*
 *Phase 1 planned: 2026-07-24 — 4 plans, 3 waves*
+*Phase 2 planned: 2026-07-24 — 4 plans, 4 waves (sequential — all share app.js)*
