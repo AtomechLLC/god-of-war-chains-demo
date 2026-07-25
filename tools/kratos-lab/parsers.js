@@ -279,5 +279,52 @@ const Parsers = (() => {
     return img;
   }
 
-  return { fetchBuf, parseMesh, decodeTexture };
+  // ---- WAD container: record walk + nearest-preceding-name resolution ------
+  // Format verified first-party against R_WPN0_0.WAD (283 records, clean EOF)
+  // and against god_of_war_browser pack/wad/wad.go. Record header (32 B):
+  //   u16 Tag @+0, u16 Flags @+2, u32 Size @+4, char Name[24] @+8 (NUL-term)
+  // NOT a u32 type — real server instances carry nonzero high-u16 flags.
+  // Data follows at +32; next record at align16(off + 32 + size).
+  function parseWad(buf) {
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    const records = [];
+    let off = 0;
+    while (off + 32 <= buf.length) {
+      const tag = dv.getUint16(off, true);        // wad.go Tag (u16, NOT u32)
+      const flags = dv.getUint16(off + 2, true);  // wad.go Flags
+      const size = dv.getUint32(off + 4, true);   // wad.go Size
+      // strictly NUL-terminated name[24] — bytes after the NUL are garbage
+      let name = "";
+      for (let i = 0; i < 24; i++) {
+        const c = buf[off + 8 + i];
+        if (!c) break;
+        name += String.fromCharCode(c);
+      }
+      const dataOff = off + 32;
+      records.push({ idx: records.length, off, tag, flags, size, name, dataOff });
+      // tag 0x18 (heap declaration): size is a reservation, no data follows
+      const dataSize = tag === 0x18 ? 0 : size;
+      if (dataSize > buf.length - dataOff) throw new Error(`WAD record ${name} overruns buffer`);
+      off = (off + 32 + dataSize + 15) & ~15;
+    }
+    return records;
+  }
+
+  // Nearest-preceding-name resolution — wad.go GetNodeByName(name, id-1,
+  // searchForward=false): backward scan from the referencing record.
+  // Targets must CARRY DATA: tag 0x1E (server instance) or 0x70 (raw data)
+  // with size > 0 — this skips size-0 back-references AND the named GroupEnd
+  // markers (tag 0x32), which reuse their group head's name.
+  function resolve(records, name, fromIdx) {
+    for (let i = fromIdx - 1; i >= 0; i--) {
+      const r = records[i];
+      if (r.name === name && r.size > 0 && (r.tag === 0x1e || r.tag === 0x70)) return r;
+    }
+    return null; // caller decides: throw with record name
+  }
+
+  return { fetchBuf, parseMesh, decodeTexture, parseWad, resolve };
 })();
+
+// dual-environment guard: browser <script> global + Node require (no build step)
+if (typeof module !== "undefined" && module.exports) module.exports = Parsers;
