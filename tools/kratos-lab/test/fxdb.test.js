@@ -274,4 +274,151 @@ const PTC_PARAM_START = 0x64; // f32 params begin here (RESEARCH PTC table)
   );
 }
 
-console.log("fxdb.test.js: MSH + PTC known-answers passed");
+// ---------------------------------------------------------------------------
+// --- FXC subtype-branch known-answers ---  parseFxc + buildFxDb fxc/refs (DEC-02, Wave 3)
+// ---------------------------------------------------------------------------
+// FXC is the LAST decode layer (D-02) and the FxDb root: an emitter links to its
+// particle def (shared +0x08 slot) and, for poly emitters, to an explicit MSH shape.
+// The layout after +0x50 BRANCHES on the u16 subtype @+0x02 (Pitfall 2): subtype
+// 2/3 read the ref name @+0x54; subtype 0xd reads a u32 count @+0x54 then the MSH
+// name @+0x58. BFT/BGT emit1 are standalone-ONLY (Pitfall 1) — they reach the FxDb
+// only via the buildFxDb 3rd arg, exactly as the PTC defs did in 05-02. Seed values
+// are byte-exact this session (05-RESEARCH "Per-Field Evidence Tables").
+
+// (a) subtype 0x2 emitter (standalone FXC_BFTemit1, 228 B).
+let bftMatrix;
+{
+  const { buf: fb, rec: fr } = loadBin("FXC_BFTemit1");
+  const fxc = FxParse.parseFxc(fb, fr); // RED: parseFxc not exported until Task 2
+  assert.strictEqual(fxc.magic, 0x1e, "FXC_BFTemit1 magic === 0x1e");
+  assert.strictEqual(fxc.subtype, 0x2, "FXC_BFTemit1 subtype === 0x2 (emitter)");
+  assert.strictEqual(fxc.slotId, 0x1d, "FXC_BFTemit1 slot@0x08 === 0x1d (pairs PTC_BFTpart1)");
+  assert.strictEqual(fxc.index, 0x05, "FXC_BFTemit1 idx@0x0a === 0x05");
+  assert.strictEqual(fxc.size, 228, "FXC_BFTemit1 size@0x50 === 228");
+  assert.strictEqual(fxc.shapeRef, "BFTpart1Shape", "FXC_BFTemit1 shapeRef@0x54 === BFTpart1Shape");
+  const r0 = [fxc.matrix[0], fxc.matrix[1], fxc.matrix[2]];
+  assert.ok(Math.abs(r0[0] - 0.00204) < 1e-4, `matrix row0.x ≈ 0.00204 (got ${r0[0]})`);
+  assert.ok(Math.abs(r0[1] - 0.7579) < 1e-4, `matrix row0.y ≈ 0.75790 (got ${r0[1]})`);
+  assert.ok(Math.abs(r0[2] - 0.65237) < 1e-4, `matrix row0.z ≈ 0.65237 (got ${r0[2]})`);
+  bftMatrix = fxc.matrix;
+}
+
+// (b) Differential invariant (DEC-02 test-map row 4): FXC_BGTemit1's 16-float matrix
+// is BYTE-IDENTICAL to BFTemit1 (fire & swoosh share placement); they differ ONLY at
+// idx (0x06) / name (F->G) / shape block. The shapeRef NAME discriminates, not slot (A4).
+{
+  const { buf: gb, rec: gr } = loadBin("FXC_BGTemit1");
+  const fxc = FxParse.parseFxc(gb, gr);
+  assert.deepStrictEqual(fxc.matrix, bftMatrix, "FXC_BGTemit1 matrix IDENTICAL to BFTemit1 (shared placement)");
+  assert.strictEqual(fxc.shapeRef, "BGTpart1Shape", "FXC_BGTemit1 shapeRef === BGTpart1Shape");
+  assert.strictEqual(fxc.index, 0x06, "FXC_BGTemit1 idx@0x0a === 0x06 (differs from BFT 0x05)");
+  // Orthonormality sanity: the 3x3 rotation rows are each unit length — a wrong
+  // stride/offset would not yield unit vectors (real-vs-noise interleave check).
+  for (let r = 0; r < 3; r++) {
+    const row = [fxc.matrix[r * 4], fxc.matrix[r * 4 + 1], fxc.matrix[r * 4 + 2]];
+    const len = Math.hypot(row[0], row[1], row[2]);
+    assert.ok(Math.abs(len - 1.0) < 1e-3, `matrix rotation row${r} unit-length (|row|=${len.toFixed(4)})`);
+  }
+}
+
+// (c) subtype 0x3 spark (in-WAD FXC_BDEsparkemit @0xCB70): ref "flame6Shape",
+// matrix identity (row0 = (1,0,0) — parent-origin placement).
+{
+  const spark = recs.find((r) => r.name === "FXC_BDEsparkemit" && r.off === 0xcb70);
+  assert.ok(spark, "FXC_BDEsparkemit @0xCB70 (in-WAD) record exists");
+  const fxc = FxParse.parseFxc(buf, spark);
+  assert.strictEqual(fxc.subtype, 0x3, "FXC_BDEsparkemit subtype === 0x3 (spark)");
+  assert.strictEqual(fxc.shapeRef, "flame6Shape", "FXC_BDEsparkemit shapeRef === flame6Shape");
+  assert.ok(
+    Math.abs(fxc.matrix[0] - 1.0) < 1e-4 && Math.abs(fxc.matrix[1]) < 1e-4 && Math.abs(fxc.matrix[2]) < 1e-4,
+    `FXC_BDEsparkemit matrix identity (row0 = 1,0,0; got ${fxc.matrix.slice(0, 3)})`
+  );
+}
+
+// (d) subtype 0xd poly branch (in-WAD FXC_BDepoly3 @0xCC80, 136 B, Pitfall 2): a u32
+// count lives @+0x54 and the MSH name is read at +0x58 (NOT +0x54). This proves the
+// subtype branch — reading the name at +0x54 would return the count bytes as garbage.
+{
+  const poly = recs.find((r) => r.name === "FXC_BDepoly3" && r.off === 0xcc80);
+  assert.ok(poly, "FXC_BDepoly3 @0xCC80 (in-WAD) record exists");
+  const dvp = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  const count54 = dvp.getUint32(poly.dataOff + 0x54, true); // u32 count @+0x54 (subtype-0xd)
+  assert.strictEqual(count54, 1, "FXC_BDepoly3 u32 count @+0x54 === 1");
+  const fxc = FxParse.parseFxc(buf, poly);
+  assert.strictEqual(fxc.subtype, 0xd, "FXC_BDepoly3 subtype === 0xd (poly)");
+  assert.strictEqual(fxc.count, 1, "FXC_BDepoly3 parsed count === 1 (u32 @+0x54, subtype-0xd branch)");
+  // name read at +0x58 AFTER the u32 count — the explicit FXC->MSH link.
+  assert.strictEqual(fxc.shapeRef, "MSH_BDepoly3Shape", "FXC_BDepoly3 shapeRef@+0x58 === MSH_BDepoly3Shape (NOT +0x54)");
+  assert.strictEqual(fxc.size, 136, "FXC_BDepoly3 size@0x50 === 136");
+}
+
+// (e) buildFxDb cross-ref graph WITH the standalone source (the D-01 payoff): the
+// in-WAD spark/poly emitters come from the WAD; the BFT/BGT trail emitters + their
+// PTC defs come from the 3rd arg. All become REAL db.fxc/db.ptc keys, and the full
+// emitter->particle->shape graph assembles + serializes.
+{
+  const mk = (n) => ({ name: n, buf: loadBin(n).buf, tag: 0x1e });
+  const standaloneRecs = ["FXC_BFTemit1", "FXC_BGTemit1", "PTC_BFTpart1", "PTC_BGTpart1"].map(mk);
+  const db = FxParse.buildFxDb(recs, buf, standaloneRecs);
+
+  // in-WAD spark emitter + standalone trail emitters are all real db.fxc keys
+  assert.ok(db.fxc["FXC_BDEsparkemit"], "db.fxc['FXC_BDEsparkemit'] present (in-WAD)");
+  assert.ok(db.fxc["FXC_BFTemit1"], "db.fxc['FXC_BFTemit1'] present (standalone 3rd arg)");
+  assert.ok(db.fxc["FXC_BGTemit1"], "db.fxc['FXC_BGTemit1'] present (standalone 3rd arg)");
+
+  // shape refs: the subtype-0xd MSH link RESOLVES (resolved:true); the spark runtime
+  // handle is recorded resolved:false (non-MSH_ name — no WAD record, never thrown).
+  const hasRef = (from, kind, to, resolved) =>
+    db.refs.some((x) => x.from === from && x.kind === kind && x.to === to && x.resolved === resolved);
+  assert.ok(
+    hasRef("FXC_BDepoly3", "shape", "MSH_BDepoly3Shape", true),
+    "refs: FXC_BDepoly3 -> MSH_BDepoly3Shape resolved:true (explicit FXC->MSH link)"
+  );
+  assert.ok(
+    hasRef("FXC_BDEsparkemit", "shape", "flame6Shape", false),
+    "refs: FXC_BDEsparkemit -> flame6Shape resolved:false (runtime handle)"
+  );
+
+  // the D-01 trail slot pair (both share slot 0x1d — the RESEARCH canonical FxDb example)
+  const hasSlot = (from, to) => db.refs.some((x) => x.kind === "slot" && x.from === from && x.to === to);
+  assert.ok(hasSlot("FXC_BFTemit1", "PTC_BFTpart1"), "refs: FXC_BFTemit1 -> PTC_BFTpart1 slot pair (0x1d) present");
+
+  // GUARD (Warning 1): no slot pair is fabricated over placeholder slot 0x00 / the
+  // 0xffff root sentinel — every WAD-native FXC/PTC carries slot 0x00, and pairing on
+  // it would invent false 0x00×0x00 links. Every emitted slot ref must carry a real,
+  // non-placeholder slot on BOTH ends.
+  const isPlaceholder = (s) => s === 0x00 || s === 0xffff;
+  for (const ref of db.refs) {
+    if (ref.kind !== "slot") continue;
+    const fromSlot = db.fxc[ref.from] && db.fxc[ref.from].slotId;
+    const toSlot = db.ptc[ref.to] && db.ptc[ref.to].slotId;
+    assert.ok(!isPlaceholder(fromSlot), `slot ref from ${ref.from} carries a real slot (not 0x00/0xffff)`);
+    assert.ok(!isPlaceholder(toSlot), `slot ref to ${ref.to} carries a real slot (not 0x00/0xffff)`);
+  }
+
+  // the whole graph (msh+ptc+fxc+refs) is the Phase-6 hand-off — must serialize.
+  let json;
+  assert.doesNotThrow(() => {
+    json = JSON.stringify(db);
+  }, "FxDb (msh+ptc+fxc+refs) is JSON.stringify-able");
+  assert.ok(
+    json.includes("MSH_BDepoly3Shape") && json.includes("FXC_BFTemit1"),
+    "JSON dump contains the resolved MSH shape + the standalone BFT emitter"
+  );
+}
+
+// (f) fail-loud: bad-magic + short FXC both throw named errors (WR-01 / T-05-01).
+{
+  const big = new Uint8Array(0x60); // magic @0 left 0 (!= 0x1e)
+  const badRec = { name: "FXC_bogus", dataOff: 0, size: 0x60, tag: 0x1e };
+  assert.throws(() => FxParse.parseFxc(big, badRec), /FXC_bogus/, "bad FXC magic names the record");
+
+  const shortRec = { name: "FXC_short", dataOff: 0, size: 0x10, tag: 0x1e };
+  assert.throws(
+    () => FxParse.parseFxc(big, shortRec),
+    /FXC_short/,
+    "short FXC size throws named (before magic)"
+  );
+}
+
+console.log("fxdb.test.js: MSH + PTC + FXC known-answers passed");
