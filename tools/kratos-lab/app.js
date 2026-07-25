@@ -356,6 +356,55 @@
   gl.clearColor(0, 0, 0, 1); // opaque clear — FBO-path clears must also be opaque
   gl.enable(gl.DEPTH_TEST);
 
+  // ---- native-res render target (REND-03): 512×448 offscreen FBO -----------
+  // 4:3 stretched display of the 512×448 GS target (02-RESEARCH A2 / Open Q1 —
+  // NTSC non-square pixels). 8:7 raw option = change displayAspect to 8/7;
+  // revisit when Phase-1 capture stills land. Do not block on it.
+  const NATIVE = { w: 512, h: 448, displayAspect: 4 / 3 };
+  let nativeRes = false; // default OFF — full-res inspect until Phase 7 comparisons
+  // 512×448: width POT, height NPOT. WebGL1 NPOT rules: fine as an FBO color
+  // texture with CLAMP_TO_EDGE + LINEAR and no mipmaps — all true here.
+  // gl.RGBA/UNSIGNED_BYTE: 8-bit clamped like the canvas so REND-01's blend
+  // saturation behavior survives (NO float formats).
+  const rtTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, rtTex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, NATIVE.w, NATIVE.h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); // bilinear upscale = the authentic soft look
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  const rtDepth = gl.createRenderbuffer();
+  gl.bindRenderbuffer(gl.RENDERBUFFER, rtDepth);
+  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, NATIVE.w, NATIVE.h);
+  const fbo = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, rtTex, 0);
+  gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rtDepth);
+  // T-2-10: an incomplete FBO renders black silently — fail loud at startup
+  if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) throw new Error("native-res FBO incomplete");
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+  // Blit pass: its OWN trivial program — no fxProg/hero state coupling (T-2-11)
+  const blitProg = gl.createProgram();
+  gl.attachShader(blitProg, shader(gl.VERTEX_SHADER, `
+    attribute vec2 aPos; uniform vec2 uScale; varying vec2 vUV;
+    void main() { gl_Position = vec4(aPos * uScale, 0.0, 1.0); vUV = aPos * 0.5 + 0.5; }`));
+  gl.attachShader(blitProg, shader(gl.FRAGMENT_SHADER, `
+    precision mediump float; varying vec2 vUV; uniform sampler2D uTex;
+    void main() { gl_FragColor = texture2D(uTex, vUV); }`));
+  gl.linkProgram(blitProg);
+  const blitLocs = {
+    aPos: gl.getAttribLocation(blitProg, "aPos"),
+    uScale: gl.getUniformLocation(blitProg, "uScale"),
+    uTex: gl.getUniformLocation(blitProg, "uTex"),
+  };
+  const blitBuf = gl.createBuffer(); // fullscreen two-triangle quad, -1..1
+  gl.bindBuffer(gl.ARRAY_BUFFER, blitBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1]), gl.STATIC_DRAW);
+  gl.useProgram(blitProg);
+  gl.uniform1i(blitLocs.uTex, 0);
+  gl.useProgram(prog);
+
   // tiny mat4
   const M = {
     mul(a, b) {
@@ -576,7 +625,13 @@
   function renderFrame(wallDt) {
     const w = canvas.clientWidth, h = canvas.clientHeight;
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
-    gl.viewport(0, 0, w, h);
+    if (nativeRes) {
+      // every pass renders into the 512×448 GS-storage-size target (REND-03)
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.viewport(0, 0, NATIVE.w, NATIVE.h);
+    } else {
+      gl.viewport(0, 0, w, h);
+    }
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     if (autoSpin) yaw += wallDt * 0.25;
     uploadSkinnedVerts();
@@ -592,7 +647,9 @@
     const target = Math.max(userDist, required);
     dist += (target - dist) * Math.min(1, wallDt * (target > dist ? 10 : 2.5));
     const rot = M.mul(M.rotX(pitch), M.rotY(yaw));
-    const mvp = M.mul(M.persp(0.9, w / h, 0.05, 50), M.mul(M.trans(0, 0, -dist), rot));
+    // native pass projects at the 4:3 DISPLAY aspect (non-square GS pixels) —
+    // NOT the 512/448 storage aspect (02-RESEARCH A2)
+    const mvp = M.mul(M.persp(0.9, nativeRes ? NATIVE.displayAspect : w / h, 0.05, 50), M.mul(M.trans(0, 0, -dist), rot));
     gl.useProgram(prog);
     bindMeshSet(heroSet);
     gl.uniformMatrix4fv(uMVP, false, mvp);
@@ -613,6 +670,27 @@
         gl.drawElements(gl.TRIANGLES, bladeSet.count, gl.UNSIGNED_SHORT, 0);
       }
       drawFx(mvp);
+    }
+    if (nativeRes) {
+      // blit 512×448 → canvas letterboxed to 4:3, bilinear upscale. Per
+      // 02-RESEARCH Pitfall 6: the canvas (and preserveDrawingBuffer
+      // screenshots) now contain ONLY this blit — that IS the output; any
+      // readPixels check reads after this point.
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, w, h);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // opaque black = letterbox bars
+      gl.disable(gl.DEPTH_TEST);
+      gl.useProgram(blitProg);
+      const ca = w / h; // letterbox (bars top/bottom) or pillarbox (bars sides)
+      if (ca > NATIVE.displayAspect) gl.uniform2f(blitLocs.uScale, NATIVE.displayAspect / ca, 1);
+      else gl.uniform2f(blitLocs.uScale, 1, ca / NATIVE.displayAspect);
+      gl.bindTexture(gl.TEXTURE_2D, rtTex);
+      gl.bindBuffer(gl.ARRAY_BUFFER, blitBuf);
+      gl.enableVertexAttribArray(blitLocs.aPos);
+      gl.vertexAttribPointer(blitLocs.aPos, 2, gl.FLOAT, false, 0, 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      gl.enable(gl.DEPTH_TEST);
+      gl.useProgram(prog);
     }
   }
 
@@ -816,6 +894,7 @@
     if (k === " ") { e.preventDefault(); input("X"); }
     if (k === "shift") { machine.st.l1 = true; $("btnL1").classList.add("latched"); machine.press("L1"); }
     if (k === "r") $("btnRage").click();
+    if (k === "n") { nativeRes = !nativeRes; status(nativeRes ? "native res ON — 512×448 → 4:3 (bilinear)" : "native res OFF — full canvas res"); }
   });
   window.addEventListener("keyup", (e) => {
     const k = e.key.toLowerCase();
@@ -916,6 +995,10 @@
       };
     },
     setView(y, p, d) { yaw = y; pitch = p; dist = d; userDist = d; autoSpin = false; },
+    // native-res 512×448 → 4:3 toggle (REND-03; same as the N keybind).
+    // Default OFF — Phase 7's comparison harness flips it on programmatically.
+    setNativeRes(on) { nativeRes = !!on; status(nativeRes ? "native res ON — 512×448 → 4:3 (bilinear)" : "native res OFF — full canvas res"); },
+    isNativeRes() { return nativeRes; },
     input,
   };
 })().catch((e) => {
