@@ -983,6 +983,17 @@
   $("btnT").addEventListener("mouseup", triUp);
   $("btnC").addEventListener("click", () => input("C"));
   $("btnX").addEventListener("click", () => input("X"));
+  // Autoplay / FX-only inspection controls (dev/QA capture aids)
+  $("btnAutoplay").addEventListener("click", () => {
+    const on = !autoplay;
+    setAutoplay(on ? "mix" : null);
+    $("btnAutoplay").classList.toggle("latched", on);
+    $("btnAutoplay").innerHTML = on ? "&#10073;&#10073; Autoplay" : "&#9654; Autoplay";
+  });
+  $("btnFxOnly").addEventListener("click", () => {
+    window.__fxOnly = !window.__fxOnly;
+    $("btnFxOnly").classList.toggle("latched", !!window.__fxOnly);
+  });
   $("btnL1").addEventListener("click", () => {
     machine.st.l1 = !machine.st.l1;
     $("btnL1").classList.toggle("latched", machine.st.l1);
