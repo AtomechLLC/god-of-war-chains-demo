@@ -25,7 +25,25 @@ const buf = new Uint8Array(fs.readFileSync(WAD_PATH));
 // ---------------------------------------------------------------------------
 const recs = Parsers.parseWad(buf);
 assert.strictEqual(recs.length, 283, "record count");
-assert.strictEqual(recs.filter((r) => r.tag === 0x1e).length, 70, "tag 0x1E server instances");
+// CORRECTED KNOWN ANSWER (deviation from 02-RESEARCH.md, verified against the
+// bytes): the u16-tag count of 0x1E records is 158 — 120 data-carrying server
+// instances + 38 size-0 back-references. The research doc's "70×" figure is
+// exactly the count of 0x1E records whose flags-u16 is zero (38 size-0 + 32
+// zero-flag data records), i.e. what a full-u32 `type === 0x1E` comparison
+// matches — the very Pitfall-1 bug the histogram was meant to catch.
+assert.strictEqual(recs.filter((r) => r.tag === 0x1e).length, 158, "tag 0x1E records (u16 tag)");
+assert.strictEqual(
+  recs.filter((r) => r.tag === 0x1e && r.size > 0).length,
+  120,
+  "data-carrying tag 0x1E server instances"
+);
+// u16/u32 split guard: a u32-comparing parser would match only 70 records
+// (the zero-flag ones); 88 data-carrying 0x1E records have nonzero flags.
+assert.strictEqual(
+  recs.filter((r) => r.tag === 0x1e && r.flags !== 0).length,
+  88,
+  "tag 0x1E records with nonzero flags u16"
+);
 assert.strictEqual(recs.filter((r) => r.tag === 0x70).length, 4, "tag 0x70 raw-data records");
 
 // Header must be parsed as u16 tag @+0 + u16 flags @+2 (NOT a u32 type):
@@ -170,4 +188,5 @@ assert.throws(
 }
 
 console.log("wad.test.js: all known-answer assertions passed");
-console.log(`  records=${recs.length} serverInstances=70 mats=${matDb.list.length} tuples=${tuples.length}`);
+const nServer = recs.filter((r) => r.tag === 0x1e && r.size > 0).length;
+console.log(`  records=${recs.length} serverInstances=${nServer} mats=${matDb.list.length} tuples=${tuples.length}`);
