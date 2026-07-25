@@ -27,6 +27,7 @@ definitions, colors, and values, not approximations.
 - ✓ Blade meshes attached and driven by the game's authored type-10 blade position tracks — existing
 - ✓ Basic chain ribbon (flat quad strip, chainlink texture) + basic additive swing trail — existing
 - ✓ Auto-framing camera that keeps blade whips in view — existing
+- ✓ Material/blend modes decoded from MAT records (u16-tag WAD walk, marker-safe nearest-preceding resolution, 2-tuple blend inventory) and applied to every FX draw via the single MAT→GL table; PS2 compositing invariants locked (alpha:false, 0x80=1.0 MODULATE, saturation-to-white) plus fixed 60Hz sim accumulator and native 512×448 render-target toggle — *Validated in Phase 2: WAD/MAT Decode & Render-Pass Foundation*
 
 ### Active
 
@@ -34,7 +35,6 @@ definitions, colors, and values, not approximations.
 - [ ] Chain glow/heat pass matches the game (chainglow texture, additive blend, correct color and intensity)
 - [ ] Chain motion matches the game: catenary drape at rest, whip-lag curvature in flight, plausible forearm wrap
 - [ ] Blade fire and spark emission decoded from the weapon WAD's FXC/PTC records (flame6/flame3, BDEsparkemit) and rendered with the game's textures, colors, emission values
-- [ ] Material/blend modes decoded from MAT records (blend equations, additive flags) and applied
 - [ ] Side-by-side comparison against reference gameplay footage judged 80–90% accurate in motion
 
 ### Out of Scope
@@ -104,4 +104,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-24 after initialization*
+*Last updated: 2026-07-25 after Phase 2 completion*
