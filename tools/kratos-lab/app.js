@@ -446,9 +446,14 @@
   // positions). Gripped when the track sits at the hand; flying otherwise,
   // tip (-Z) leading along the track velocity.
   const CHAIN_LEN = 14; // ribbon slack reference only
+  // TRAIL_INNER_T: fraction from hilt→tip that the trail sheet's inner edge is
+  // biased toward (Pattern 7). INFERRED (A9) from footage analysis in
+  // trail-fidelity-from-footage.md — NOT a decoded value. 0.6 makes the trail
+  // hug the tip arc (the outer sweep) instead of the full hilt→tip sheet.
+  const TRAIL_INNER_T = 0.6;
   const bladeSim = {
-    l: { prevPos: null, mat: new Float32Array(16), pos: null },
-    r: { prevPos: null, mat: new Float32Array(16), pos: null },
+    l: { prevPos: null, mat: new Float32Array(16), pos: null, chain: null },
+    r: { prevPos: null, mat: new Float32Array(16), pos: null, chain: null },
   };
 
   function driveBlade(sim, world, hand, trackPos, dt) {
@@ -481,6 +486,10 @@
       sim.mat.set([xx, xy, xz, 0, yx, yy, yz, 0, zx, zy, zz, 0, pos[0], pos[1], pos[2], 1]);
     }
     return sim.mat;
+  }
+
+  function lerp3(a, b, t) {
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
   }
 
   function xformM(m, p) {
@@ -545,30 +554,35 @@
       const hand = JID[handN], chainJ = JID[chainN];
       if (hand !== undefined && chainJ !== undefined && bladeSim[key].pos) {
         // chain ribbon: forearm chain joint -> simulated blade pommel;
-        // taut when the blade flies, saggy when gripped
+        // taut when the blade flies, saggy when gripped. Sample the sag curve
+        // (Phase 4 swaps this sampler for a real solver — the walker stays
+        // curve-agnostic), then hand the points to the pure arc-length link-
+        // walker (chain.js): one 32px link cell per LINK_PITCH with an
+        // alternating ~90° twist — countable segmented links with visible alpha
+        // gaps, NOT the old squashed flat strip (`u = t·reps`).
         const a = [world[chainJ * 16 + 12], world[chainJ * 16 + 13], world[chainJ * 16 + 14]];
         const bpt = xformM(bladeSim[key].mat, blade.hilt);
         const d = [bpt[0] - a[0], bpt[1] - a[1], bpt[2] - a[2]];
         const len = Math.hypot(...d) || 1;
         const slack = Math.max(0, 1 - len / CHAIN_LEN);
-        let cx = -d[2], cz = d[0];
-        const cl = Math.hypot(cx, cz) || 1;
-        const hw = 0.14;
-        cx = (cx / cl) * hw; cz = (cz / cl) * hw;
-        const rows = [];
-        const segs = 10, reps = Math.max(1, Math.round(len / 0.9));
-        for (let i = 0; i <= segs; i++) {
-          const t = i / segs;
+        const CURVE_SAMPLES = 64;
+        const curvePts = [];
+        for (let i = 0; i <= CURVE_SAMPLES; i++) {
+          const t = i / CURVE_SAMPLES;
           const sag = Math.sin(Math.PI * t) * (0.4 + len * 0.35 * slack);
-          const px = a[0] + d[0] * t, py = a[1] + d[1] * t - sag, pz = a[2] + d[2] * t;
-          rows.push({ a: [px - cx, py, pz - cz], b: [px + cx, py, pz + cz], u: t * reps, alpha: 1 });
+          curvePts.push([a[0] + d[0] * t, a[1] + d[1] * t - sag, a[2] + d[2] * t]);
         }
-        pushRibbon(rows, chainV);
+        const chain = Chain.buildRibbon(curvePts, Chain.LINK_PITCH);
+        bladeSim[key].chain = chain; // stash per side for KratosLab.chainInfo()
+        for (let i = 0; i < chain.verts.length; i++) chainV.push(chain.verts[i]);
       }
       const hst = trailHist[key];
       if (hst.length >= 2) {
         const rows = hst.map((e, i) => ({
-          a: e.hilt, b: e.tip, u: i / (hst.length - 1),
+          // inner edge biased toward the tip arc (Pattern 7, fair-game overlap);
+          // u/v orientation is unchanged — the decoded swordtrail texture
+          // confirms bright ember edge at v=1 (tip) and age ramp toward u=1.
+          a: lerp3(e.hilt, e.tip, TRAIL_INNER_T), b: e.tip, u: i / (hst.length - 1),
           alpha: Math.max(0, 1 - e.age / TRAIL_AGE) * 0.85,
         }));
         pushRibbon(rows, trailV);
@@ -1010,6 +1024,15 @@
         blendDstRGB: gl.getParameter(gl.BLEND_DST_RGB),
         depthMask: gl.getParameter(gl.DEPTH_WRITEMASK),
       };
+    },
+    // chainInfo(): world-scale proof surface for the CHAIN-01 checkpoint —
+    // per-side link counts from the last Chain.buildRibbon result. ≈15–16
+    // links over CHAIN_LEN 14 is the interim sanity bar (NOT the footage
+    // cross-check, which is DEFERRED to Phase-1 polish 01-04). Numeric
+    // primitives only — never a decoded string into the DOM (IN-06).
+    chainInfo() {
+      const side = (c) => (c ? { linkCount: c.nLinks, arcLen: c.arcLen, linkPitch: c.linkPitch, ribbonWidth: c.ribbonWidth } : null);
+      return { l: side(bladeSim.l.chain), r: side(bladeSim.r.chain) };
     },
     setView(y, p, d) { yaw = y; pitch = p; dist = d; userDist = d; autoSpin = false; },
     // native-res 512×448 → 4:3 toggle (REND-03; same as the N keybind).
