@@ -1,8 +1,14 @@
 # Game disc contents — copyrighted, multi-GB, re-derivable from user's own disc.
-# NEVER push game data to the public repo.
+# NEVER push game data to the public repo. The ISO and BIOS are never committed
+# under any circumstances — no exception exists or will be added.
 God of War (USA).iso
 God of War (USA)/
 ps2bios/
+*.iso
+
+# assets/ is the ONLY tracked game-data subset: a deliberately curated minimal
+# study set (weapon records, R_WPN0_0.WAD, extracted Kratos set) for the
+# educational program — decision 2026-07-24, see assets/README.md.
 
 # Extracted game assets (models/textures/animations from the disc) — copyrighted
 # game content; local-only. The extraction docs (README) stay tracked.
