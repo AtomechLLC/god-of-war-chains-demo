@@ -44,6 +44,7 @@ No structural pre-pass was provided; all findings below are narrative findings f
 
 ### CR-01: Blend-window pose corruption — `skin.lastWorld` aliases `computePose`'s shared buffer, which the prev-pose computation clobbers
 
+**Status:** fixed — commit `66057c2` (lazy-alloc persistent copy + `.set(world)` in `simStep`; static-source regression guard added to `loop.test.js`). Logic fix — blend-window visuals need a quick human browser check.
 **File:** `tools/kratos-lab/app.js:514,518,932` (root cause interaction with `tools/kratos-lab/anim.js:286`)
 **Issue:** `rig.computePose()` fills and returns a **single** `Float32Array` allocated once in the `makeRig` closure (anim.js:286 `const world = new Float32Array(n * 16);` … `return world;`). `simStep()` stores that same array by reference: `skin.lastWorld = world;` (app.js:932). During a blend window, `uploadSkinnedVerts()` first calls `skinPose(rig.computePose(skin.prevAct, skin.prevTime))` (app.js:514), which **overwrites the shared buffer with the previous pose**, then calls `skinPose(skin.lastWorld)` (app.js:518) — but `skin.lastWorld` now contains the *previous* pose, not the current one. The blend therefore interpolates prev-with-prev: for the entire blend duration (0.08s–0.5s on every move transition) the rendered character is frozen at a single stale pose, then snaps — the exact artifact the blend exists to prevent. `drawFx` (app.js:542) also reads the clobbered `skin.lastWorld` for the chain-anchor and hand positions, so the chain/trail ribbons anchor to the stale pose too.
 
@@ -61,6 +62,7 @@ skin.lastWorld.set(world);   // copy — computePose reuses one internal buffer
 
 ### WR-01: `buildMats` reads 0x78 bytes per record without validating `r.size` — truncated/corrupt MAT decodes neighboring bytes silently
 
+**Status:** fixed — commit `50e8a97` (named throws for size < 0x38 and size < 0x38 + layerCount·0x40).
 **File:** `tools/kratos-lab/fxparse.js:81-106`
 **Issue:** The only size filter is `r.size === 0` (line 79). The decoder then unconditionally reads the 0x38-byte header plus a 0x40-byte layer (0x78 bytes total) from `r.dataOff`. A MAT record whose `size` is, say, 0x20 would pass the filter and silently decode bytes belonging to the *next* WAD record (in-buffer reads succeed; `parseWad` only guarantees the record doesn't overrun the buffer, not that the decoder stays inside the record). Near the end of the buffer it instead throws a raw `RangeError` with no record name. Both outcomes violate the fail-loud, name-the-record decode contract that the rest of this module enforces (bad magic, mode-bit asserts). Verified: all 24 MATs in the shipping WAD are ≥ 0x78, so this is a hardening gap, not a live decode error — but this parser is explicitly the foundation for later WADs.
 **Fix:**
@@ -73,6 +75,7 @@ if (r.size < 0x38 + layerCount * 0x40)
 
 ### WR-02: Multi-layer MATs are silently mis-inventoried — only layer 0 is decoded, but `enumTuples` attributes all layers to layer 0's tuple
 
+**Status:** fixed — commit `952fb34` (throw on `layerCount !== 1` until per-layer decode exists; all 24 shipping MATs single-layer, suites green).
 **File:** `tools/kratos-lab/fxparse.js:91-106,134-148`
 **Issue:** `buildMats` decodes only layer 0 (`const l0 = base + 0x38;`) while `layerCount` is read from the header. `enumTuples` then adds the *full* `layerCount` to the tuple keyed by layer 0's mode/depthWrite/filter. If a future WAD (the hero-side WAD with `MAT_Csmoke`/`MAT_firesploch1` is already anticipated in fx.js comments) contains a 2-layer MAT whose layers carry *different* blend modes, the inventory — the tool that decides which blend tuples need GL mappings — will silently claim coverage it doesn't have. That is precisely the silent-mistranslation failure mode the DEC-01 throw-on-unknown design exists to prevent. Verified: all 24 records in this WAD have `layerCount === 1`, so this is latent, not live.
 **Fix:** Enforce the current single-layer assumption loudly until multi-layer decode exists:
@@ -84,12 +87,14 @@ if (layerCount !== 1)
 
 ### WR-03: Variable shadowing — for-of destructured `key` immediately shadowed in `drawFx`; `s0` in `simStep` shadows the module-level `s0 = mesh.scale`
 
+**Status:** fixed — commit `da66126` (deleted the `const key = handN[0]` redeclaration; renamed `simStep`'s loop `s0` → `trackOff`).
 **File:** `tools/kratos-lab/app.js:544-546,939` (vs `app.js:350`)
 **Issue:** In `drawFx`, the loop head destructures `key` (`for (const [key, handN, chainN] of [["l", "lWeapIH", "lChain"], …])`) and the body immediately redeclares it: `const key = handN[0];` (line 546). The destructured binding is dead code; the two values only coincide because `"lWeapIH"[0] === "l"`. Reordering the tuple or renaming a joint would make them silently diverge, and any reference to `key` inserted above line 546 hits the TDZ and throws at runtime. Separately, `simStep`'s loop (line 939) destructures a loop element named `s0` (a track offset, 0/3) that shadows the module-level `const s0 = mesh.scale` (line 350) — harmless today only because `modelMat` is built before `simStep` exists, but it is the same trap.
 **Fix:** Delete line 546 (`const key = handN[0];`) — the destructured `key` already holds `"l"`/`"r"`. Rename `simStep`'s loop element `s0` to `trackOff` (and its use `track[s0]` → `track[trackOff]`).
 
 ### WR-04: Exceptions thrown inside the rAF loop (including the designed `Fx.applyMaterial` assert) kill the app silently — the #status fail-loud contract only covers load time
 
+**Status:** fixed — commit `12bfa78` (loop body wrapped in try/catch: message routed to `#status`, error logged, frame scheduling halted cleanly). Optional startup mode-validation not applied (out of the reviewed fix's core scope).
 **File:** `tools/kratos-lab/app.js:959-967` (interaction with `tools/kratos-lab/fx.js:50`)
 **Issue:** The DEC-01 contract routes unknown blend modes to a throw in `Fx.applyMaterial` (fx.js:50) — but that throw fires *inside `drawFx`, inside the rAF callback*. The async IIFE's `.catch` (app.js:1004) has long since resolved by then, so the exception is not caught: the loop body throws before `requestAnimationFrame(loop)` is scheduled, the app freezes on the last frame, `#status` still reads "ready — …", and the only evidence is a console error. Two consequences: (1) the load-time comment "decode failures … must reach the outer catch, which surfaces them in #status" does not hold for the render-time half of the assert contract (a `strange`-mode MAT passes `decodeFlags` and only trips at first draw); (2) any other mid-loop exception (`machine.tick`, GL loss side effects) has the same frozen-app, status-lies failure mode. Also note the app.js:75-77 startup check verifies the three required MATs *exist* but not that their modes are mappable.
 **Fix:** Surface loop-time failures through the same channel as load-time ones:
