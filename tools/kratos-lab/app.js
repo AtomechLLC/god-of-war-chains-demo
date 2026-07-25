@@ -608,7 +608,10 @@
       const mat = matDb.byName.MAT_chainlink;
       Fx.applyMaterial(gl, mat);
       fxLog.push({ name: mat.name, mode: mat.mode, depthWrite: !mat.disableDepthWrite });
-      gl.uniform3fv(fxLocs.uMaterialColor, mat.materialColor);
+      // __fxBright (debug): overbright the dark metal so the segmented link
+      // geometry is legible WITHOUT the Phase-3 chainglow (03-02). Inspection
+      // aid only — real visibility comes from the glow overlay.
+      gl.uniform3fv(fxLocs.uMaterialColor, window.__fxBright ? [8, 8, 8] : mat.materialColor);
       gl.uniform4fv(fxLocs.uLayerColor, mat.blendColor);
       gl.uniform1f(fxLocs.uCutoff, 0.35); // INFERRED cutout threshold (02-RESEARCH A3)
       gl.bindTexture(gl.TEXTURE_2D, chainTex);
@@ -671,13 +674,15 @@
     gl.uniform1f(uPages, atlasPages);
     gl.uniformMatrix4fv(uModel, false, modelMat);
     gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.drawElements(gl.TRIANGLES, heroSet.count, gl.UNSIGNED_SHORT, 0);
+    // __fxOnly (debug): skip the hero + blade MESHES so the FX passes render
+    // alone against the black clear — isolates chain/trail visibility.
+    if (!window.__fxOnly) gl.drawElements(gl.TRIANGLES, heroSet.count, gl.UNSIGNED_SHORT, 0);
     // Blades of Chaos: chain-simulated (gripped when slow, flung when whipped)
     if (bladeSet && skin && skin.lastWorld) {
       gl.uniform1f(uPages, 1);
       gl.bindTexture(gl.TEXTURE_2D, bladeTex);
       bindMeshSet(bladeSet);
-      for (const key of ["l", "r"]) {
+      if (!window.__fxOnly) for (const key of ["l", "r"]) {
         if (!bladeSim[key].pos) continue;
         gl.uniformMatrix4fv(uModel, false, M.mul(modelMat, bladeSim[key].mat));
         gl.drawElements(gl.TRIANGLES, bladeSet.count, gl.UNSIGNED_SHORT, 0);
@@ -872,6 +877,33 @@
     machine.press(key);
   }
 
+  // --- autoplay: dev/QA capture aid ------------------------------------------
+  // Loops a named input sequence so FX (chain links, sword trail, and the
+  // Phase-3 chainglow) can be captured/inspected without hand-timing swings.
+  // Ticks inside simStep, so it advances under BOTH the rAF loop and the
+  // deterministic KratosLab.step() pump (hidden tabs get no rAF). Purely drives
+  // the same input() path a player would — no bespoke animation.
+  const AUTOPLAY = {
+    light: ["S", "S", "S"],
+    heavy: ["T", "T", "T"],
+    mix: ["S", "S", "T", "C", "T", "S"],
+    grab: ["C", "C"],
+  };
+  let autoplay = null; // { seq, i, gap, wait } or null when off
+  function setAutoplay(name, gapSteps) {
+    if (!name) { autoplay = null; log("⏹ autoplay off"); return null; }
+    const seq = AUTOPLAY[name] || AUTOPLAY.mix;
+    autoplay = { seq, i: 0, gap: gapSteps || 26, wait: 0 };
+    log("▶ autoplay: " + name + " (" + seq.join(" ") + ")");
+    return name;
+  }
+  function tickAutoplay() {
+    if (!autoplay) return;
+    if (autoplay.wait > 0) { autoplay.wait--; return; }
+    input(autoplay.seq[autoplay.i++ % autoplay.seq.length]);
+    autoplay.wait = autoplay.gap; // sim steps between inputs (26 ≈ 0.43s @60Hz)
+  }
+
   // hold-detection for Triangle (launcher from stance)
   let tDown = 0;
   function triDown() { tDown = performance.now(); }
@@ -937,6 +969,7 @@
   let simStepCount = 0;
   function simStep() {
     const STEP = Loop.STEP;
+    tickAutoplay(); // dev/QA capture aid — fires the next scripted input when active
     lastState = { name: machine.st.current, t: machine.st.t };
     machine.tick(STEP);
     heat = Math.max(machine.st.rage ? 0.45 : 0, heat - STEP * 0.8);
@@ -1034,6 +1067,10 @@
       const side = (c) => (c ? { linkCount: c.nLinks, arcLen: c.arcLen, linkPitch: c.linkPitch, ribbonWidth: c.ribbonWidth } : null);
       return { l: side(bladeSim.l.chain), r: side(bladeSim.r.chain) };
     },
+    // autoplay(name, gap): loop a scripted input sequence for hands-free FX
+    // capture. Names: "light" | "heavy" | "mix" | "grab"; autoplay(false) stops.
+    // Optional gap = sim steps between inputs (default 26 ≈ 0.43s @60Hz).
+    autoplay(name, gap) { return setAutoplay(name === false ? null : (name || "mix"), gap); },
     setView(y, p, d) { yaw = y; pitch = p; dist = d; userDist = d; autoSpin = false; },
     // native-res 512×448 → 4:3 toggle (REND-03; same as the N keybind).
     // Default OFF — Phase 7's comparison harness flips it on programmatically.
