@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 5 context gathered
-last_updated: "2026-07-25T21:01:44.007Z"
-last_activity: 2026-07-25 -- Phase 05 planning complete
+stopped_at: Completed 05-01-PLAN.md (MSH decoder + FxDb skeleton)
+last_updated: "2026-07-25T21:19:11.327Z"
+last_activity: 2026-07-25
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 15
-  completed_plans: 8
+  completed_plans: 9
   percent: 29
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-24)
 
 **Core value:** A GoW1 attack in kratos-lab reads 80–90% identical to real gameplay footage — chains, glow, and fire use the game's own decoded textures, particle definitions, colors, and values, not approximations.
-**Current focus:** Phase 4 — chain motion
+**Current focus:** Phase 05 — fx-record-decode
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
+Phase: 05 (fx-record-decode) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-07-25 -- Phase 05 planning complete
+Last activity: 2026-07-25
 
-Progress: [████████░░] 80% (8/10 planned plans; phases 4-7 plan counts TBD)
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [████████░░] 80% (8/10 planned plans; phases 4-7 p
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 05 P01 | 15min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,7 @@ Recent decisions affecting current work:
 - (roadmap): Rendering conventions (0x80=1.0, blend table, 60Hz tick, native-res toggle) locked in Phase 2 because retrofit costs are highest
 - (init): Level 1 blade tier only; god-tier deferred
 - **(03-02, user, explicit): FAST-TRACK the particle/fire system (roadmap Phases 5 decode + 6 render) as the real path to the footage look.** At the combined chain+glow checkpoint the user judged the glow "VERY subtle" and the sword trails thin ("should be thick, rich and full of particles — we are way off") vs reference footage. Phase 3's chain + glow are ACCEPTED as the functional foundation (CHAIN-02 automated-verified); footage-fidelity of the FX is deferred to the particle work rather than pushing Phase 3 further. Do NOT claim Phase-3 FX visually match footage.
+- [Phase 05]: (05-01) buildFxDb keeps the FIRST (level-1, 768-B) same-name MSH copy; god-tier 1008-B out of scope — deviation from the plan's last-copy-wins note, required by the RED size-768 known answer
 
 ### Pending Todos
 
@@ -94,6 +96,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-25T19:49:22.703Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-fx-record-decode/05-CONTEXT.md
+Last session: 2026-07-25T21:19:11.317Z
+Stopped at: Completed 05-01-PLAN.md (MSH decoder + FxDb skeleton)
+Resume file: None
