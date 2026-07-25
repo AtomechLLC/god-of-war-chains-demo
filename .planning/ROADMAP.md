@@ -96,7 +96,18 @@ Plans:
   2. The link pass renders with "usual" alpha blending and depth-write ON, so later fire/glow passes occlude correctly against the chain
   3. A chainglow additive overlay (depth-write off) shares the ribbon UVs and shows the decoded texture's real heat-ramp colors — no hand-picked glow color anywhere
 
-**Plans**: TBD
+**Plans:** 2 plans (2 waves)
+
+Plans:
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — Segmented, twisted link-ribbon walker (pure chain.js + RED geometry suite), drawFx PASS 1, chainInfo hook, trail tip-arc bias (CHAIN-01)
+
+**Wave 2** *(blocked on Wave 1 — shares app.js/index.html)*
+
+- [ ] 03-02-PLAN.md — chainglow additive overlay + WAD-sourced chain textures via parseTxr, depthFunc(LEQUAL) coplanar overlay (CHAIN-02)
+
+Note: The "on-screen link count matches Phase-1 measurements" sub-criterion is DEFERRED — `reference/MEASUREMENTS.md` awaits Phase-1 01-04. Interim validation (square-texel invariant + texture-geometry known-answers + `KratosLab.chainInfo()` world-scale hook) ships this phase; link-count calibration is a one-constant recalibration during the Phase-1 polish pass.
 
 ### Phase 4: Chain Motion
 
@@ -174,7 +185,7 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 |-------|----------------|--------|-----------|
 | 1. Reference Pipeline & Validation Criteria | 2/4 | In Progress|  |
 | 2. WAD/MAT Decode & Render-Pass Foundation | 4/4 | Complete    | 2026-07-25 |
-| 3. Chain Link Ribbon & Glow | 0/TBD | Not started | - |
+| 3. Chain Link Ribbon & Glow | 0/2 | Planned | - |
 | 4. Chain Motion | 0/TBD | Not started | - |
 | 5. FX Record Decode | 0/TBD | Not started | - |
 | 6. Particle Runtime — Fire, Sparks & Trails | 0/TBD | Not started | - |
@@ -184,3 +195,4 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 *Created: 2026-07-24 — 7 phases, 17/17 v1 requirements mapped*
 *Phase 1 planned: 2026-07-24 — 4 plans, 3 waves*
 *Phase 2 planned: 2026-07-24 — 4 plans, 4 waves (sequential — all share app.js)*
+*Phase 3 planned: 2026-07-25 — 2 plans, 2 waves (sequential — share app.js/index.html)*
