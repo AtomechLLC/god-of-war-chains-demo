@@ -142,4 +142,136 @@ const recs = Parsers.parseWad(buf);
   );
 }
 
-console.log("fxdb.test.js: MSH known-answers passed");
+// ---------------------------------------------------------------------------
+// --- PTC known-answers ---  parsePtc + buildFxDb ptc-section (DEC-02, Wave 2)
+// ---------------------------------------------------------------------------
+// Decode order MSH -> PTC -> FXC (D-02): particles reference shapes, so they are
+// decoded after MSH. Standalone .bin files carry NO WAD header — file byte 0 IS
+// the record magic — so synthesize a HEADERLESS rec { name, idx:0, tag, size, dataOff:0 }
+// (05-PATTERNS "Standalone .bin = headerless record"). BFT/BGT are standalone-ONLY
+// (absent from R_WPN0_0.WAD — Pitfall 1); the D-01 payoff-first trail defs can only
+// enter the FxDb through the buildFxDb 3rd arg.
+const FX_DIR = path.join(__dirname, "..", "..", "..", "assets", "kratos", "fx");
+function loadBin(name, tag = 0x1e) {
+  const b = new Uint8Array(fs.readFileSync(path.join(FX_DIR, `${name}.bin`)));
+  return { buf: b, rec: { name, idx: 0, tag, size: b.length, dataOff: 0 } };
+}
+
+const PTC_PARAM_START = 0x64; // f32 params begin here (RESEARCH PTC table)
+
+// (a) In-WAD fire particles: PTC_flame3 @0xCD50, PTC_flame6 @0xC890 (level-1 copies).
+{
+  const f3 = recs.find((r) => r.name === "PTC_flame3" && r.off === 0xcd50);
+  assert.ok(f3, "PTC_flame3 @0xCD50 (in-WAD) record exists");
+  const d3 = FxParse.parsePtc(buf, f3); // RED: parsePtc not exported until Task 2
+  assert.strictEqual(d3.magic, 0x13, "PTC_flame3 magic === 0x13");
+  assert.strictEqual(d3.size, 632, "PTC_flame3 size@0x50 === 632");
+  assert.strictEqual(d3.shapeRef, "flame3Shape", "PTC_flame3 shapeRef === flame3Shape");
+
+  const f6 = recs.find((r) => r.name === "PTC_flame6" && r.off === 0xc890);
+  assert.ok(f6, "PTC_flame6 @0xC890 (in-WAD) record exists");
+  const d6 = FxParse.parsePtc(buf, f6);
+  assert.strictEqual(d6.magic, 0x13, "PTC_flame6 magic === 0x13");
+  assert.strictEqual(d6.size, 632, "PTC_flame6 size@0x50 === 632");
+  assert.strictEqual(d6.shapeRef, "flame6Shape", "PTC_flame6 shapeRef === flame6Shape");
+}
+
+// (b) Standalone trail particles: PTC_BFTpart1 (568 B) / PTC_BGTpart1 (552 B),
+// (c) variable-length guard, (d) color-provenance guard (Pitfall 4).
+{
+  const { buf: bftBuf, rec: bftRec } = loadBin("PTC_BFTpart1");
+  const dBft = FxParse.parsePtc(bftBuf, bftRec);
+  assert.strictEqual(dBft.magic, 0x13, "PTC_BFTpart1 magic === 0x13");
+  assert.strictEqual(dBft.slotId, 0x1d, "PTC_BFTpart1 slot@0x08 === 0x1d (pairs FXC_BFTemit1)");
+  assert.strictEqual(dBft.size, 568, "PTC_BFTpart1 size@0x50 === 568");
+  assert.strictEqual(dBft.shapeRef, "BFTpart1Shape", "PTC_BFTpart1 shapeRef === BFTpart1Shape");
+
+  const { buf: bgtBuf, rec: bgtRec } = loadBin("PTC_BGTpart1");
+  const dBgt = FxParse.parsePtc(bgtBuf, bgtRec);
+  assert.strictEqual(dBgt.magic, 0x13, "PTC_BGTpart1 magic === 0x13");
+  assert.strictEqual(dBgt.slotId, 0x1d, "PTC_BGTpart1 slot@0x08 === 0x1d");
+  assert.strictEqual(dBgt.size, 552, "PTC_BGTpart1 size@0x50 === 552");
+  assert.strictEqual(dBgt.shapeRef, "BGTpart1Shape", "PTC_BGTpart1 shapeRef === BGTpart1Shape");
+
+  // (c) variable-length guard (T-05-02): the param walk never reads past rec.size —
+  // params start @+0x64 and (start + 4*length) must stay within the record.
+  assert.ok(
+    PTC_PARAM_START + dBft.params.length * 4 <= dBft.size,
+    `BFT params bounded by rec.size (${PTC_PARAM_START} + 4*${dBft.params.length} <= ${dBft.size})`
+  );
+  assert.ok(
+    PTC_PARAM_START + dBgt.params.length * 4 <= dBgt.size,
+    `BGT params bounded by rec.size (${PTC_PARAM_START} + 4*${dBgt.params.length} <= ${dBgt.size})`
+  );
+
+  // (d) color-provenance guard (Pitfall 4 / A3 / T-05-04): PTC carries NO per-effect
+  // color. parsePtc must emit no real-tagged color/rgba field; any stored RGBA is
+  // INFERRED/runtime. Prove it: BFT (fire) vs BGT (swoosh) are byte-identical in the
+  // static RGBA region — identity (1,1,1,0) @+0x128 — so no crimson lives there.
+  assert.ok(!("color" in dBft) && !("rgba" in dBft), "parsePtc emits no color/rgba def field");
+  assert.ok(
+    !dBft.evidence.some((e) => /color|rgba/i.test(e.field) && e.tag === "real"),
+    "no real-tagged color/rgba evidence entry (color is runtime/MAT-sourced, not PTC)"
+  );
+  const RGBA_OFF = 0x128, RGBA_LEN = 16; // identity (1,1,1,0) — the color-candidate quad
+  const bftRgba = [...bftBuf.slice(RGBA_OFF, RGBA_OFF + RGBA_LEN)];
+  const bgtRgba = [...bgtBuf.slice(RGBA_OFF, RGBA_OFF + RGBA_LEN)];
+  assert.deepStrictEqual(
+    bftRgba,
+    bgtRgba,
+    "BFT vs BGT byte-identical in the static RGBA region (proves color is not per-effect)"
+  );
+  const rgbaDv = new DataView(bftBuf.buffer, bftBuf.byteOffset, bftBuf.byteLength);
+  assert.ok(Math.abs(rgbaDv.getFloat32(RGBA_OFF, true) - 1.0) < 1e-4, "static RGBA is identity (1, ...)");
+}
+
+// (e) buildFxDb WITH the standalone source (the D-01 hand-off): the fire particles
+// come from the WAD, the BFT/BGT trail particles come from the 3rd arg — BOTH become
+// REAL KEYS in db.ptc, and each runtime-handle shapeRef is recorded resolved:false.
+{
+  const { buf: bftBuf } = loadBin("PTC_BFTpart1");
+  const { buf: bgtBuf } = loadBin("PTC_BGTpart1");
+  const standaloneRecs = [
+    { name: "PTC_BFTpart1", buf: bftBuf, tag: 0x1e },
+    { name: "PTC_BGTpart1", buf: bgtBuf, tag: 0x1e },
+  ];
+  const db = FxParse.buildFxDb(recs, buf, standaloneRecs);
+
+  // in-WAD fire particle entered db.ptc
+  assert.ok(db.ptc["PTC_flame3"], "db.ptc['PTC_flame3'] present (in-WAD)");
+  assert.strictEqual(db.ptc["PTC_flame3"].shapeRef, "flame3Shape", "db.ptc PTC_flame3 shapeRef");
+
+  // standalone trail particles are REAL KEYS in db.ptc — the D-01 priority data
+  // actually enters the queryable FxDb (not just the test).
+  assert.ok(db.ptc["PTC_BFTpart1"], "db.ptc['PTC_BFTpart1'] present (standalone 3rd arg)");
+  assert.strictEqual(db.ptc["PTC_BFTpart1"].shapeRef, "BFTpart1Shape", "db.ptc PTC_BFTpart1 shapeRef");
+  assert.strictEqual(db.ptc["PTC_BFTpart1"].slotId, 0x1d, "db.ptc PTC_BFTpart1 slot 0x1d");
+  assert.ok(db.ptc["PTC_BGTpart1"], "db.ptc['PTC_BGTpart1'] present (standalone 3rd arg)");
+  assert.strictEqual(db.ptc["PTC_BGTpart1"].shapeRef, "BGTpart1Shape", "db.ptc PTC_BGTpart1 shapeRef");
+  assert.strictEqual(db.ptc["PTC_BGTpart1"].slotId, 0x1d, "db.ptc PTC_BGTpart1 slot 0x1d");
+
+  // runtime-handle shape refs recorded resolved:false (non-MSH_ names — no WAD record)
+  const hasShapeRef = (from, to) =>
+    db.refs.some((x) => x.from === from && x.kind === "shape" && x.to === to && x.resolved === false);
+  assert.ok(hasShapeRef("PTC_flame3", "flame3Shape"), "refs: PTC_flame3 -> flame3Shape resolved:false");
+  assert.ok(hasShapeRef("PTC_BFTpart1", "BFTpart1Shape"), "refs: PTC_BFTpart1 -> BFTpart1Shape resolved:false");
+  assert.ok(hasShapeRef("PTC_BGTpart1", "BGTpart1Shape"), "refs: PTC_BGTpart1 -> BGTpart1Shape resolved:false");
+
+  assert.doesNotThrow(() => JSON.stringify(db), "FxDb with ptc section is JSON.stringify-able");
+}
+
+// (f) fail-loud: bad-magic + short PTC both throw named errors (WR-01 / T-05-01).
+{
+  const big = new Uint8Array(0x64); // magic @0 left 0 (!= 0x13)
+  const badRec = { name: "PTC_bogus", dataOff: 0, size: 0x64, tag: 0x1e };
+  assert.throws(() => FxParse.parsePtc(big, badRec), /PTC_bogus/, "bad PTC magic names the record");
+
+  const shortRec = { name: "PTC_short", dataOff: 0, size: 0x10, tag: 0x1e };
+  assert.throws(
+    () => FxParse.parsePtc(big, shortRec),
+    /PTC_short/,
+    "short PTC size throws named (before any field read)"
+  );
+}
+
+console.log("fxdb.test.js: MSH + PTC known-answers passed");
