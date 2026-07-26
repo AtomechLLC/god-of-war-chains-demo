@@ -425,24 +425,26 @@ The render domain is fixed by hard project constraints (WebGL1, no libraries, PS
 
 **If this table is empty:** it is not — every INFERRED/assumed item above needs user/footage confirmation before it becomes a locked value (Phase 7 tuning gate). Real/decoded items (BDEsparkemit presence, blade-light values, color source, bindings) are NOT in this table — they are verified fact.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Particle param semantics (rate/velocity/lifetime/size mapping).**
+> All four carry an explicit MVP disposition the plans honor — none is a live execution dependency (marked RESOLVED per #1602). Each is DEFERRED to Phase-7 footage confirmation or a labeled INFERRED default, not blocking.
+
+1. **Particle param semantics (rate/velocity/lifetime/size mapping).** — RESOLVED (DEFERRED: MVP drives INFERRED constants, Phase-7 confirm)
    - What we know: param bytes are real; a scalar at idx 3 varies per family (flame3=0.05, flame5=0.12, BFT=0.1, BGT=0.3, CNG=0.3), idx 4=16 constant, idx 5/6=−1 sentinels; NaN words interleaved.
    - What's unclear: which offset is rate vs velocity vs lifetime vs size.
    - Recommendation: MVP drives these from INFERRED constants (label them); optionally schedule a thin differential-decode top-up (across flame3/5/6, BFT/BGT, CNG) to promote idx-3-class scalars to real. Do not block the payoff slices on it.
 
-2. **Which `FXC_BDEsparkemit` variant is canonical for level-1 blade fire vs impact spark.**
+2. **Which `FXC_BDEsparkemit` variant is canonical for level-1 blade fire vs impact spark.** — RESOLVED (INFERRED: use BDEsparkemit + .0 pair; Phase-7 confirm)
    - What we know: `FXC_BDEsparkemit`→flame6Shape, `.0`→flame3Shape, `0`(slot 0x2)→flame3Shape, `2`(subtype 0x2)→flame5Shape; size-0 dupes dropped by keep-first.
    - What's unclear: the suffix semantics (`.0`/`0`/`2`) and whether one variant is the on-hit burst.
    - Recommendation: use `FXC_BDEsparkemit` + `.0` as the flame6/flame3 pair (FIRE-01); reuse the same family for the on-hit burst (FIRE-02) with an INFERRED higher rate; confirm against footage in Phase 7.
 
-3. **`parseLight` full field map.**
+3. **`parseLight` full field map.** — RESOLVED (decode 4 core values as REAL now; ancillary fields low-priority evidence pass)
    - What we know: color(+0x2c), intensity(+0x38), range(+0x44), anchor(+0x10) are byte-exact; +0x00=6, +0x08=1 (type/flags), +0x24..+0x2c=(1,1,1), +0x3c=8.0, +0x40=1.5 also present.
    - What's unclear: whether +0x24 triple is ambient, +0x3c/+0x40 are falloff exponents/inner-range.
    - Recommendation: decode the 4 core values as real now; a short evidence pass can attribute the ancillary fields (low priority — REND-02 only needs color/intensity/range/anchor).
 
-4. **How much of "fire hugs the blade in every combat frame" (FIRE-01) needs the blade-fire poly shapes (`MSH_BDepoly3/6Shape`) vs pure billboards.**
+4. **How much of "fire hugs the blade in every combat frame" (FIRE-01) needs the blade-fire poly shapes (`MSH_BDepoly3/6Shape`) vs pure billboards.** — RESOLVED (MVP: billboards from shared pool; BDepoly sheets are the documented Phase-7 fallback)
    - What we know: 24-vert blade-fire shapes exist and are decoded; the emitters reference flame *particle* shapes.
    - What's unclear: whether GoW1 draws the flame as billboard particles, as the BDepoly sheets, or both layered.
    - Recommendation: MVP uses billboards from the shared pool (simplest, matches "layered flame3+flame6"); keep BDepoly sheets as a fallback if footage reads wrong at gameplay distance.
