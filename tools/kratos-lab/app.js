@@ -542,7 +542,7 @@
   // that keeps the per-frame rebuild trivial (<0.1ms) and bounds the buffer +
   // CPU cost. POOL_CAP*4 verts stays < 65536 so the static index buffer fits
   // UNSIGNED_SHORT. Particles.makePool enforces the cap (reject-when-full).
-  const POOL_CAP = 512;
+  const POOL_CAP = 2048;  // INFERRED density headroom (was 512); POOL_CAP*4 verts < 65536 index limit — Phase-7 tune
   const fxPool = Particles.makePool({ maxParticles: POOL_CAP });
   // FIRE-02 velocity-stretch factor for impact sparks: the pool VS scales each quad's
   // long (velocity-aligned) axis by this when the spark batch draws (uStretch). INFERRED
@@ -751,7 +751,7 @@
   const JID = {};
   if (rig) for (const j of rig.obj.joints) JID[j.name] = j.id;
   const trailHist = { l: [], r: [] };
-  const TRAIL_AGE = 0.22;
+  const TRAIL_AGE = 0.5;   // INFERRED: ~30-frame trail persistence (footage ~0.5s @60Hz) — long luminous sweep (Phase-7 tune)
 
   // ---- blade transforms from the game's authored type-10 tracks ------------
   // Each act stores per-frame world-space positions for both blades
@@ -763,7 +763,7 @@
   // biased toward (Pattern 7). INFERRED (A9) from footage analysis in
   // trail-fidelity-from-footage.md — NOT a decoded value. 0.6 makes the trail
   // hug the tip arc (the outer sweep) instead of the full hilt→tip sheet.
-  const TRAIL_INNER_T = 0.6;
+  const TRAIL_INNER_T = 0.3;  // INFERRED: wider trail sheet toward the arc (was 0.6, too narrow) — Phase-7 tune
   // CHAIN-03 chain-glow combat gains (D-05, A2 — INFERRED, footage-calibrated in
   // Phase 7). No decoded state-gate field exists (verified Phase 5), so the dark<->hot
   // RULE is INFERRED; the brightness it drives is data-grounded (alpha-over-1.0,
@@ -1023,7 +1023,7 @@
           // u/v orientation is unchanged — the decoded swordtrail texture
           // confirms bright ember edge at v=1 (tip) and age ramp toward u=1.
           a: lerp3(e.hilt, e.tip, TRAIL_INNER_T), b: e.tip, u: i / (hst.length - 1),
-          alpha: Math.max(0, 1 - e.age / TRAIL_AGE) * 0.85,
+          alpha: Math.max(0, 1 - e.age / TRAIL_AGE) * 1.0,   // INFERRED brightness (was 0.85) — additive streak (Phase-7 tune)
         }));
         pushRibbon(rows, trailV);
       }
@@ -1639,7 +1639,7 @@
             const tip = xformM(bm, blade.tip);
             const prevTip = hst.length ? hst[hst.length - 1].tip : tip;
             hst.push({ tip, hilt: xformM(bm, blade.hilt), age: 0 });
-            if (hst.length > 26) hst.shift();
+            if (hst.length > 44) hst.shift();   // INFERRED: hold ~30-frame (TRAIL_AGE 0.5) sweep + margin (was 26)
             // TRL-01/02 trail-spark riders (D-04c — the user's #1 richness lever):
             // a few hot specks spawn on the tip arc each attacking tick, then
             // DECOUPLE (they advect on their own vel + gravity via fxPool.integrate,
@@ -1648,9 +1648,9 @@
             // rate/velocity/size/life record exists (Pitfall 1); all Phase-7
             // footage-tunable. Determinism boundary (D-07): the jitter is runtime
             // Math.random, kept OUT of the pure tested Particles paths.
-            const SPARKS_PER_TICK = 3;        // INFERRED emission rate (few per tick, per side)
+            const SPARKS_PER_TICK = 8;        // INFERRED emission rate (denser trail riders; was 3) — Phase-7 tune
             const SPARK_LIFE = 30 * STEP;     // INFERRED ~30-frame trail-gone anchor (0.5s @60Hz)
-            const SPARK_SIZE = 0.18;          // INFERRED billboard half-size (mesh-local units)
+            const SPARK_SIZE = 0.24;          // INFERRED billboard half-size (was 0.18) — Phase-7 tune
             const SPARK_ALPHA = 1.6;          // INFERRED peak alpha128 (>1.0 overbright — premult path)
             const POS_JIT = 0.25;             // INFERRED positional jitter radius
             const VEL_JIT = 1.5;              // INFERRED per-axis velocity jitter
@@ -1686,9 +1686,9 @@
             // TODO(Open Q1): promote rates/lifetimes to REAL if an FXC/PTC param-
             // semantics top-up decodes the emission fields (the upgrade path that
             // removes these INFERRED constants).
-            const FIRE_PER_TICK = 2;      // INFERRED per-system, per-side emission rate
+            const FIRE_PER_TICK = 6;      // INFERRED per-system, per-side emission rate (denser flame mass; was 2) — Phase-7 tune
             const FIRE_LIFE = 22 * STEP;  // INFERRED ~22-frame lifetime (0.37s @60Hz)
-            const FIRE_SIZE = 0.5;        // INFERRED billboard half-size (mesh-local units)
+            const FIRE_SIZE = 0.7;        // INFERRED billboard half-size (fuller flame; was 0.5) — Phase-7 tune
             const FIRE_ALPHA = 1.9;       // INFERRED peak alpha128 (>1.0 overbright — premult path, CLAUDE.md Part 1 alpha-over-1.0)
             const FIRE_POS_JIT = 0.35;    // INFERRED positional jitter radius
             const FIRE_VEL_JIT = 1.2;     // INFERRED per-axis velocity jitter
