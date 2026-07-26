@@ -100,7 +100,9 @@ const STEP = Loop.STEP;                   // particles integrate at exactly this
   const bladeMat1 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 50, 0, 0, 1];    // blade whipped to T=(50,0,0)
   const newAnchor = Particles.spawnAnchor(bladeMat1, fxcMatrix);
   const p = pool.particles[0];
-  assert.ok(len3(p.pos) < 1e-6, `blade-lag: zero-velocity particle stays at its spawn origin, got ${p.pos}`);
+  // gravity gently pulls the free particle, but it stays NEAR its spawn origin —
+  // it did NOT teleport toward the blade's far-away new anchor (that is the decouple).
+  assert.ok(dist(p.pos, spawn0) < 1.0, `blade-lag: particle stays near its spawn origin under free advection (not tracking the blade), got ${p.pos}`);
   const divergence = dist(p.pos, newAnchor);
   assert.ok(divergence >= 49, `blade-lag: particle must DECOUPLE from the moved blade (dist ≥ 49), got ${divergence}`);
 }
