@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: "Completed 05-05-PLAN.md (DEC-03: parseAnmType5 type-5 ANM blade-state descriptor decoded; escalation disposition recorded; Phase 5 ready for verification)"
-last_updated: "2026-07-26T00:38:39.109Z"
+status: ready_to_plan
+stopped_at: Phase 05 complete (5/5) — ready to discuss Phase 6
+last_updated: 2026-07-26T04:34:08.005Z
 last_activity: 2026-07-26
 progress:
   total_phases: 7
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-24)
 
 **Core value:** A GoW1 attack in kratos-lab reads 80–90% identical to real gameplay footage — chains, glow, and fire use the game's own decoded textures, particle definitions, colors, and values, not approximations.
-**Current focus:** Phase 05 — fx-record-decode
+**Current focus:** Phase 6 — particle runtime — fire, sparks & trails
 
 ## Current Position
 
-Phase: 05 (fx-record-decode) — EXECUTING
-Plan: 5 of 5
-Status: Phase complete — ready for verification
+Phase: 6
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-07-26
 
 Progress: [█████████░] 87%
@@ -36,7 +36,7 @@ Progress: [█████████░] 87%
 
 **Velocity:**
 
-- Total plans completed: 6
+- Total plans completed: 11
 - Average duration: —
 - Total execution time: 0.0 hours
 
@@ -46,6 +46,7 @@ Progress: [█████████░] 87%
 |-------|-------|-------|----------|
 | 2 | 4 | - | - |
 | 03 | 2 | - | - |
+| 05 | 5 | - | - |
 
 **Recent Trend:**
 
