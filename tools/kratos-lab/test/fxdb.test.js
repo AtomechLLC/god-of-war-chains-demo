@@ -426,6 +426,36 @@ let bftMatrix;
   const hasSlot = (from, to) => db.refs.some((x) => x.kind === "slot" && x.from === from && x.to === to);
   assert.ok(hasSlot("FXC_BFTemit1", "PTC_BFTpart1"), "refs: FXC_BFTemit1 -> PTC_BFTpart1 slot pair (0x1d) present");
 
+  // WR-03: slot 0x1d is a GROUP id shared by BOTH the fire (BFT) and swoosh (BGT)
+  // trail records, so the loop cross-multiplies 2 FXC × 2 PTC = 4 slot refs. Only
+  // the name-matched DIAGONAL is a true emitter->particle binding; the off-diagonal
+  // edges (fire emitter -> swoosh particle, and vice-versa) are false cross-links.
+  // Every slot ref must be SELF-DESCRIBING so the Phase-6 consumer can tell them
+  // apart — corroboration-only, with the A4 name discriminator (shapeNameMatch).
+  const slotRef = (from, to) => db.refs.find((x) => x.kind === "slot" && x.from === from && x.to === to);
+  const bftTrue = slotRef("FXC_BFTemit1", "PTC_BFTpart1"); // true diagonal
+  const bftFalse = slotRef("FXC_BFTemit1", "PTC_BGTpart1"); // false cross-link
+  const bgtTrue = slotRef("FXC_BGTemit1", "PTC_BGTpart1"); // true diagonal
+  const bgtFalse = slotRef("FXC_BGTemit1", "PTC_BFTpart1"); // false cross-link
+  for (const [r, label] of [[bftTrue, "BFT<->BFT"], [bftFalse, "BFT->BGT"], [bgtTrue, "BGT<->BGT"], [bgtFalse, "BGT->BFT"]]) {
+    assert.ok(r, `slot ref ${label} present (group 0x1d cross-product)`);
+    assert.strictEqual(r.via, "slot", `slot ref ${label} carries via:"slot" marker`);
+    assert.strictEqual(r.corroborationOnly, true, `slot ref ${label} is corroboration-only (never authoritative)`);
+  }
+  // The marker DISTINGUISHES the real pair from the false ones (the whole point):
+  assert.strictEqual(bftTrue.shapeNameMatch, true, "true pair FXC_BFTemit1<->PTC_BFTpart1: shapeNameMatch true (A4)");
+  assert.strictEqual(bgtTrue.shapeNameMatch, true, "true pair FXC_BGTemit1<->PTC_BGTpart1: shapeNameMatch true (A4)");
+  assert.strictEqual(bftFalse.shapeNameMatch, false, "false cross-link FXC_BFTemit1->PTC_BGTpart1: shapeNameMatch false");
+  assert.strictEqual(bgtFalse.shapeNameMatch, false, "false cross-link FXC_BGTemit1->PTC_BFTpart1: shapeNameMatch false");
+  assert.strictEqual(bftTrue.confidence, "name-confirmed", "true pair confidence === name-confirmed");
+  assert.strictEqual(bgtTrue.confidence, "name-confirmed", "true pair confidence === name-confirmed");
+  assert.strictEqual(bftFalse.confidence, "group", "false cross-link confidence === group (corroboration-only)");
+  assert.strictEqual(bgtFalse.confidence, "group", "false cross-link confidence === group (corroboration-only)");
+  // A group with N×M members must NOT look like N×M real bindings: exactly the two
+  // diagonal edges are name-confirmed; the cross-links are not.
+  const nameConfirmed = db.refs.filter((x) => x.kind === "slot" && x.confidence === "name-confirmed");
+  assert.strictEqual(nameConfirmed.length, 2, "exactly 2 name-confirmed slot bindings in the 0x1d group (not 4)");
+
   // GUARD (Warning 1): no slot pair is fabricated over placeholder slot 0x00 / the
   // 0xffff root sentinel — every WAD-native FXC/PTC carries slot 0x00, and pairing on
   // it would invent false 0x00×0x00 links. Every emitted slot ref must carry a real,

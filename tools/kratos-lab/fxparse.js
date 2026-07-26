@@ -659,16 +659,37 @@ const FxParse = (() => {
     // refs (2) — slot pairs (GUARDED, Warning 1 / T-05-04). SKIP placeholder slot 0x00
     // and the 0xffff root sentinel: every WAD-native FXC/PTC carries slot 0x00, so
     // pairing on it would fabricate false 0x00×0x00 links. Otherwise pair the FXC with
-    // every PTC sharing its non-placeholder slot. With the standalone source merged, the
-    // only real pairing is the 0x1d trail group (FXC_BFTemit1<->PTC_BFTpart1, and the
-    // BGT pair) — corroboration; the shapeRef NAME is the discriminator (A4).
+    // every PTC sharing its non-placeholder slot.
+    //
+    // WR-03: a slotId is a GROUP id, NOT a 1:1 emitter->particle binding (A4: 0x1d is
+    // the BFT+BGT trail group; 0x1 is the CNG+FXCF+BDepoly6 group). Cross-multiplying a
+    // group of N FXCs × M PTCs emits N×M edges where only the name-matched DIAGONAL is a
+    // true binding (e.g. FXC_BFTemit1<->PTC_BFTpart1) and the off-diagonal edges are
+    // false cross-links (fire emitter -> swoosh particle, and vice-versa). Slot refs are
+    // corroboration-ONLY by design (never authoritative), so keep them ALL — but make
+    // each SELF-DESCRIBING so the Phase-6 consumer can tell a true binding from a group
+    // collision: `via:"slot"` + `corroborationOnly:true` flag the provenance, and
+    // `shapeNameMatch` encodes the A4 discriminator (the emitter's authoritative shapeRef
+    // equals the particle's shapeRef ONLY on the real pair). `confidence` summarizes it.
     for (const { name, def } of fxcEntries) {
       const slot = def.slotId;
       if (slot === 0x00 || slot === 0xffff) continue; // placeholder / root sentinel
       for (const ptcName of Object.keys(db.ptc)) {
-        if (db.ptc[ptcName].slotId === slot) {
-          db.refs.push({ from: name, kind: "slot", to: ptcName });
-        }
+        const ptcDef = db.ptc[ptcName];
+        if (ptcDef.slotId !== slot) continue;
+        // A4 name discriminator: the FXC emitter's shapeRef names the particle's own
+        // shape ONLY for the true pair (BFTpart1Shape==BFTpart1Shape); a group collision
+        // names a different shape (BFTpart1Shape != BGTpart1Shape).
+        const shapeNameMatch = def.shapeRef === ptcDef.shapeRef;
+        db.refs.push({
+          from: name,
+          kind: "slot",
+          to: ptcName,
+          via: "slot",
+          corroborationOnly: true, // slot refs corroborate; NEVER an authoritative binding
+          shapeNameMatch, // A4: true only for the real emitter<->particle diagonal
+          confidence: shapeNameMatch ? "name-confirmed" : "group",
+        });
       }
     }
 
