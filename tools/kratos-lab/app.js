@@ -85,6 +85,15 @@
   for (const need of ["MAT_chainlink", "MAT_chainglow", "MAT_swordtrail"]) {
     if (!matDb.byName[need]) throw new Error(`weapon WAD missing required MAT: ${need}`);
   }
+  // WR-01: db.meta.colorSource (MAT_pticleMat.blendColor) is the REAL fire/spark
+  // tint dereferenced EVERY frame in drawFx (db.meta.colorSource.value). buildFxDb
+  // creates it ONLY when MAT_pticleMat is present in the WAD, so make that dependency
+  // explicit and FAIL LOUD here at load with a named error — never a silent per-frame
+  // TypeError that the loop() try/catch would surface as a halted render. MAT_pticleMat
+  // is present in the shipping WAD; this just asserts the render loop's precondition.
+  if (!db.meta.colorSource || !db.meta.colorSource.value) {
+    throw new Error("weapon WAD missing MAT_pticleMat (fire/spark color source db.meta.colorSource)");
+  }
   console.table(matTuples);
   console.log(`weapon WAD: ${wadRecords.length} records, ${matDb.list.length} MATs, ${matTuples.length} blend tuples`);
 
