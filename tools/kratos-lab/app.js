@@ -878,6 +878,15 @@
     const kinds = (opts && opts.kinds) || null;  // Set of kinds to include; null = all (back-compat)
     const tint = (opts && opts.tint) || null;    // REAL decoded rgb override (fire: db.meta.colorSource)
     const stretch = (opts && opts.stretch) || 0; // FIRE-02: >0 = velocity-aligned stretch factor (spark batch)
+    // WR-02: the tint override is a SEPARATE, untrusted path sourced from decoded
+    // MAT_pticleMat.blendColor (db.meta.colorSource.value) — read via getFloat32 with
+    // no finite check anywhere upstream. The per-particle guard below covers pos/vel/
+    // size/alpha but NOT this batch-constant tint, so a NaN/Infinity disc byte would
+    // pack straight into poolVerts -> bufferSubData. Validate the packed RGB ONCE here
+    // (Phase requirement 2 / V5); fall back to the per-particle color (spawn already
+    // guarantees it finite) when the tint is non-finite so NO NaN ever uploads.
+    const safeTint =
+      tint && Number.isFinite(tint[0]) && Number.isFinite(tint[1]) && Number.isFinite(tint[2]) ? tint : null;
     const parts = fxPool.particles;
     const n = Math.min(parts.length, POOL_CAP);
     if (n === 0) return;                       // empty pool → nothing; state stays clean
@@ -911,9 +920,9 @@
       // additive-premult fragment (rgb·alpha128, ONE,ONE) recovers GS brightness
       // ABOVE the 1.0 clamp (CLAUDE.md Part 1 alpha-over-1.0). Spark batch: no tint,
       // per-particle rgb as-is. NO fabricated crimson anywhere (Pitfall 4).
-      const cr = tint ? tint[0] : (c ? c[0] : 1);
-      const cg = tint ? tint[1] : (c ? c[1] : 1);
-      const cb = tint ? tint[2] : (c ? c[2] : 1);
+      const cr = safeTint ? safeTint[0] : (c ? c[0] : 1);
+      const cg = safeTint ? safeTint[1] : (c ? c[1] : 1);
+      const cb = safeTint ? safeTint[2] : (c ? c[2] : 1);
       for (let k = 0; k < 4; k++) {
         const cor = POOL_CORNERS[k];
         V[o++] = p[0]; V[o++] = p[1]; V[o++] = p[2];       // aCenter (mesh-local)
