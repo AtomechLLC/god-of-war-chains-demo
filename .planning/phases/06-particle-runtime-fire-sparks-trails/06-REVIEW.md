@@ -13,7 +13,18 @@ findings:
   warning: 3
   info: 2
   total: 5
-status: issues_found
+status: resolved
+resolution:
+  resolved_at: 2026-07-26T10:00:00Z
+  warnings_fixed:
+    - WR-01: 52b90ad (MAT_pticleMat/colorSource load-time fail-loud assert — no per-frame TypeError)
+    - WR-02: 75d8a6d (drawPool guards tint RGB non-finite before bufferSubData)
+    - WR-03: 663a78b (parseLight validates core values finite, fail-loud named throw)
+  info_fixed:
+    - IN-01: 6f74938 (dedupe BFT/BGT variant tint into shared helper)
+    - IN-02: bc3e738 (annotate parseLight ambientTriple color-R alias)
+  tests: all 8 suites (particles/light/fxdb/fx/wad/chain/loop/anm) green after fixes; node --check app.js OK
+  note: WR-02 uses graceful degradation (substitute spawn-finite per-particle color) rather than blanking the batch — deliberate, matches the review's suggested fix
 ---
 
 # Phase 6: Code Review Report
