@@ -973,6 +973,18 @@
     gl.disableVertexAttribArray(poolLocs.aVel);
   }
 
+  // IN-01: the INFERRED per-variant tint (Phase-7 footage-tunable) shared by the
+  // trail-sheet ramp stops (drawFx) and the impact-spark tint (simStep) so one
+  // tuning edit can't silently desync the sparks from the trail. BGT pulls a color
+  // toward white by whiteK; BFT keeps red and damps green/blue to crimson (whiteK
+  // ignored). NO fabricated real color — the inputs are the INFERRED runtime ramp
+  // stops (Particles.rampColor), never a decoded field (Pitfall 4).
+  function variantTint(variant, c, whiteK) {
+    return variant === "BGT"
+      ? [c[0] + (1 - c[0]) * whiteK, c[1] + (1 - c[1]) * whiteK, c[2] + (1 - c[2]) * whiteK]
+      : [c[0], c[1] * 0.50, c[2] * 0.45];
+  }
+
   function drawFx(mvp, view) {
     fxLog.length = 0;
     if (!blade || !skin || !skin.lastWorld) return;
@@ -1130,20 +1142,12 @@
       const variant = Particles.variantFor(machine.st.current);   // "BFT" | "BGT"
       const hot0 = Particles.rampColor(0.0);    // INFERRED white-hot core (t=0)
       const cool0 = Particles.rampColor(1.0);   // INFERRED ember (t=1)
-      let rampHot, rampCool;
-      if (variant === "BGT") {
-        // BGT neutral swoosh: pull the ramp stops toward white -> a faint,
-        // near-hueless streak (INFERRED per-variant tint; Phase-7 footage-tunable).
-        const toWhite = (c, k) => [c[0] + (1 - c[0]) * k, c[1] + (1 - c[1]) * k, c[2] + (1 - c[2]) * k];
-        rampHot = toWhite(hot0, 0.15);
-        rampCool = toWhite(cool0, 0.70);
-      } else {
-        // BFT crimson fire: keep red, damp green/blue -> a hot crimson streak
-        // (INFERRED per-variant tint; Phase-7 footage-tunable).
-        const crimson = (c) => [c[0], c[1] * 0.50, c[2] * 0.45];
-        rampHot = crimson(hot0);
-        rampCool = crimson(cool0);
-      }
+      // Per-variant ramp stops via the shared variantTint helper (IN-01): BGT pulls
+      // the hot/cool stops toward white by 0.15/0.70 (a faint, near-hueless streak);
+      // BFT damps green/blue to crimson (whiteK ignored). Same rule the impact sparks
+      // use in simStep — one source of truth (INFERRED tint; Phase-7 footage-tunable).
+      const rampHot = variantTint(variant, hot0, 0.15);
+      const rampCool = variantTint(variant, cool0, 0.70);
       gl.uniform1f(fxLocs.uTrailRamp, 1.0);
       gl.uniform1f(fxLocs.uGlowGain, 0.0); // glow premult OFF for the trail (no bleed, T-06-07-01)
       gl.uniform3fv(fxLocs.uRampHot, rampHot);
@@ -1587,9 +1591,9 @@
         // tint, never a fabricated real color (05-04: no painted ramp).
         const variant = Particles.variantFor(machine.st.current);   // "BFT" | "BGT"
         const hot = Particles.rampColor(0.0);
-        const sparkTint = variant === "BGT"
-          ? [hot[0] + (1 - hot[0]) * 0.15, hot[1] + (1 - hot[1]) * 0.15, hot[2] + (1 - hot[2]) * 0.15]
-          : [hot[0], hot[1] * 0.50, hot[2] * 0.45];
+        // IN-01: same shared per-variant tint as the trail-sheet hot stop in drawFx
+        // (BGT whiteK 0.15), so the sparks never desync from the trail on a Phase-7 tune.
+        const sparkTint = variantTint(variant, hot, 0.15);
         for (const [key, hand, trackOff] of [["l", JID.lWeapIH, 0], ["r", JID.rWeapIH, 3]]) {
           const hst = trailHist[key];
           for (const e of hst) e.age += STEP;
