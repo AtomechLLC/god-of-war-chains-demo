@@ -209,17 +209,34 @@ const FxParse = (() => {
       off += 0x18;
     }
 
+    // WR-01: the first-vertex evidence entry below reads base+0x10..+0x1c (the pos
+    // rawHex) AND interprets verts[0].pos. The 0x10 header gate does NOT cover those
+    // bytes — a record that passes the header gate but is too short to hold a full
+    // first vertex (0x10 <= size < 0x28) would spill past dataOff + rec.size: a bare
+    // (UNNAMED) RangeError at buffer end, or a SILENT read of the next record's bytes
+    // into the diagnostic rawHex. Fail loud NAMED here — the file-wide "never read
+    // past dataOff + rec.size" invariant — instead of a nameless crash / cross-record
+    // spill. (A full first vertex spans +0x10..+0x28; real MSH copies are 768/1008 B.)
+    if (base + 0x28 > end) {
+      throw new Error(`MSH ${rec.name}: size ${rec.size} < 0x28 — too short for the first vertex (+0x10..+0x28) the evidence reads`);
+    }
+
     // Data-first evidence: raw values are byte-decoded (real). idxCount's MEANING
     // is inferred (A5) though its raw value is real. The 0xffffffff sentinels are
     // recorded verbatim, never acted on. NO color is read from a shape (Pitfall 4).
-    const p0 = verts.length ? verts[0].pos : [0, 0, 0];
     const evidence = [
       { field: "vertCount", offset: "+0x00", rawHex: hex32(base + 0x00), interp: `${vertCount} vertices`, corrob: "RESEARCH MSH table; unit-length normals confirm interleave", tag: "real" },
       { field: "idxCount", offset: "+0x04", rawHex: hex32(base + 0x04), interp: `${idxCount} — suspected index/strip/triangle count (raw real, meaning INFERRED, A5)`, corrob: "RESEARCH MSH +0x04", tag: "INFERRED" },
       { field: "sentinel0", offset: "+0x08", rawHex: hex32(base + 0x08), interp: "0xffffffff sentinel (constant; verbatim, never acted on)", corrob: "constant across all copies", tag: "real" },
       { field: "sentinel1", offset: "+0x0c", rawHex: hex32(base + 0x0c), interp: "0xffffffff sentinel (constant; verbatim, never acted on)", corrob: "constant across all copies", tag: "real" },
-      { field: "verts[0].pos", offset: "+0x10", rawHex: `${hex32(base + 0x10)} ${hex32(base + 0x14)} ${hex32(base + 0x18)}`, interp: `first vertex position (${p0.map((v) => v.toFixed(3)).join(", ")})`, corrob: "RESEARCH: (0, 2.982, -13.684)", tag: "real" },
     ];
+    // Emit the first-vertex evidence only when a full vertex was decoded (guarded
+    // above): guarantees the raw pos reads stay within rec.size and the interp is a
+    // real decoded position, never a fabricated (0,0,0) over a zero-vertex header.
+    if (verts.length) {
+      const p0 = verts[0].pos;
+      evidence.push({ field: "verts[0].pos", offset: "+0x10", rawHex: `${hex32(base + 0x10)} ${hex32(base + 0x14)} ${hex32(base + 0x18)}`, interp: `first vertex position (${p0.map((v) => v.toFixed(3)).join(", ")})`, corrob: "RESEARCH: (0, 2.982, -13.684)", tag: "real" });
+    }
 
     return { vertCount, idxCount, verts, size: rec.size, evidence };
   }

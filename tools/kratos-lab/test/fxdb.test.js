@@ -140,6 +140,30 @@ const recs = Parsers.parseWad(buf);
     /MSH_short/,
     "short MSH size throws named (before any field read)"
   );
+
+  // WR-01: a record that PASSES the 0x10 header gate but is too short to hold a
+  // full first vertex (0x10 <= size < 0x28) must ALSO throw a NAMED error — the
+  // evidence block reads the first vertex (base+0x10..+0x28), and those raw reads
+  // must be bounded by rec.size. The backing buffer here is deliberately LARGE
+  // (0x40) so the reads would NOT hit a RangeError — the only thing that makes a
+  // truncated record throw is the record-size bound (proving it is a NAMED
+  // fail-loud, not an incidental out-of-buffer RangeError or a silent spill into
+  // the next record's bytes).
+  const band = new Uint8Array(0x40);
+  for (const sz of [0x10, 0x18, 0x1c, 0x20, 0x24, 0x27]) {
+    const rec = { name: `MSH_trunc_${sz.toString(16)}`, dataOff: 0, size: sz, tag: 0x70 };
+    assert.throws(
+      () => FxParse.parseMsh(band, rec),
+      new RegExp(`MSH_trunc_${sz.toString(16)}`),
+      `truncated MSH size 0x${sz.toString(16)} throws NAMED (not a bare RangeError / silent spill)`
+    );
+  }
+  // A record with a full first vertex (size >= 0x28) does NOT throw on the size
+  // bound — the guard is exactly at the first-vertex boundary, not over-tight.
+  assert.doesNotThrow(
+    () => FxParse.parseMsh(band, { name: "MSH_min", dataOff: 0, size: 0x28, tag: 0x70 }),
+    "MSH size 0x28 (one full vertex) passes the WR-01 first-vertex bound"
+  );
 }
 
 // ---------------------------------------------------------------------------
