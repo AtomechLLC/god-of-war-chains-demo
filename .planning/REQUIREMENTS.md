@@ -33,8 +33,8 @@ Requirements for v1. Each requirement is testable and traceable to a phase.
 
 ### Swing Trails
 
-- [ ] **TRL-01**: Swing trails use the real swordtrail texture with runtime crimson tint and white-hot core, additive, fast fade, stepped 60Hz extrusion (no spline smoothing)
-- [ ] **TRL-02**: The dual trail system (crimson fire trail + neutral swoosh, BFT/BGT pairs) is decoded and both variants render on the correct moves
+- [x] **TRL-01**: Swing trails use the real swordtrail texture with runtime crimson tint and white-hot core, additive, fast fade, stepped 60Hz extrusion (no spline smoothing)
+- [x] **TRL-02**: The dual trail system (crimson fire trail + neutral swoosh, BFT/BGT pairs) is decoded and both variants render on the correct moves
 
 ### Renderer Authenticity
 
@@ -77,8 +77,8 @@ Mapped by roadmap creation (2026-07-24). Every v1 requirement maps to exactly on
 | MOT-02 | Phase 4 | Pending |
 | FIRE-01 | Phase 6 | Pending |
 | FIRE-02 | Phase 6 | Pending |
-| TRL-01 | Phase 6 | Pending |
-| TRL-02 | Phase 6 | Pending |
+| TRL-01 | Phase 6 | Complete |
+| TRL-02 | Phase 6 | Complete |
 | REND-01 | Phase 2 | Complete |
 | REND-02 | Phase 6 | Pending |
 | REND-03 | Phase 2 | Complete |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-02-PLAN.md (parseLight + binding contracts)
-last_updated: "2026-07-26T08:06:20.888Z"
+stopped_at: Completed 06-03-PLAN.md (runtime trail ramp + BFT/BGT variant)
+last_updated: "2026-07-26T08:15:07.970Z"
 last_activity: 2026-07-26
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 23
-  completed_plans: 15
+  completed_plans: 16
   percent: 43
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 ## Current Position
 
 Phase: 06 (particle-runtime-fire-sparks-trails) — EXECUTING
-Plan: 3 of 8
+Plan: 4 of 8
 Status: Ready to execute
 Last activity: 2026-07-26
 
-Progress: [███████░░░] 65%
+Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Progress: [███████░░░] 65%
 | Phase 05 P05 | 15min | 2 tasks | 2 files |
 | Phase 06 P01 | 5min | 2 tasks | 2 files |
 | Phase 06 P02 | 12min | - tasks | - files |
+| Phase 06 P03 | 9min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,9 @@ Recent decisions affecting current work:
 - [Phase ?]: (06-01) data-first labeling: spawn-anchor transform is REAL; gravity/jitter/variantFor/glowGain/rampColor are INFERRED (rampColor never a fabricated real color, 05-04); Security: reject-when-full pool cap + non-finite pos/vel/size/life/color guards (V5)
 - [Phase ?]: (06-02) FxParse.parseLight decodes LeftBladeLight/RightBladeLight (88-B tag-0x1e records) byte-exact: color(1.0,0.622,0.288)@+0x2c, intensity 2.5@+0x38, range 160@+0x44, anchor(-0.32,-8.0,1.0)@+0x10 — REND-02 values are REAL/decoded (D-09b resolved), not roadmap constants; fail-loud size-gate (<0x48) mirrors parseTxr; 4 core values tagged real, ancillary +0x24/+0x3c/+0x40 INFERRED (A5)
 - [Phase ?]: (06-02) fxdb.test.js Phase-6 binding contracts pin already-real facts (no decode top-up): FXC_BDEsparkemit is a real db.fxc key (subtype 0x3, shapeRef flame6Shape; .0 variant→flame3Shape), fire binds emitter→particle by shapeRef NAME (Pitfall 6, placeholder slot 0x0), FXC_CNGemit→PTC_CNGpart is shapeNameMatch===true name-confirmed (CHAIN-03). REND-02/FIRE-01/FIRE-02/CHAIN-03 remain Pending (render lands in 06-05..06-08)
+- [Phase ?]: (06-03) Swordtrail runtime age->color ramp (INFERRED white-hot->ember, 05-04 no painted ramp) applied per-row-age (vT.z proxy) in the fxProg fragment gated by uTrailRamp; endpoints from tested-pure Particles.rampColor; blend/depth still only from MAT_swordtrail via Fx.applyMaterial (DEC-01) (TRL-01)
+- [Phase ?]: (06-03) Per-move BFT (crimson) vs BGT (neutral swoosh) trail variant via Particles.variantFor(machine.st.current); variant is INFERRED per-variant tint on the SAME Particles.rampColor stops + SAME decoded GFX_swordtrail texture/MAT_swordtrail blend — never a fabricated real color (Pitfall 4) (TRL-02)
+- [Phase ?]: (06-03) Rule-3 deviation: added particles.js browser <script> tag now (lockstep ?v=24) — drawFx consumes Particles.* in the browser this wave, so the module IS browser-consumed; the plan's defer-to-06-04 note contradicted its own action text (06-01 flagged this exact prerequisite)
 
 ### Pending Todos
 
@@ -112,6 +116,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-26T08:06:20.878Z
-Stopped at: Completed 06-02-PLAN.md (parseLight + binding contracts)
+Last session: 2026-07-26T08:14:52.546Z
+Stopped at: Completed 06-03-PLAN.md (runtime trail ramp + BFT/BGT variant)
 Resume file: None
