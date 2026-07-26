@@ -429,6 +429,16 @@
     // Particles.rampColor(0)/(1) endpoints (per-move-variant tinted in drawFx);
     // vT.z is the per-row age proxy (0.85 fresh/young -> 0 old) that selects them.
     uniform float uTrailRamp; uniform vec3 uRampHot; uniform vec3 uRampCool;
+    // CHAIN-03 combat-gated glow brightness (D-05, A2). When uGlowGain > 0 this is
+    // the alpha-over-1.0 chainglow premult branch (CLAUDE.md Part 1): output the
+    // DECODED glow texel rgb premultiplied by (alpha128 * uGlowGain) with alpha 0,
+    // so blendFunc(ONE,ONE) (additivePremult) reproduces the GS additive Cs*As + Cd
+    // with As UNCLAMPED — a gain > 1.0 pushes the glow ABOVE the 1.0 clamp (the
+    // 03-02 "glow too subtle" lever, data-grounded — NOT a hand-tuned color). Gated
+    // by uGlowGain so it touches ONLY the chainglow pass; the link/trail/pool passes
+    // upload uGlowGain=0 (no bleed, T-06-07-01). The COLOR is still the decoded
+    // chainglow texel (identity material/blend); only the gain rule is INFERRED.
+    uniform float uGlowGain;
     void main() {
       vec4 c = texture2D(uTex, vT.xy);
       vec3 rgb = c.rgb * uLayerColor.rgb * uMaterialColor;
@@ -436,6 +446,12 @@
       // cutout 0.35 is INFERRED — GS TEST-register alpha test is not in MAT
       // records (02-RESEARCH A3); Phase 5's GS dump reads the real value.
       if (a < uCutoff) discard;
+      if (uGlowGain > 0.0) {
+        // alpha-over-1.0 glow-brightness recovery: premultiply the decoded texel by
+        // (alpha128 * combat gain), alpha out 0 => Cs*As + Cd under ONE,ONE.
+        gl_FragColor = vec4(rgb * (a * uGlowGain), 0.0);
+        return;
+      }
       if (uTrailRamp > 0.5) {
         // age fraction: young/hot (t=0) at high alpha -> old/ember (t=1) at low.
         float t = clamp(1.0 - vT.z / 0.85, 0.0, 1.0);
@@ -456,6 +472,7 @@
     uTrailRamp: gl.getUniformLocation(fxProg, "uTrailRamp"),
     uRampHot: gl.getUniformLocation(fxProg, "uRampHot"),
     uRampCool: gl.getUniformLocation(fxProg, "uRampCool"),
+    uGlowGain: gl.getUniformLocation(fxProg, "uGlowGain"),
   };
   const fxBuf = gl.createBuffer();
   // per-frame FX pass log: rewritten at the top of each drawFx call; one entry
@@ -677,6 +694,15 @@
   // trail-fidelity-from-footage.md — NOT a decoded value. 0.6 makes the trail
   // hug the tip arc (the outer sweep) instead of the full hilt→tip sheet.
   const TRAIL_INNER_T = 0.6;
+  // CHAIN-03 chain-glow combat gains (D-05, A2 — INFERRED, footage-calibrated in
+  // Phase 7). No decoded state-gate field exists (verified Phase 5), so the dark<->hot
+  // RULE is INFERRED; the brightness it drives is data-grounded (alpha-over-1.0,
+  // CLAUDE.md Part 1) and the COLOR stays the decoded chainglow texel (Pitfall 4 — no
+  // hand-picked glow color). GLOW_REST is small (dark links at rest); GLOW_HOT > 1.0
+  // (a hot streak that exceeds the 1.0 clamp) — this is the 03-02 "glow too subtle"
+  // lever, closed data-grounded. Fed through the tested-pure Particles.glowGain.
+  const GLOW_REST = 0.3;   // INFERRED — dim glow at rest (dark links)
+  const GLOW_HOT = 1.8;    // INFERRED — bright hot streak on attack (>1.0, alpha-over-1.0)
   const bladeSim = {
     l: { prevPos: null, mat: new Float32Array(16), pos: null, chain: null },
     r: { prevPos: null, mat: new Float32Array(16), pos: null, chain: null },
@@ -918,6 +944,11 @@
     gl.uniformMatrix4fv(fxLocs.uMVP, false, mvp);
     gl.uniformMatrix4fv(fxLocs.uM, false, modelMat);
     gl.uniform1i(fxLocs.uTex, 0);
+    // CHAIN-03 leak guard (T-06-07-01): reset the glow premult flag at the TOP of
+    // every drawFx so a mid-phase render is deterministic — only the chainglow PASS 2
+    // turns it on, and the trail pass turns it back off. Off => the fxProg fragment
+    // takes the normal (non-premult) path for the link/trail passes.
+    gl.uniform1f(fxLocs.uGlowGain, 0.0);
     gl.bindBuffer(gl.ARRAY_BUFFER, fxBuf);
     gl.enableVertexAttribArray(fxLocs.aP);
     gl.enableVertexAttribArray(fxLocs.aT);
@@ -953,21 +984,47 @@
       gl.bufferData(gl.ARRAY_BUFFER, chainVerts, gl.DYNAMIC_DRAW);
       gl.drawArrays(gl.TRIANGLES, 0, chainVertCount);
 
-      // PASS 2 — chainglow: additive + depth-write OFF (MAT_chainglow 0x48090080),
-      // drawing the SAME vertex bytes (NO re-upload -> bit-identical depth). The
-      // heat-ramp colors come straight from the decoded texture: MAT_chainglow
-      // carries identity material/blend colors, so the MODULATE shader passes
-      // texels through unchanged — there is NO hand-picked glow color anywhere.
-      // Visible over the links because depthFunc(LEQUAL) (set once at init)
-      // admits the coplanar equal-depth fragments.
+      // PASS 2 — chainglow: additive-PREMULT + depth-write OFF, drawing the SAME
+      // vertex bytes (NO re-upload -> bit-identical depth). CHAIN-03 (D-05, A2): the
+      // glow is now combat-GATED (dark at rest -> hot streak on attack) and BRIGHTENED
+      // through the alpha-over-1.0 path (CLAUDE.md Part 1) — the fragment premultiplies
+      // the DECODED glow texel by (alpha128 * uGlowGain) and blends ONE,ONE, so a gain
+      // > 1.0 pushes the glow ABOVE the 1.0 clamp (closing the 03-02 "glow too subtle"
+      // lever, data-grounded). The heat-ramp COLORS still come straight from the decoded
+      // MAT_chainglow texture (identity material/blend -> texels pass through); there is
+      // NO hand-picked glow color (Pitfall 4) — only the gain rule + GLOW_REST/GLOW_HOT
+      // are INFERRED. Visible over the links via depthFunc(LEQUAL) (set once at init).
+      //
+      // Gate rule: dark<->hot base from the tested-pure Particles.glowGain (INFERRED,
+      // no decoded state gate exists — verified Phase 5). Optional smooth flare on top:
+      // during an attack, ease the hot streak in over the active window (st.t/st.dur vs
+      // windows.branch ~0.70) and back toward rest, so the glow pulses with the swing
+      // instead of hard-switching. Bounded in [GLOW_REST, glowBase] and finite (the
+      // tested glowGain feeds it) — the value the premult fragment scales by (INFERRED).
+      const glowBase = Particles.glowGain(machine.isIdle(), { rest: GLOW_REST, hot: GLOW_HOT });
+      let glowGainNow = glowBase;
+      if (!machine.isIdle()) {
+        const f = Math.min(Math.max(machine.st.t / (machine.st.dur || 1), 0), 1);
+        const env = Math.max(Math.sin(Math.PI * Math.min(f / (machine.windows.branch || 1), 1)), 0);
+        glowGainNow = GLOW_REST + (glowBase - GLOW_REST) * env;
+      }
+      // Synthesize a mat-like carrying mode:'additivePremult' so Fx.applyMaterial's
+      // assert-on-unknown contract still holds (DEC-01 — no hardcoded blendFunc here;
+      // the blend switch lives ONLY in fx.js). depthWrite OFF as the decoded additive
+      // glow always was.
       const matG = matDb.byName.MAT_chainglow;
-      Fx.applyMaterial(gl, matG);
-      fxLog.push({ name: matG.name, mode: matG.mode, depthWrite: !matG.disableDepthWrite });
+      const glowGL = { name: matG.name, mode: "additivePremult", disableDepthWrite: true };
+      Fx.applyMaterial(gl, glowGL);
+      fxLog.push({ name: glowGL.name, mode: glowGL.mode, depthWrite: !glowGL.disableDepthWrite, glowGain: glowGainNow });
       gl.uniform3fv(fxLocs.uMaterialColor, matG.materialColor); // identity — texels pass through
       gl.uniform4fv(fxLocs.uLayerColor, matG.blendColor); // identity RGBA
-      gl.uniform1f(fxLocs.uCutoff, 0.0); // additive: alpha ≡ 1, no cutout (a 0.35 copy would be wrong by construction)
+      gl.uniform1f(fxLocs.uCutoff, 0.0); // additive: alpha ≡ texel, no cutout
+      gl.uniform1f(fxLocs.uGlowGain, glowGainNow); // >0 activates the premult branch; combat-gated
       gl.bindTexture(gl.TEXTURE_2D, chainglowTex);
       gl.drawArrays(gl.TRIANGLES, 0, chainVertCount); // SAME bytes — no bufferData
+      // Restore the glow flag OFF so the trail pass (same fxProg) is unaffected by the
+      // premult branch (T-06-07-01 — no bleed; the trail sets it again defensively).
+      gl.uniform1f(fxLocs.uGlowGain, 0.0);
     }
     if (trailV.length) {
       // MAT_swordtrail decodes additive + depth-write OFF (0x48090080) — the
@@ -1009,6 +1066,7 @@
         rampCool = crimson(cool0);
       }
       gl.uniform1f(fxLocs.uTrailRamp, 1.0);
+      gl.uniform1f(fxLocs.uGlowGain, 0.0); // glow premult OFF for the trail (no bleed, T-06-07-01)
       gl.uniform3fv(fxLocs.uRampHot, rampHot);
       gl.uniform3fv(fxLocs.uRampCool, rampCool);
       gl.bindTexture(gl.TEXTURE_2D, trailTex);
