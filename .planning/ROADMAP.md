@@ -138,7 +138,7 @@ Note: Research flag — motion mechanism is footage-inferred, not data-backed; p
   3. The type-5 ANM descriptor is decoded and drives blade presentation — blades appear on Kratos's back out of combat and in hands during combat
   4. A PCSX2 GS dump of a blade swing confirms actual per-effect blend configs, and the disc region (NTSC vs PAL) is confirmed before interpreting any rate/lifetime as tick units
 
-**Plans:** 3/5 plans executed
+**Plans:** 4/5 plans executed
 
 Plans:
 **Wave 1**
@@ -151,7 +151,7 @@ Plans:
 - [x] 05-03-PLAN.md — FXC emitter decoder (parseFxc, subtype-branched) + full cross-ref graph — the D-01 trail+spark payoff (DEC-02)
 
 **Wave 4** *(blocked on Wave 3)*
-- [ ] 05-04-PLAN.md — Color-provenance (MAT_pticleMat) + swordtrail no-ramp proof + fire/chain-glow corpus + evidence audit + GS-dump decision (DEC-02, checkpoint)
+- [x] 05-04-PLAN.md — Color-provenance (MAT_pticleMat) + swordtrail no-ramp proof + fire/chain-glow corpus + evidence audit + GS-dump decision (DEC-02, checkpoint)
 
 **Wave 5** *(blocked on Wave 4 — DEC-03 deferred to last per D-07)*
 - [ ] 05-05-PLAN.md — Type-5 ANM blade-state descriptor (parseAnmType5): differential-locate + decode blade show/hide (DEC-03)
@@ -203,7 +203,7 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 | 2. WAD/MAT Decode & Render-Pass Foundation | 4/4 | Complete    | 2026-07-25 |
 | 3. Chain Link Ribbon & Glow | 2/2 | Complete   | 2026-07-25 |
 | 4. Chain Motion | 0/TBD | Not started | - |
-| 5. FX Record Decode | 3/5 | In Progress|  |
+| 5. FX Record Decode | 4/5 | In Progress|  |
 | 6. Particle Runtime — Fire, Sparks & Trails | 0/TBD | Not started | - |
 | 7. Side-by-Side Validation & Inferred Tuning | 0/TBD | Not started | - |
 
