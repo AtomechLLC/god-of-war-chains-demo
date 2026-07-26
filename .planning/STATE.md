@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 05-03-PLAN.md (FXC decoder + FxDb cross-ref graph; DEC-02 complete)
-last_updated: "2026-07-25T21:44:04.719Z"
+last_updated: "2026-07-26T00:20:55.920Z"
 last_activity: 2026-07-25
 progress:
   total_phases: 7
@@ -73,6 +73,7 @@ Recent decisions affecting current work:
 - [Phase 05]: (05-01) buildFxDb keeps the FIRST (level-1, 768-B) same-name MSH copy; god-tier 1008-B out of scope — deviation from the plan's last-copy-wins note, required by the RED size-768 known answer
 - [Phase 05]: (05-02) PTC decoded (parsePtc + buildFxDb 3rd-arg standaloneRecs): BFT/BGT trail defs are real db.ptc keys at slot 0x1d; no color read from PTC (identity RGBA byte-identical fire-vs-swoosh, Pitfall 4); DEC-02 still Pending until FXC (05-03)
 - [Phase ?]: (05-03) DEC-02 COMPLETE: FXC decoded (parseFxc subtype-branched 0x2/0x3/0xd, +0x58 poly branch after u32 count) — MSH+PTC+FXC all decoded with per-field evidence; buildFxDb emits the full JSON-dumpable emitter->particle->shape graph (standalone BFT/BGT emit1 as real db.fxc keys, MSH refs resolved:true, guarded 0x1d BFT/BGT slot pair, placeholder slot 0x00/0xffff skipped)
+- [Phase 05]: (05-04) D-06 GS-dump corroboration = SKIP (user decision): per-effect blend confidence stays MEDIUM, corroborated by differential-decode + Phase-1 footage anchors + cross-record consistency; Phase 6 uses the MAT-decoded blend already pinned in DEC-01. DEC-02 color clause substantiated data-first: effect color traced to MAT_pticleMat.blendColor (real byte value) with the white-hot->orange->ember age->color ramp INFERRED (GFX_swordtrail carries no painted length-wise ramp; static PTC RGBA identity, byte-identical fire-vs-swoosh).
 
 ### Pending Todos
 
