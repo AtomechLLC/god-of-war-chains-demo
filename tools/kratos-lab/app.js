@@ -714,14 +714,36 @@
       gl.uniform3fv(fxLocs.uMaterialColor, mat.materialColor);
       gl.uniform4fv(fxLocs.uLayerColor, mat.blendColor);
       gl.uniform1f(fxLocs.uCutoff, 0.0);
-      // --- TRL-01: runtime age->color ramp on the swordtrail ribbon -----------
+      // --- TRL-01/02: runtime age->color ramp + per-move BFT/BGT variant ------
       // INFERRED white-hot->ember tint applied per-row-age in the fxProg fragment
       // (gated by uTrailRamp). 05-04 PROVED GFX_swordtrail carries NO painted
       // length-wise ramp, so this is a RUNTIME tint, never a decoded/real color.
       // Endpoints come from the tested-pure Particles.rampColor stops; blend and
       // depth still come ONLY from MAT_swordtrail via Fx.applyMaterial (DEC-01).
-      const rampHot = Particles.rampColor(0.0);   // INFERRED white-hot core (t=0)
-      const rampCool = Particles.rampColor(1.0);  // INFERRED ember (t=1)
+      //
+      // TRL-02 dual variant: Particles.variantFor(machine.st.current) picks BFT
+      // (crimson fire) vs BGT (neutral swoosh) per move. BOTH variants reuse this
+      // ONE decoded GFX_swordtrail texture + MAT_swordtrail blend — only the
+      // runtime tint on the ramp stops differs. The per-variant tint is INFERRED
+      // and traces to the runtime ramp; it NEVER introduces a fabricated real
+      // color (Pitfall 4). An unknown/idle move defaults safely inside variantFor.
+      const variant = Particles.variantFor(machine.st.current);   // "BFT" | "BGT"
+      const hot0 = Particles.rampColor(0.0);    // INFERRED white-hot core (t=0)
+      const cool0 = Particles.rampColor(1.0);   // INFERRED ember (t=1)
+      let rampHot, rampCool;
+      if (variant === "BGT") {
+        // BGT neutral swoosh: pull the ramp stops toward white -> a faint,
+        // near-hueless streak (INFERRED per-variant tint; Phase-7 footage-tunable).
+        const toWhite = (c, k) => [c[0] + (1 - c[0]) * k, c[1] + (1 - c[1]) * k, c[2] + (1 - c[2]) * k];
+        rampHot = toWhite(hot0, 0.15);
+        rampCool = toWhite(cool0, 0.70);
+      } else {
+        // BFT crimson fire: keep red, damp green/blue -> a hot crimson streak
+        // (INFERRED per-variant tint; Phase-7 footage-tunable).
+        const crimson = (c) => [c[0], c[1] * 0.50, c[2] * 0.45];
+        rampHot = crimson(hot0);
+        rampCool = crimson(cool0);
+      }
       gl.uniform1f(fxLocs.uTrailRamp, 1.0);
       gl.uniform3fv(fxLocs.uRampHot, rampHot);
       gl.uniform3fv(fxLocs.uRampCool, rampCool);
