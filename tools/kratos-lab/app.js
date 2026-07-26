@@ -73,6 +73,15 @@
   const wadRecords = Parsers.parseWad(wadBuf);
   const matDb = FxParse.buildMats(wadRecords, wadBuf);
   const matTuples = FxParse.enumTuples(matDb.list);
+  // FIRE-01 (BLOCKER fix): build + expose the runtime FxDb the fire/spark render
+  // slices read. Before this plan app.js built only `matDb` — the render `db` did
+  // NOT exist in the browser runtime. buildFxDb with NO 3rd `standaloneRecs` arg
+  // synchronously surfaces the in-WAD fire family (FXC_BDEsparkemit +
+  // FXC_BDEsparkemit.0, PTC_flame3/PTC_flame6) and db.meta.colorSource
+  // (MAT_pticleMat.blendColor) — all verified in-WAD this session. BFT/BGT/CNG/FXCF
+  // are standalone-ONLY (Phase-5 Pitfall 1) and the FIRE slices do NOT need them, so
+  // NO async fetch of assets/kratos/fx/*.bin is added here (D-09a — in-WAD only).
+  const db = FxParse.buildFxDb(wadRecords, wadBuf);
   for (const need of ["MAT_chainlink", "MAT_chainglow", "MAT_swordtrail"]) {
     if (!matDb.byName[need]) throw new Error(`weapon WAD missing required MAT: ${need}`);
   }
@@ -1428,6 +1437,18 @@
     // Default OFF — Phase 7's comparison harness flips it on programmatically.
     setNativeRes(on) { nativeRes = !!on; status(nativeRes ? "native res ON — 512×448 → 4:3 (bilinear)" : "native res OFF — full canvas res"); },
     isNativeRes() { return nativeRes; },
+    // fxdb(): JSON-safe view of the runtime FxDb the fire/spark render slices read
+    // (FIRE-01). Primitives + arrays only — colorSource (the REAL byte-decoded
+    // MAT_pticleMat.blendColor) plus the fxc/ptc key sets — NEVER a GL/DOM handle
+    // (IN-06). A node harness asserts the no-3rd-arg in-WAD build populates
+    // colorSource + FXC_BDEsparkemit + PTC_flame6, proving the render `db` exists.
+    fxdb() {
+      return {
+        colorSource: db.meta.colorSource,
+        fxcKeys: Object.keys(db.fxc),
+        ptcKeys: Object.keys(db.ptc),
+      };
+    },
     input,
   };
 })().catch((e) => {
