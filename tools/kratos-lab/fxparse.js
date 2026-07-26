@@ -217,7 +217,12 @@ const FxParse = (() => {
 
     // Ancillary raw values (real bytes, INFERRED meaning — A5): recorded for the
     // low-priority evidence pass only; never surfaced as a real light parameter.
-    const ambientTriple = [f(0x24), f(0x28), f(0x2c)]; // (1,1,1) — ambient? candidate
+    // IN-02: the 3rd component reads +0x2c, which ALIASES color[0] (color starts at
+    // +0x2c) — so ambientTriple[2] === color R by construction. Recorded verbatim as
+    // an evidence-only (INFERRED) candidate; the alias is intentional-as-recorded, NOT
+    // a slipped offset — do not "fix" it to a distinct offset without RESEARCH per-field
+    // confirmation (Open Q3), as that would change a decoded evidence byte.
+    const ambientTriple = [f(0x24), f(0x28), f(0x2c)]; // (1,1,1) — ambient? candidate (+0x2c == color R)
     const ancA = f(0x3c); // 8.0 — falloff-exponent? / inner-range? candidate
     const ancB = f(0x40); // 1.5 — falloff-exponent? / inner-range? candidate
 
