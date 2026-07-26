@@ -118,6 +118,36 @@ const near = (a, b, tol = 1e-3) => Math.abs(a - b) <= tol;
 }
 
 // ---------------------------------------------------------------------------
+// (c2) WR-03 content validation: a LIGHT record that PASSES the size gate but
+//      carries a non-finite CORE value (NaN color / Infinity intensity / NaN range
+//      / -Infinity anchor) must fail LOUD & NAMED, so bad bytes never leave the
+//      decoder toward a GL uniform (Security V5 / T-06-02-01). The all-zero (finite)
+//      baseline still decodes clean — only the injected non-finite float trips it.
+// ---------------------------------------------------------------------------
+{
+  const rec = { name: "BladeLight_bad", dataOff: 0, size: 0x48, tag: 0x1e };
+  // exactly-enough, all-zero (finite) baseline with ONE non-finite float injected.
+  const inject = (off, v) => {
+    const u8 = new Uint8Array(0x48);
+    new DataView(u8.buffer).setFloat32(off, v, true);
+    return u8;
+  };
+  // Sanity: the all-zero baseline (0.0 everywhere) is finite → decodes without throw.
+  assert.doesNotThrow(
+    () => FxParse.parseLight(new Uint8Array(0x48), rec),
+    "all-zero LIGHT (finite 0.0 core values) decodes clean — the guard only trips on non-finite"
+  );
+  assert.throws(() => FxParse.parseLight(inject(0x2c, NaN), rec), /LIGHT .*non-finite color/,
+    "NaN light color @+0x2c throws named (never reaches uLightColor)");
+  assert.throws(() => FxParse.parseLight(inject(0x38, Infinity), rec), /LIGHT .*non-finite intensity/,
+    "Infinity light intensity @+0x38 throws named (never reaches uInt)");
+  assert.throws(() => FxParse.parseLight(inject(0x44, NaN), rec), /LIGHT .*non-finite range/,
+    "NaN light range @+0x44 throws named (never reaches uLightRange)");
+  assert.throws(() => FxParse.parseLight(inject(0x14, -Infinity), rec), /LIGHT .*non-finite anchor/,
+    "-Infinity light anchor @+0x14 throws named (never reaches uLightPos)");
+}
+
+// ---------------------------------------------------------------------------
 // (d) range-attenuation math (pure) — the REND-02 wave 06-08 wires this into the
 //     mesh shader; test the math NOW so it is proven before it is used.
 // ---------------------------------------------------------------------------

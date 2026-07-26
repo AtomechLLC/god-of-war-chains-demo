@@ -204,6 +204,17 @@ const FxParse = (() => {
     const intensity = f(0x38); // 2.5
     const range = f(0x44); // 160 — linear attenuation range
 
+    // WR-03 (Security V5 / T-06-02-01): content-validate the FOUR core REAL values
+    // before they leave the decoder toward GL uniforms (app.js uLightColor*/uLightRange*/
+    // uInt). parseLight was the only decoder with no content check — a NaN/Infinity in
+    // these disc bytes would yield NaN fragment output for every lit pixel. Fail loud &
+    // NAMED, mirroring the size-gate idiom, so bad bytes never reach a uniform.
+    for (const [k, v] of [["intensity", intensity], ["range", range]]) {
+      if (!Number.isFinite(v)) throw new Error(`LIGHT ${rec.name}: non-finite ${k} (${v})`);
+    }
+    if (!color.every(Number.isFinite)) throw new Error(`LIGHT ${rec.name}: non-finite color (${color.join(", ")})`);
+    if (!anchor.every(Number.isFinite)) throw new Error(`LIGHT ${rec.name}: non-finite anchor (${anchor.join(", ")})`);
+
     // Ancillary raw values (real bytes, INFERRED meaning — A5): recorded for the
     // low-priority evidence pass only; never surfaced as a real light parameter.
     const ambientTriple = [f(0x24), f(0x28), f(0x2c)]; // (1,1,1) — ambient? candidate
