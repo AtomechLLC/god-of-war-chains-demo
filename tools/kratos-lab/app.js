@@ -1223,7 +1223,13 @@
       const gx = (p[0] - mesh.ctr[0]) * mesh.scale, gy = (p[1] - mesh.ctr[1]) * mesh.scale, gz = (p[2] - mesh.ctr[2]) * mesh.scale;
       reach = Math.max(reach, Math.hypot(gx, gy, gz));
     }
-    const required = reach > 1.1 ? reach * 1.5 + 1.4 : 0;
+    // Cap the auto-frame zoom-out. The blade-sim can fling the blade absurdly far
+    // during fast combos (pre-existing Phase-4 chain-span bug, ~121u), which drove
+    // `dist` past the far plane (50) — shrinking/clipping Kratos out of frame (he
+    // "disappeared on attack") and making the trail read as tiny separated chunks.
+    // Clamp to the max manual wheel-zoom (16) so Kratos always stays framed; a
+    // far-flung blade tip simply leaves frame instead of shrinking everything.
+    const required = reach > 1.1 ? Math.min(reach * 1.5 + 1.4, 16) : 0;
     const target = Math.max(userDist, required);
     dist += (target - dist) * Math.min(1, wallDt * (target > dist ? 10 : 2.5));
     const rot = M.mul(M.rotX(pitch), M.rotY(yaw));
@@ -1519,6 +1525,18 @@
     window.__fxOnly = !window.__fxOnly;
     $("btnFxOnly").classList.toggle("latched", !!window.__fxOnly);
   });
+  // Replay controls: pause / frame-step / slow-mo (dev/QA capture aid).
+  $("btnPause").addEventListener("click", () => {
+    paused = !paused;
+    $("btnPause").classList.toggle("latched", paused);
+    $("btnPause").innerHTML = paused ? "&#9654; Resume" : "&#10073;&#10073; Pause";
+  });
+  $("btnStep").addEventListener("click", () => { pendingSteps += 1; });
+  $("btnSlow").addEventListener("click", () => {
+    timescale = timescale === 1 ? 0.2 : 1;
+    $("btnSlow").classList.toggle("latched", timescale !== 1);
+    $("btnSlow").innerHTML = timescale !== 1 ? "&#189;&#215; Slo-mo (on)" : "&#189;&#215; Slo-mo";
+  });
   $("btnL1").addEventListener("click", () => {
     machine.st.l1 = !machine.st.l1;
     $("btnL1").classList.toggle("latched", machine.st.l1);
@@ -1750,6 +1768,12 @@
   }
   const accum = Loop.makeAccumulator({ step: Loop.STEP, maxFrame: 0.25 });
   let last = performance.now();
+  // Replay controls (dev/QA capture aid): pause freezes the sim (render keeps
+  // running so the camera stays live), timescale gives slow-mo, and pendingSteps
+  // lets the frame-step button advance N sim ticks while paused.
+  let paused = false;
+  let timescale = 1.0;
+  let pendingSteps = 0;
   function loop(now) {
     // WR-04: the load-time fail-loud contract (#status) must also cover the
     // render-time half of the DEC-01 assert — Fx.applyMaterial throws fire
@@ -1759,7 +1783,12 @@
     try {
       const wallDt = (now - last) / 1000;
       last = now;
-      const n = accum.advance(wallDt); // 0..15 fixed steps owed this frame
+      let n;
+      if (paused) {
+        n = pendingSteps; pendingSteps = 0; // only frame-step advances the sim
+      } else {
+        n = accum.advance(wallDt * timescale); // 0..15 fixed steps (slow-mo scales dt)
+      }
       for (let i = 0; i < n; i++) simStep();
       renderFrame(wallDt); // render every rAF — camera/autospin stay smooth
       renderTimeline();
@@ -1781,6 +1810,36 @@
     // parameter is GONE: sim always advances by exactly Loop.STEP (1/60s),
     // and the render's presentation dt is pinned to STEP for determinism.
     step() { simStep(); renderFrame(Loop.STEP); renderTimeline(); },
+    // --- replay controls (dev/QA capture aid) ---
+    // pause(v): freeze/unfreeze the sim (render keeps running so the camera stays
+    // live and screenshots work). pause() toggles. Returns the new paused state.
+    pause(v) { paused = v === undefined ? !paused : !!v; return paused; },
+    get paused() { return paused; },
+    // setSpeed(x): slow-mo / fast-forward multiplier on sim time (1 = realtime,
+    // 0.2 = 5× slow). Does not affect the render loop, only how fast the sim advances.
+    setSpeed(x) { timescale = Math.max(0, Number(x) || 0); return timescale; },
+    get speed() { return timescale; },
+    // frameStep(k): advance exactly k sim ticks (default 1), even while paused —
+    // for frame-by-frame capture. Returns the queued count.
+    frameStep(k) { pendingSteps += Math.max(1, (k | 0) || 1); return pendingSteps; },
+    // diag(): hero-draw health probe — why does Kratos vanish on attack? Reports
+    // the current move, GL error, whether the skinned hero verts / blade matrices /
+    // decoded light positions are finite. Call while paused on an attack frame.
+    diag() {
+      const nan = (arr) => { if (!arr) return 'n/a'; let b = 0; for (let i = 0; i < arr.length; i++) if (!Number.isFinite(arr[i])) b++; return b; };
+      const bl = {};
+      for (const key of ["l", "r"]) {
+        const bs = bladeSim[key];
+        const lp = (bs && bs.pos && bs.mat) ? xformM(modelMat, xformM(bs.mat, key === "l" ? bladeLightL.anchor : bladeLightR.anchor)) : null;
+        bl[key] = { hasPos: !!(bs && bs.pos), matNaN: nan(bs && bs.mat), posNaN: nan(bs && bs.pos), lightPos: lp, lightPosNaN: nan(lp) };
+      }
+      return {
+        move: machine.st.current, attacking: !machine.isIdle(),
+        glError: gl.getError(), heroVerts: heroSet.count,
+        skinnedPosNaN: nan(heroSet.pos), poseNaN: nan(skin && skin.lastWorld),
+        fxOnly: !!window.__fxOnly, camDist: +dist.toFixed(2), blades: bl,
+      };
+    },
     // independent 60Hz witness: scripts can sample this across wall time to
     // prove the sim cadence (60±1 steps/s on any display).
     get simStepCount() { return simStepCount; },
