@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 06-04-PLAN.md (billboard particle pool + trail-spark riders)
-last_updated: "2026-07-26T08:29:01.174Z"
+last_updated: "2026-07-26T08:43:33.190Z"
 last_activity: 2026-07-26
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 23
-  completed_plans: 17
+  completed_plans: 18
   percent: 43
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 ## Current Position
 
 Phase: 06 (particle-runtime-fire-sparks-trails) — EXECUTING
-Plan: 5 of 8
+Plan: 6 of 8
 Status: Ready to execute
 Last activity: 2026-07-26
 
-Progress: [███████░░░] 74%
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
@@ -63,6 +63,7 @@ Progress: [███████░░░] 74%
 | Phase 06 P02 | 12min | - tasks | - files |
 | Phase 06 P03 | 9min | 2 tasks | 2 files |
 | Phase 06 P04 | 18min | 2 tasks | 4 files |
+| Phase 06 P05 | 20min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,9 @@ Recent decisions affecting current work:
 - [Phase ?]: (06-03) Swordtrail runtime age->color ramp (INFERRED white-hot->ember, 05-04 no painted ramp) applied per-row-age (vT.z proxy) in the fxProg fragment gated by uTrailRamp; endpoints from tested-pure Particles.rampColor; blend/depth still only from MAT_swordtrail via Fx.applyMaterial (DEC-01) (TRL-01)
 - [Phase ?]: (06-03) Per-move BFT (crimson) vs BGT (neutral swoosh) trail variant via Particles.variantFor(machine.st.current); variant is INFERRED per-variant tint on the SAME Particles.rampColor stops + SAME decoded GFX_swordtrail texture/MAT_swordtrail blend — never a fabricated real color (Pitfall 4) (TRL-02)
 - [Phase ?]: (06-03) Rule-3 deviation: added particles.js browser <script> tag now (lockstep ?v=24) — drawFx consumes Particles.* in the browser this wave, so the module IS browser-consumed; the plan's defer-to-06-04 note contradicted its own action text (06-01 flagged this exact prerequisite)
+- [Phase ?]: (06-05) Runtime FxDb now built in app.js: const db = FxParse.buildFxDb(wadRecords, wadBuf) (NO 3rd arg — in-WAD fire family + db.meta.colorSource only, D-09a) + KratosLab.fxdb() accessor; the render db existed only after this plan (BLOCKER fix)
+- [Phase ?]: (06-05) Blade fire flame3+flame6 emit world-space per attacking tick via spawnAnchor(bladeSim[key].mat, sys.matrix) sampled once -> decouple (SC1 blade-lag, D-03); bound emitter->particle by shapeRef NAME (fireBindings), flame5 god-tier rejected; emission rate/vel/size/life INFERRED+labeled (Open-Q1 TODO)
+- [Phase ?]: (06-05) Fire color = REAL db.meta.colorSource (MAT_pticleMat.blendColor [2,2,2] overbright) applied as per-vertex tint at draw x INFERRED overbright alpha128 -> additive-premult alpha-over-1.0 (CLAUDE.md Part 1); fire sprite fxTexFromMat(MAT_pticleMat) w/ documented trailTex fallback; drawPool batches by family {kinds,tint}; no fabricated crimson (Pitfall 4)
 
 ### Pending Todos
 
@@ -117,6 +121,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-26T08:29:01.164Z
+Last session: 2026-07-26T08:43:00.949Z
 Stopped at: Completed 06-04-PLAN.md (billboard particle pool + trail-spark riders)
 Resume file: None
