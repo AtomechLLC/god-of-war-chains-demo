@@ -182,6 +182,7 @@
 
   // ---------- WebGL textured mesh renderer ----------------------------------
   const canvas = $("gl");
+  const dbgHud = $("dbgHud"); // on-screen diagnostic readout (updated in renderFrame)
   // alpha:false — opaque canvas: page compositing can never tint/wash out the
   // additive FX passes (REND-01; verify with the magenta-background test).
   // Gamma stance: naive 8-bit gamma-space math IS the target — no sRGB, no
@@ -272,14 +273,25 @@
     return set;
   }
   function bindMeshSet(set) {
+    // Re-ENABLE the mesh attribute arrays every bind, not just re-point them. The
+    // Phase-6 FX passes (drawPool / trail) enable their own attrib arrays and leave
+    // ALL arrays DISABLED afterward; without re-enabling here, the hero/blade draw on
+    // the next frame runs with aPos/aUV/aNrm/aCol disabled → every vertex reads the
+    // constant (0,0,0) → the whole mesh collapses to the origin and vanishes. This
+    // only bit during combat (the pool only draws while attacking), which is why
+    // "Kratos disappeared on attack". enableVertexAttribArray is idempotent/cheap.
     gl.bindBuffer(gl.ARRAY_BUFFER, set.pos);
     gl.vertexAttribPointer(LOCS.aPos, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(LOCS.aPos);
     gl.bindBuffer(gl.ARRAY_BUFFER, set.uv);
     gl.vertexAttribPointer(LOCS.aUV, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(LOCS.aUV);
     gl.bindBuffer(gl.ARRAY_BUFFER, set.nrm);
     gl.vertexAttribPointer(LOCS.aNrm, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(LOCS.aNrm);
     gl.bindBuffer(gl.ARRAY_BUFFER, set.col);
     gl.vertexAttribPointer(LOCS.aCol, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(LOCS.aCol);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, set.ibo);
   }
 
@@ -1232,6 +1244,11 @@
     const required = reach > 1.1 ? Math.min(reach * 1.5 + 1.4, 16) : 0;
     const target = Math.max(userDist, required);
     dist += (target - dist) * Math.min(1, wallDt * (target > dist ? 10 : 2.5));
+    // On-screen debug HUD (dev aid): surfaces why Kratos might not be visible so a
+    // screenshot alone is diagnostic — camera distance, blade reach, draw gating.
+    if (dbgHud) dbgHud.textContent =
+      `move ${machine.st.current}   dist ${dist.toFixed(1)}   reach ${reach.toFixed(1)}\n` +
+      `hero ${window.__fxOnly ? "HIDDEN (FX-only)" : "drawn"}   native ${nativeRes ? "ON" : "off"}   pool ${fxPool.count}`;
     const rot = M.mul(M.rotX(pitch), M.rotY(yaw));
     // view = camera transform (world→view); its row-0/row-1 give the world-space
     // camera right/up the billboard pool needs (drawPool). Split out of the mvp
@@ -1284,7 +1301,7 @@
         gl.uniformMatrix4fv(uModel, false, M.mul(modelMat, bladeSim[key].mat));
         gl.drawElements(gl.TRIANGLES, bladeSet.count, gl.UNSIGNED_SHORT, 0);
       }
-      drawFx(mvp, view);
+      if (!window.__noFx) drawFx(mvp, view); // __noFx (debug): skip ALL FX to isolate whether the FX passes hide the hero
     }
     if (nativeRes) {
       // blit 512×448 → canvas letterboxed to 4:3, bilinear upscale. Per
@@ -1827,6 +1844,7 @@
     // decoded light positions are finite. Call while paused on an attack frame.
     diag() {
       const nan = (arr) => { if (!arr) return 'n/a'; let b = 0; for (let i = 0; i < arr.length; i++) if (!Number.isFinite(arr[i])) b++; return b; };
+      const bounds = (arr) => { if (!arr) return null; let mn = 1e30, mx = -1e30, ma = 0; for (let i = 0; i < arr.length; i++) { const v = arr[i]; if (v < mn) mn = v; if (v > mx) mx = v; const a = Math.abs(v); if (a > ma) ma = a; } return { min: +mn.toFixed(1), max: +mx.toFixed(1), maxAbs: +ma.toFixed(1) }; };
       const bl = {};
       for (const key of ["l", "r"]) {
         const bs = bladeSim[key];
@@ -1836,7 +1854,7 @@
       return {
         move: machine.st.current, attacking: !machine.isIdle(),
         glError: gl.getError(), heroVerts: heroSet.count,
-        skinnedPosNaN: nan(heroSet.pos), poseNaN: nan(skin && skin.lastWorld),
+        skinnedPosNaN: nan(heroSet.pos), skinnedBounds: bounds(heroSet.pos), poseBounds: bounds(skin && skin.lastWorld), poseNaN: nan(skin && skin.lastWorld),
         fxOnly: !!window.__fxOnly, camDist: +dist.toFixed(2), blades: bl,
       };
     },
