@@ -400,6 +400,87 @@
   // per applyMaterial'd pass — console-visible proof of per-pass state without
   // mid-frame GL reads (exposed on window.KratosLab.fxLog).
   const fxLog = [];
+
+  // ---- FX pool: shared world-space billboard particle pool (D-02) ----------
+  // ONE GL program (billboard VS from the view-matrix camRight/camUp columns +
+  // an alpha-over-1.0 premult fragment), ONE interleaved DYNAMIC_DRAW buffer
+  // rewritten per frame via bufferSubData (never reallocated), ONE STATIC index
+  // buffer built ONCE. 4 verts/particle. The pure sim (spawn/integrate/cull)
+  // lives in Particles (particles.js); this is only the GPU-submission half
+  // (CLAUDE.md Part 3 "Billboard particles"). No ANGLE_instanced_arrays, no
+  // gl.POINTS (both banned by CLAUDE.md at this particle scale).
+  //
+  // POOL_CAP — INFERRED hard bound (Security V5 / T-06-04-02). GoW1-era emitters
+  // are tens-to-hundreds of particles; 512 is a comfortable few-hundred ceiling
+  // that keeps the per-frame rebuild trivial (<0.1ms) and bounds the buffer +
+  // CPU cost. POOL_CAP*4 verts stays < 65536 so the static index buffer fits
+  // UNSIGNED_SHORT. Particles.makePool enforces the cap (reject-when-full).
+  const POOL_CAP = 512;
+  const fxPool = Particles.makePool({ maxParticles: POOL_CAP });
+  const POOL_FLOATS_PER_VERT = 11;                 // aCenter(3)+aCorner(2)+aUV(2)+aColor(4)
+  const POOL_STRIDE = POOL_FLOATS_PER_VERT * 4;    // interleaved stride in bytes
+  const poolProg = gl.createProgram();
+  gl.attachShader(poolProg, shader(gl.VERTEX_SHADER, `
+    attribute vec3 aCenter;   // particle center (mesh-local — same space as the trail verts)
+    attribute vec2 aCorner;   // ±halfSize corner offset
+    attribute vec2 aUV;
+    attribute vec4 aColor;    // rgb + alpha128 (may exceed 1.0 — premultiplied in the fragment)
+    uniform mat4 uMVP; uniform vec3 uCamRight; uniform vec3 uCamUp;
+    varying vec2 vUV; varying vec4 vColor;
+    void main() {
+      // Billboard: expand the quad along the camera right/up axes so every
+      // sprite faces the camera with NO per-particle CPU matrix (CLAUDE.md Part
+      // 3). uCamRight/uCamUp are the view matrix's row-0/row-1 (columns of its
+      // transpose), supplied by drawPool.
+      vec3 world = aCenter + uCamRight * aCorner.x + uCamUp * aCorner.y;
+      gl_Position = uMVP * vec4(world, 1.0);
+      vUV = aUV; vColor = aColor;
+    }`));
+  gl.attachShader(poolProg, shader(gl.FRAGMENT_SHADER, `
+    precision mediump float;
+    varying vec2 vUV; varying vec4 vColor;
+    uniform sampler2D uTex;
+    void main() {
+      // alpha-over-1.0 premultiply (CLAUDE.md Part 1): output rgb·alpha128 with
+      // alpha128 UNCLAMPED (GS As up to ~1.99), blended ONE,ONE (additivePremult)
+      // => Cs·As + Cd — the GS fire/glow additive. The sprite texel modulates the
+      // premultiplied color; alpha out = 0 leaves dest alpha untouched.
+      vec4 t = texture2D(uTex, vUV);
+      gl_FragColor = vec4(vColor.rgb * vColor.a * t.rgb * t.a, 0.0);
+    }`));
+  gl.linkProgram(poolProg);
+  const poolLocs = {
+    aCenter: gl.getAttribLocation(poolProg, "aCenter"),
+    aCorner: gl.getAttribLocation(poolProg, "aCorner"),
+    aUV: gl.getAttribLocation(poolProg, "aUV"),
+    aColor: gl.getAttribLocation(poolProg, "aColor"),
+    uMVP: gl.getUniformLocation(poolProg, "uMVP"),
+    uCamRight: gl.getUniformLocation(poolProg, "uCamRight"),
+    uCamUp: gl.getUniformLocation(poolProg, "uCamUp"),
+    uTex: gl.getUniformLocation(poolProg, "uTex"),
+  };
+  // ONE interleaved ARRAY_BUFFER (DYNAMIC_DRAW), allocated once at cap size and
+  // rewritten each frame with bufferSubData. poolVerts is the CPU scratch that
+  // gets packed then uploaded (mirror uploadSkinnedVerts' bufferSubData path).
+  const poolVertBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, poolVertBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, POOL_CAP * 4 * POOL_STRIDE, gl.DYNAMIC_DRAW);
+  const poolVerts = new Float32Array(POOL_CAP * 4 * POOL_FLOATS_PER_VERT);
+  // STATIC index buffer built ONCE: two triangles (6 idx) per particle quad.
+  const poolIdxBuf = gl.createBuffer();
+  {
+    const idx = new Uint16Array(POOL_CAP * 6);
+    for (let i = 0; i < POOL_CAP; i++) {
+      const b = i * 4;
+      idx[i * 6] = b; idx[i * 6 + 1] = b + 1; idx[i * 6 + 2] = b + 2;
+      idx[i * 6 + 3] = b; idx[i * 6 + 4] = b + 2; idx[i * 6 + 5] = b + 3;
+    }
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, poolIdxBuf);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
+  }
+  // the 4 quad corners: [cornerX, cornerY, u, v] (±1 scaled by particle size).
+  const POOL_CORNERS = [[-1, -1, 0, 0], [1, -1, 1, 0], [1, 1, 1, 1], [-1, 1, 0, 1]];
+
   const s0 = mesh.scale;
   const modelMat = new Float32Array([
     s0, 0, 0, 0, 0, s0, 0, 0, 0, 0, s0, 0,
@@ -606,7 +687,82 @@
     }
   }
 
-  function drawFx(mvp) {
+  // drawPool(mvp, view, batchTex) — submit the shared billboard particle pool
+  // (D-02). ONE bufferSubData rewrite of the active particles then ONE additive-
+  // premult batch through Fx.applyMaterial (no hardcoded blendFunc/depthMask —
+  // DEC-01). Called from drawFx BEFORE restoreFxState; an empty pool draws
+  // nothing and leaves fxState() clean. The sprite is bound PER BATCH by the
+  // caller's family (this plan's only batch = trail-spark riders on trailTex);
+  // later slices (fire 06-05) bind their own decoded sprite.
+  function drawPool(mvp, view, batchTex) {
+    const parts = fxPool.particles;
+    const n = Math.min(parts.length, POOL_CAP);
+    if (n === 0) return;                       // empty pool → nothing; state stays clean
+    // Camera right/up in world space = the view matrix's row-0/row-1 (columns of
+    // its transpose). modelMat is a uniform scale + translate (NO rotation), so
+    // these world directions are also valid in the mesh-local space aCenter lives
+    // in — the pool centers ride the same coords as the trail/chain verts.
+    let rx = view[0], ry = view[4], rz = view[8];
+    let ux = view[1], uy = view[5], uz = view[9];
+    const rl = Math.hypot(rx, ry, rz) || 1, ul = Math.hypot(ux, uy, uz) || 1;
+    rx /= rl; ry /= rl; rz /= rl; ux /= ul; uy /= ul; uz /= ul;
+    const V = poolVerts;
+    let o = 0, drawn = 0;
+    for (let i = 0; i < n; i++) {
+      const q = parts[i];
+      const p = q.pos, c = q.color, size = q.size;
+      // per-particle fade: peak alpha128 (c[3], INFERRED overbright) × life-left.
+      const fade = q.life > 0 ? Math.max(0, 1 - q.age / q.life) : 0;
+      const a = (c && c.length > 3 ? c[3] : 1) * fade;
+      // Guard non-finite BEFORE the value reaches bufferSubData (V5 / T-06-04-03).
+      // Particles.spawn already rejects non-finite inputs at emission; this is
+      // defense-in-depth for the runtime-derived fade/size so NaN never uploads.
+      if (!Number.isFinite(p[0]) || !Number.isFinite(p[1]) || !Number.isFinite(p[2]) ||
+          !Number.isFinite(size) || !Number.isFinite(a)) continue;
+      const cr = c ? c[0] : 1, cg = c ? c[1] : 1, cb = c ? c[2] : 1;
+      for (let k = 0; k < 4; k++) {
+        const cor = POOL_CORNERS[k];
+        V[o++] = p[0]; V[o++] = p[1]; V[o++] = p[2];       // aCenter (mesh-local)
+        V[o++] = cor[0] * size; V[o++] = cor[1] * size;     // aCorner (±size)
+        V[o++] = cor[2]; V[o++] = cor[3];                   // aUV
+        V[o++] = cr; V[o++] = cg; V[o++] = cb; V[o++] = a;  // aColor rgb + alpha128
+      }
+      drawn++;
+    }
+    if (drawn === 0) return;
+    gl.useProgram(poolProg);
+    gl.uniformMatrix4fv(poolLocs.uMVP, false, M.mul(mvp, modelMat)); // aCenter is mesh-local
+    gl.uniform3f(poolLocs.uCamRight, rx, ry, rz);
+    gl.uniform3f(poolLocs.uCamUp, ux, uy, uz);
+    gl.uniform1i(poolLocs.uTex, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, poolVertBuf);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, V.subarray(0, drawn * 4 * POOL_FLOATS_PER_VERT));
+    gl.enableVertexAttribArray(poolLocs.aCenter);
+    gl.enableVertexAttribArray(poolLocs.aCorner);
+    gl.enableVertexAttribArray(poolLocs.aUV);
+    gl.enableVertexAttribArray(poolLocs.aColor);
+    gl.vertexAttribPointer(poolLocs.aCenter, 3, gl.FLOAT, false, POOL_STRIDE, 0);
+    gl.vertexAttribPointer(poolLocs.aCorner, 2, gl.FLOAT, false, POOL_STRIDE, 12);
+    gl.vertexAttribPointer(poolLocs.aUV, 2, gl.FLOAT, false, POOL_STRIDE, 20);
+    gl.vertexAttribPointer(poolLocs.aColor, 4, gl.FLOAT, false, POOL_STRIDE, 28);
+    gl.disable(gl.CULL_FACE);
+    // Blend + depth ONLY from the MAT table (DEC-01): the new additivePremult
+    // mode (ONE,ONE + FUNC_ADD + depthMask off). No hardcoded blendFunc here.
+    Fx.applyMaterial(gl, { name: "fxPool", mode: "additivePremult", disableDepthWrite: true });
+    fxLog.push({ name: "fxPool", mode: "additivePremult", depthWrite: false, count: drawn });
+    gl.bindTexture(gl.TEXTURE_2D, batchTex);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, poolIdxBuf);
+    gl.drawElements(gl.TRIANGLES, drawn * 6, gl.UNSIGNED_SHORT, 0);
+    // Disable the pool's attrib arrays so they never leak into the next mesh/FX
+    // draw (which re-point their own attribs, but a leftover enabled array at
+    // these locations still pointing at poolVertBuf can trip some drivers).
+    gl.disableVertexAttribArray(poolLocs.aCenter);
+    gl.disableVertexAttribArray(poolLocs.aCorner);
+    gl.disableVertexAttribArray(poolLocs.aUV);
+    gl.disableVertexAttribArray(poolLocs.aColor);
+  }
+
+  function drawFx(mvp, view) {
     fxLog.length = 0;
     if (!blade || !skin || !skin.lastWorld) return;
     const world = skin.lastWorld;
@@ -649,7 +805,9 @@
         pushRibbon(rows, trailV);
       }
     }
-    if (!chainV.length && !trailV.length) return;
+    // Reach the pool pass even when chain/trail are empty (the pool draws its own
+    // program/buffer). An empty pool no-ops inside drawPool, so state stays clean.
+    if (!chainV.length && !trailV.length && fxPool.count === 0) return;
     gl.useProgram(fxProg);
     gl.uniformMatrix4fv(fxLocs.uMVP, false, mvp);
     gl.uniformMatrix4fv(fxLocs.uM, false, modelMat);
@@ -751,6 +909,14 @@
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(trailV), gl.DYNAMIC_DRAW);
       gl.drawArrays(gl.TRIANGLES, 0, trailV.length / 6);
     }
+    // PASS — trail-spark particle pool: billboard, additive-premult, depth OFF,
+    // AFTER the trail sheet and BEFORE restoreFxState (Pitfall 3 leak guard). The
+    // batch sprite is the already-loaded in-WAD GFX_swordtrail streak (trailTex,
+    // real texture bytes) — an INFERRED sprite reuse: the D-04c trail-spark
+    // enhancement has no dedicated decoded sprite record, so it rides the decoded
+    // swordtrail texel (real bytes, INFERRED assignment). Later slices bind their
+    // own batch sprite. Empty pool → drawPool no-ops; fxState() stays clean.
+    drawPool(mvp, view, trailTex);
     Fx.restoreFxState(gl);
     gl.useProgram(prog);
   }
@@ -783,9 +949,13 @@
     const target = Math.max(userDist, required);
     dist += (target - dist) * Math.min(1, wallDt * (target > dist ? 10 : 2.5));
     const rot = M.mul(M.rotX(pitch), M.rotY(yaw));
+    // view = camera transform (world→view); its row-0/row-1 give the world-space
+    // camera right/up the billboard pool needs (drawPool). Split out of the mvp
+    // compose so drawFx can hand it to drawPool.
+    const view = M.mul(M.trans(0, 0, -dist), rot);
     // native pass projects at the 4:3 DISPLAY aspect (non-square GS pixels) —
     // NOT the 512/448 storage aspect (02-RESEARCH A2)
-    const mvp = M.mul(M.persp(0.9, nativeRes ? NATIVE.displayAspect : w / h, 0.05, 50), M.mul(M.trans(0, 0, -dist), rot));
+    const mvp = M.mul(M.persp(0.9, nativeRes ? NATIVE.displayAspect : w / h, 0.05, 50), view);
     gl.useProgram(prog);
     bindMeshSet(heroSet);
     gl.uniformMatrix4fv(uMVP, false, mvp);
@@ -807,7 +977,7 @@
         gl.uniformMatrix4fv(uModel, false, M.mul(modelMat, bladeSim[key].mat));
         gl.drawElements(gl.TRIANGLES, bladeSet.count, gl.UNSIGNED_SHORT, 0);
       }
-      drawFx(mvp);
+      drawFx(mvp, view);
     }
     if (nativeRes) {
       // blit 512×448 → canvas letterboxed to 4:3, bilinear upscale. Per

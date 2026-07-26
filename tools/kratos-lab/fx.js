@@ -30,6 +30,17 @@ const Fx = (() => {
       gl.enable(gl.BLEND); gl.blendEquation(gl.FUNC_ADD);
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ONE, gl.ONE);
     },
+    // The alpha-over-1.0 brightness path anticipated by the header above
+    // (Source: CLAUDE.md Part 1 "The alpha-over-1.0 problem"). The caller's
+    // fragment premultiplies rgb by alpha128 (gl_FragColor.rgb = color.rgb *
+    // alpha128, up to ~1.99 UNCLAMPED), so blendFunc(ONE, ONE) reproduces the GS
+    // additive Cs·As + Cd exactly — dest untouched, no clamp on As. Used by the
+    // world-space billboard fire/glow/spark pool (0201 in the ABCD table).
+    // depthMask still driven by disableDepthWrite.
+    additivePremult: (gl) => {
+      gl.enable(gl.BLEND); gl.blendEquation(gl.FUNC_ADD);
+      gl.blendFunc(gl.ONE, gl.ONE);
+    },
     // subtract: untested-but-present — no weapon-WAD MAT uses it, but
     // hero-side MATs (MAT_Csmoke, MAT_firesploch1) may (02-RESEARCH Pitfall 7)
     subtract: (gl) => {
