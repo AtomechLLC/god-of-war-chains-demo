@@ -387,6 +387,103 @@ const FxParse = (() => {
     return { magic, subtype, slotId, index, matrix, shapeRef, count, size, evidence };
   }
 
+  // Decode the type-5 ANM blade-state descriptor (DEC-03, Wave 5 — deferred LAST
+  // per D-07 so it never blocks the DEC-02 payoff). Decode-only: Phase-6 wires the
+  // blade presentation that consumes this. Located + confirmed this session by the
+  // differential-decode protocol (see test/anm.test.js top-of-file evidence table).
+  //
+  // TYPE-5 IDENTITY (escalation disposition, D-04 / Warning 2): the WAD has NO
+  // instance-class-5 record and NO level-1 ANM_maiblade (god-tier ANM only), so the
+  // prescribed ANM pair-diff is impossible and "type-5" is mogaika's ANM-taxonomy
+  // LABEL, not a magic. The descriptor with a genuine level-1<->god pair that binds
+  // the blade presentation is the `gomaiblade`/`gomaigodblade` scene-binding node
+  // (class id 1, variant 2 => u32@0 = 0x00020001). Its type-5 attribution is
+  // corroborated by the ANM resource context (ANMX_R_Wpn type-id 3) but CANNOT be
+  // byte-confirmed to a literal magic — so the label is INFERRED and the ELF path is
+  // the tiebreaker. No byte-exact seed is fabricated for an unconfirmed field.
+  //
+  // Layout (level-1 `gomaiblade`, off 0xD580, size 92 — byte-exact this session):
+  //   +0x00 u16     instance class id = 1                                    [real]
+  //   +0x02 u16     descriptor variant = 2  => u32@0 = 0x00020001 (identity) [real]
+  //   +0x04 char[24] bound blade INSTANCE name ("maiblade")                  [real]
+  //   +0x1c u16     selector — differential-confirmed TIER (1 L1 / 2 god),   [real raw;
+  //                 NOT the combat show/hide field                            meaning tier]
+  //   +0x40 f32[4]  placement/anchor offset (0, -0.320, -8.0, 1.0); the -8.0 [real raw;
+  //                 z is an on-back-anchor candidate                          INFERRED interp]
+  //   +0x58 u32     0xffffffff end sentinel                                  [real]
+  // The in-hand/on-back show/hide MAPPING is runtime/animation-driven (D-04) —
+  // footage-corroborated, tagged INFERRED, never a fabricated byte seed.
+  // Fail-loud (WR-01 / T-05-01): size-gate BEFORE the identity read, both naming the
+  // record; every read is bounded by rec.size (T-05-02).
+  const ANM_T5_ID = 0x00020001;
+  function parseAnmType5(buf, rec) {
+    if (rec.size < 0x5c) {
+      throw new Error(`ANM ${rec.name}: size ${rec.size} < 0x5c (92-byte type-5 descriptor)`);
+    }
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    const base = rec.dataOff;
+    const end = base + rec.size; // hard upper bound — never read past (V5 / T-05-02)
+    const subtype = dv.getUint32(base + 0x00, true) >>> 0;
+    if (subtype !== ANM_T5_ID) {
+      throw new Error(
+        `ANM ${rec.name}: not a type-5 descriptor (u32@0 0x${subtype.toString(16).padStart(8, "0")} != 0x00020001)`
+      );
+    }
+    const classId = dv.getUint16(base + 0x00, true);
+    const variant = dv.getUint16(base + 0x02, true);
+    const bound = readName(buf, base + 0x04, 24); // bound blade instance name
+    const tierSelector = dv.getUint16(base + 0x1c, true);
+
+    // placement/anchor offset vec4 @+0x40, BOUNDED by rec.size (a short size that
+    // slipped the gate must never spill into the next record).
+    const anchorOffset = [];
+    for (let i = 0; i < 4; i++) {
+      const o = base + 0x40 + i * 4;
+      anchorOffset.push(o + 4 <= end ? dv.getFloat32(o, true) : 0);
+    }
+    const sentinel = base + 0x5c <= end ? dv.getUint32(base + 0x58, true) >>> 0 : 0;
+
+    // Queryable state -> visibility (the Phase-6 gate). The MAPPING is runtime/
+    // animation-driven (D-04): in-hand during combat, on-back when sheathed — the
+    // only differential-varying selector (@0x1c) is TIER, not this state, so the
+    // mapping is INFERRED (footage-corroborated), never a fabricated byte field.
+    const states = [
+      {
+        combat: "out-of-combat",
+        visibility: "on-back",
+        tag: "INFERRED",
+        corrob:
+          "footage: blades sheathed on Kratos's back out of combat; anchorOffset.z -8.0 is a back-offset candidate (D-04 runtime; ELF-disassembly tiebreaker)",
+      },
+      {
+        combat: "in-combat",
+        visibility: "in-hand",
+        tag: "INFERRED",
+        corrob: "footage: blades drawn in-hand during combat (D-04 runtime; ELF-disassembly tiebreaker)",
+      },
+    ];
+    // Query helper — a method (not serialized by JSON.stringify; the `states` array
+    // carries the same data for the JSON hand-off).
+    const visibilityFor = (combat) => {
+      const s = states.find((x) => x.combat === combat);
+      return s ? s.visibility : null;
+    };
+
+    const hex32 = (off) => "0x" + (dv.getUint32(off, true) >>> 0).toString(16).padStart(8, "0");
+    const evidence = [
+      { field: "classId", offset: "+0x00", rawHex: "0x" + (classId >>> 0).toString(16), interp: `instance class id ${classId} (object/instance class)`, corrob: "matches maiblade/maigodblade class id 1", tag: "real" },
+      { field: "variant", offset: "+0x02", rawHex: "0x" + (variant >>> 0).toString(16), interp: `descriptor variant ${variant} => u32@0 = 0x00020001 (type-5 blade-binding identity)`, corrob: "constant across the gomaiblade/gomaigodblade pair", tag: "real" },
+      { field: "type5Label", offset: "—", rawHex: "—", interp: "the 'type-5' ANM-taxonomy attribution — NO literal class-5 record exists in the WAD; corroborated only by the ANM resource context (ANMX_R_Wpn type-id 3, ANM_maigodblade u32@0 3)", corrob: "escalation disposition: label not byte-confirmable; ELF-disassembly is the tiebreaker (D-04)", tag: "INFERRED" },
+      { field: "bound", offset: "+0x04", rawHex: `"${bound}"`, interp: `bound blade instance name "${bound}" (the record this node presents)`, corrob: "differential: name differs by tier (maiblade vs maigodblade)", tag: "real" },
+      { field: "tierSelector", offset: "+0x1c", rawHex: "0x" + (tierSelector >>> 0).toString(16), interp: `selector ${tierSelector} — differential-confirmed TIER field (gomaiblade=1, gomaigodblade=2), NOT the combat show/hide field`, corrob: "the ONLY differential-varying u16; varies with tier, not combat state", tag: "real" },
+      { field: "anchorOffset", offset: "+0x40", rawHex: `(${anchorOffset.map((v) => v.toFixed(3)).join(", ")})`, interp: `placement/anchor offset vec4; z=${anchorOffset[2]} is an on-back-anchor candidate (raw real, back-offset interp INFERRED)`, corrob: "differential-varying vec; RESEARCH per-field table", tag: "real" },
+      { field: "sentinel", offset: "+0x58", rawHex: hex32(base + 0x58), interp: "0xffffffff end sentinel (== last 4 bytes; constant; verbatim, never acted on)", corrob: "constant across the pair; equals rec.size-4 tail", tag: "real" },
+      { field: "showHideMapping", offset: "runtime", rawHex: "—", interp: "in-combat -> in-hand / out-of-combat -> on-back — runtime/animation-driven blade presentation, NOT a decoded byte (the only differential-varying selector, @0x1c, is TIER)", corrob: "D-04 runtime-computed; footage-corroborated; ELF-disassembly tiebreaker — never a fabricated byte seed", tag: "INFERRED" },
+    ];
+
+    return { subtype, classId, variant, bound, tierSelector, anchorOffset, sentinel, states, visibilityFor, size: rec.size, evidence };
+  }
+
   // buildFxDb — assemble the decoded FX records into a queryable, JSON-dumpable
   // FxDb (05-RESEARCH "FxDb Shape"; the Phase-6 hand-off boundary). This slice
   // populates meta + msh (05-01) + ptc (this plan); fxc/refs grow as later slices
@@ -575,7 +672,7 @@ const FxParse = (() => {
     return [...tuples.values()];
   }
 
-  return { decodeFlags, buildMats, enumTuples, parseTxr, parseMsh, parsePtc, parseFxc, buildFxDb };
+  return { decodeFlags, buildMats, enumTuples, parseTxr, parseMsh, parsePtc, parseFxc, buildFxDb, parseAnmType5 };
 })();
 
 // dual-environment guard: browser <script> global + Node require (no build step)
