@@ -359,6 +359,14 @@
     varying vec3 vT;
     uniform sampler2D uTex;
     uniform vec3 uMaterialColor; uniform vec4 uLayerColor; uniform float uCutoff;
+    // TRL-01 runtime age->color ramp (INFERRED). 05-04 PROVED GFX_swordtrail
+    // carries NO painted length-wise ramp, so the white-hot->orange->ember tint
+    // MUST be computed at runtime here rather than sampled. Gated by uTrailRamp
+    // so it touches ONLY the swordtrail pass — the chain/glow passes upload
+    // uTrailRamp=0 (no bleed, T-06-03-01). uRampHot/uRampCool are the
+    // Particles.rampColor(0)/(1) endpoints (per-move-variant tinted in drawFx);
+    // vT.z is the per-row age proxy (0.85 fresh/young -> 0 old) that selects them.
+    uniform float uTrailRamp; uniform vec3 uRampHot; uniform vec3 uRampCool;
     void main() {
       vec4 c = texture2D(uTex, vT.xy);
       vec3 rgb = c.rgb * uLayerColor.rgb * uMaterialColor;
@@ -366,6 +374,11 @@
       // cutout 0.35 is INFERRED — GS TEST-register alpha test is not in MAT
       // records (02-RESEARCH A3); Phase 5's GS dump reads the real value.
       if (a < uCutoff) discard;
+      if (uTrailRamp > 0.5) {
+        // age fraction: young/hot (t=0) at high alpha -> old/ember (t=1) at low.
+        float t = clamp(1.0 - vT.z / 0.85, 0.0, 1.0);
+        rgb *= mix(uRampHot, uRampCool, t);   // MODULATE texel by the INFERRED ramp
+      }
       gl_FragColor = vec4(rgb, a);
     }`));
   gl.linkProgram(fxProg);
@@ -378,6 +391,9 @@
     uMaterialColor: gl.getUniformLocation(fxProg, "uMaterialColor"),
     uLayerColor: gl.getUniformLocation(fxProg, "uLayerColor"),
     uCutoff: gl.getUniformLocation(fxProg, "uCutoff"),
+    uTrailRamp: gl.getUniformLocation(fxProg, "uTrailRamp"),
+    uRampHot: gl.getUniformLocation(fxProg, "uRampHot"),
+    uRampCool: gl.getUniformLocation(fxProg, "uRampCool"),
   };
   const fxBuf = gl.createBuffer();
   // per-frame FX pass log: rewritten at the top of each drawFx call; one entry
@@ -653,6 +669,11 @@
       const chainVerts = new Float32Array(chainV);
       const chainVertCount = chainV.length / 6;
 
+      // The age->color ramp is a swordtrail-ONLY tint — keep it OFF for both
+      // chain passes so it never bleeds into the decoded chain/glow texels
+      // (T-06-03-01). The trail pass below re-enables it.
+      gl.uniform1f(fxLocs.uTrailRamp, 0.0);
+
       // PASS 1 — links: real decoded state = usual alpha blend + depth-write ON
       // (MAT_chainlink 0x44010080). The ONLY pass that uploads.
       const matL = matDb.byName.MAT_chainlink;
@@ -693,6 +714,17 @@
       gl.uniform3fv(fxLocs.uMaterialColor, mat.materialColor);
       gl.uniform4fv(fxLocs.uLayerColor, mat.blendColor);
       gl.uniform1f(fxLocs.uCutoff, 0.0);
+      // --- TRL-01: runtime age->color ramp on the swordtrail ribbon -----------
+      // INFERRED white-hot->ember tint applied per-row-age in the fxProg fragment
+      // (gated by uTrailRamp). 05-04 PROVED GFX_swordtrail carries NO painted
+      // length-wise ramp, so this is a RUNTIME tint, never a decoded/real color.
+      // Endpoints come from the tested-pure Particles.rampColor stops; blend and
+      // depth still come ONLY from MAT_swordtrail via Fx.applyMaterial (DEC-01).
+      const rampHot = Particles.rampColor(0.0);   // INFERRED white-hot core (t=0)
+      const rampCool = Particles.rampColor(1.0);  // INFERRED ember (t=1)
+      gl.uniform1f(fxLocs.uTrailRamp, 1.0);
+      gl.uniform3fv(fxLocs.uRampHot, rampHot);
+      gl.uniform3fv(fxLocs.uRampCool, rampCool);
       gl.bindTexture(gl.TEXTURE_2D, trailTex);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(trailV), gl.DYNAMIC_DRAW);
       gl.drawArrays(gl.TRIANGLES, 0, trailV.length / 6);
