@@ -370,6 +370,26 @@
   const chainlinkTex = fxTexFromMat(matDb.byName.MAT_chainlink, { wrapS: gl.REPEAT, wrapT: gl.CLAMP_TO_EDGE });
   const chainglowTex = fxTexFromMat(matDb.byName.MAT_chainglow, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE });
 
+  // FIRE-01 fire billboard sprite (WARNING-4 resolution): attempt the decoded
+  // MAT_pticleMat texture FIRST. MAT_pticleMat has layerCount 1 but exposes NO layer
+  // texName (probed empty this session), so fxTexFromMat is EXPECTED to fail to
+  // resolve a texture — catch it and fall back to the already-loaded trailTex
+  // (GFX_swordtrail, in-WAD) as the DOCUMENTED fire sprite. This is an INFERRED
+  // sprite REUSE: the DECODED, real part of the fire is its COLOR (db.meta.colorSource
+  // = MAT_pticleMat.blendColor); the sprite itself is a labeled INFERRED choice. A
+  // NON-NULL GL texture is bound for the fire batch either way (acceptance). Unlike
+  // the chain textures this ONE attempt is wrapped (the null-texName is expected, not
+  // a decode failure) — the fallback keeps the failure local to the fire sprite.
+  let fireTex = null;
+  if (matDb.byName.MAT_pticleMat) {
+    try {
+      fireTex = fxTexFromMat(matDb.byName.MAT_pticleMat, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE });
+    } catch (e) {
+      fireTex = null; // MAT_pticleMat carries no texName — expected; use the fallback
+    }
+  }
+  if (!fireTex) fireTex = trailTex; // INFERRED fallback fire sprite (documented reuse)
+
   const uMVP = gl.getUniformLocation(prog, "uMVP");
   const uRot = gl.getUniformLocation(prog, "uRot");
   const uHeat = gl.getUniformLocation(prog, "uHeat");
@@ -728,7 +748,9 @@
   // nothing and leaves fxState() clean. The sprite is bound PER BATCH by the
   // caller's family (this plan's only batch = trail-spark riders on trailTex);
   // later slices (fire 06-05) bind their own decoded sprite.
-  function drawPool(mvp, view, batchTex) {
+  function drawPool(mvp, view, batchTex, opts) {
+    const kinds = (opts && opts.kinds) || null;  // Set of kinds to include; null = all (back-compat)
+    const tint = (opts && opts.tint) || null;    // REAL decoded rgb override (fire: db.meta.colorSource)
     const parts = fxPool.particles;
     const n = Math.min(parts.length, POOL_CAP);
     if (n === 0) return;                       // empty pool → nothing; state stays clean
@@ -744,6 +766,7 @@
     let o = 0, drawn = 0;
     for (let i = 0; i < n; i++) {
       const q = parts[i];
+      if (kinds && !kinds.has(q.kind)) continue;   // batch by particle family (D-02)
       const p = q.pos, c = q.color, size = q.size;
       // per-particle fade: peak alpha128 (c[3], INFERRED overbright) × life-left.
       const fade = q.life > 0 ? Math.max(0, 1 - q.age / q.life) : 0;
@@ -753,7 +776,15 @@
       // defense-in-depth for the runtime-derived fade/size so NaN never uploads.
       if (!Number.isFinite(p[0]) || !Number.isFinite(p[1]) || !Number.isFinite(p[2]) ||
           !Number.isFinite(size) || !Number.isFinite(a)) continue;
-      const cr = c ? c[0] : 1, cg = c ? c[1] : 1, cb = c ? c[2] : 1;
+      // Fire batch overrides per-particle rgb with the REAL decoded fire color
+      // (tint = db.meta.colorSource / MAT_pticleMat.blendColor [2,2,2,1] overbright);
+      // the per-particle alpha128 (INFERRED overbright peak) is UNTOUCHED, so the
+      // additive-premult fragment (rgb·alpha128, ONE,ONE) recovers GS brightness
+      // ABOVE the 1.0 clamp (CLAUDE.md Part 1 alpha-over-1.0). Spark batch: no tint,
+      // per-particle rgb as-is. NO fabricated crimson anywhere (Pitfall 4).
+      const cr = tint ? tint[0] : (c ? c[0] : 1);
+      const cg = tint ? tint[1] : (c ? c[1] : 1);
+      const cb = tint ? tint[2] : (c ? c[2] : 1);
       for (let k = 0; k < 4; k++) {
         const cor = POOL_CORNERS[k];
         V[o++] = p[0]; V[o++] = p[1]; V[o++] = p[2];       // aCenter (mesh-local)
@@ -781,9 +812,12 @@
     gl.vertexAttribPointer(poolLocs.aColor, 4, gl.FLOAT, false, POOL_STRIDE, 28);
     gl.disable(gl.CULL_FACE);
     // Blend + depth ONLY from the MAT table (DEC-01): the new additivePremult
-    // mode (ONE,ONE + FUNC_ADD + depthMask off). No hardcoded blendFunc here.
-    Fx.applyMaterial(gl, { name: "fxPool", mode: "additivePremult", disableDepthWrite: true });
-    fxLog.push({ name: "fxPool", mode: "additivePremult", depthWrite: false, count: drawn });
+    // mode (ONE,ONE + FUNC_ADD + depthMask off). No hardcoded blendFunc here. Each
+    // batch (spark riders / blade fire) applies + logs its own pass so fxState()
+    // proves the additive/depth-off discipline per family.
+    const batchName = (opts && opts.name) || "fxPool";
+    Fx.applyMaterial(gl, { name: batchName, mode: "additivePremult", disableDepthWrite: true });
+    fxLog.push({ name: batchName, mode: "additivePremult", depthWrite: false, count: drawn });
     gl.bindTexture(gl.TEXTURE_2D, batchTex);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, poolIdxBuf);
     gl.drawElements(gl.TRIANGLES, drawn * 6, gl.UNSIGNED_SHORT, 0);
@@ -943,14 +977,25 @@
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(trailV), gl.DYNAMIC_DRAW);
       gl.drawArrays(gl.TRIANGLES, 0, trailV.length / 6);
     }
-    // PASS — trail-spark particle pool: billboard, additive-premult, depth OFF,
-    // AFTER the trail sheet and BEFORE restoreFxState (Pitfall 3 leak guard). The
-    // batch sprite is the already-loaded in-WAD GFX_swordtrail streak (trailTex,
+    // PASS — trail-spark particle pool riders: billboard, additive-premult, depth
+    // OFF, AFTER the trail sheet and BEFORE restoreFxState (Pitfall 3 leak guard).
+    // The batch sprite is the already-loaded in-WAD GFX_swordtrail streak (trailTex,
     // real texture bytes) — an INFERRED sprite reuse: the D-04c trail-spark
     // enhancement has no dedicated decoded sprite record, so it rides the decoded
-    // swordtrail texel (real bytes, INFERRED assignment). Later slices bind their
-    // own batch sprite. Empty pool → drawPool no-ops; fxState() stays clean.
-    drawPool(mvp, view, trailTex);
+    // swordtrail texel (real bytes, INFERRED assignment). Per-particle rgb (the
+    // BFT/BGT variant tint) is kept as-is (no tint override). Empty pool → drawPool
+    // no-ops; fxState() stays clean.
+    drawPool(mvp, view, trailTex, { name: "fxSpark", kinds: TRAIL_SPARK_KINDS });
+    // PASS — blade fire (flame3 + flame6, FIRE-01): its OWN batch by texture (D-02).
+    // Color = the REAL decoded fire color from db.meta.colorSource
+    // (MAT_pticleMat.blendColor, [2,2,2,1] overbright) applied as the per-vertex rgb
+    // tint; the per-particle alpha128 (INFERRED overbright peak) carries the extra
+    // brightness so the additive-premult fragment (rgb·alpha128, ONE,ONE) recovers GS
+    // brightness ABOVE the 1.0 clamp (CLAUDE.md Part 1 alpha-over-1.0). Sprite =
+    // fireTex (resolved MAT_pticleMat texture, or the documented trailTex fallback —
+    // MAT_pticleMat has no texName). NO fabricated crimson: the color is decoded
+    // (Pitfall 4); only the runtime age fade (life-left in drawPool) is INFERRED.
+    drawPool(mvp, view, fireTex, { name: "fxFire", kinds: FIRE_KINDS, tint: db.meta.colorSource.value });
     Fx.restoreFxState(gl);
     gl.useProgram(prog);
   }
