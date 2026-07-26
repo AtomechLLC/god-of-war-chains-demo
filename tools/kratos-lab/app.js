@@ -1209,6 +1209,22 @@
     gl.uniform1f(uHeat, heat);
     gl.uniform1f(uPages, atlasPages);
     gl.uniformMatrix4fv(uModel, false, modelMat);
+    // REND-02: refresh each blade light's WORLD position + intensity every rendered
+    // frame so it rides its blade — anchor (blade-local) × live blade matrix
+    // bladeSim[key].mat (blade→mesh) × modelMat (mesh→world), matching vWorld's space.
+    // Missing-blade guard: an uninitialized bladeSim[key].mat would push a NaN into the
+    // uniform, so zero that light's intensity until its blade sim is live (T-06-08-01).
+    for (const [key, uPos, uInt, dl] of [
+      ["l", uLightPosL, uLightIntensityL, bladeLightL],
+      ["r", uLightPosR, uLightIntensityR, bladeLightR],
+    ]) {
+      if (bladeSim[key].pos) {
+        gl.uniform3fv(uPos, xformM(modelMat, xformM(bladeSim[key].mat, dl.anchor)));
+        gl.uniform1f(uInt, dl.intensity);   // REAL decoded intensity (2.5)
+      } else {
+        gl.uniform1f(uInt, 0.0);            // no live blade yet — dark, no NaN reaches the uniform
+      }
+    }
     gl.bindTexture(gl.TEXTURE_2D, tex);
     // __fxOnly (debug): skip the hero + blade MESHES so the FX passes render
     // alone against the black clear — isolates chain/trail visibility.
