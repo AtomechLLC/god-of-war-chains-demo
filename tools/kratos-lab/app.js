@@ -479,7 +479,12 @@
   // UNSIGNED_SHORT. Particles.makePool enforces the cap (reject-when-full).
   const POOL_CAP = 512;
   const fxPool = Particles.makePool({ maxParticles: POOL_CAP });
-  const POOL_FLOATS_PER_VERT = 11;                 // aCenter(3)+aCorner(2)+aUV(2)+aColor(4)
+  // FIRE-02 velocity-stretch factor for impact sparks: the pool VS scales each quad's
+  // long (velocity-aligned) axis by this when the spark batch draws (uStretch). INFERRED
+  // (A1 — the PS2 "stretched spark" elongation is a runtime look, no decoded field);
+  // Phase-7 footage-tunable. Non-spark batches pass 0 (plain camRight/camUp billboard).
+  const SPARK_STRETCH = 2.5;
+  const POOL_FLOATS_PER_VERT = 14;                 // aCenter(3)+aCorner(2)+aUV(2)+aColor(4)+aVel(3)
   const POOL_STRIDE = POOL_FLOATS_PER_VERT * 4;    // interleaved stride in bytes
   const poolProg = gl.createProgram();
   gl.attachShader(poolProg, shader(gl.VERTEX_SHADER, `
@@ -487,14 +492,29 @@
     attribute vec2 aCorner;   // ±halfSize corner offset
     attribute vec2 aUV;
     attribute vec4 aColor;    // rgb + alpha128 (may exceed 1.0 — premultiplied in the fragment)
+    attribute vec3 aVel;      // per-particle world velocity (FIRE-02 spark stretch axis)
     uniform mat4 uMVP; uniform vec3 uCamRight; uniform vec3 uCamUp;
+    uniform float uStretch;   // 0 = plain billboard; >0 = velocity-aligned stretch factor (spark batch)
     varying vec2 vUV; varying vec4 vColor;
     void main() {
-      // Billboard: expand the quad along the camera right/up axes so every
-      // sprite faces the camera with NO per-particle CPU matrix (CLAUDE.md Part
-      // 3). uCamRight/uCamUp are the view matrix's row-0/row-1 (columns of its
-      // transpose), supplied by drawPool.
-      vec3 world = aCenter + uCamRight * aCorner.x + uCamUp * aCorner.y;
+      vec3 world;
+      if (uStretch > 0.0) {
+        // FIRE-02 velocity-aligned STRETCHED billboard (CLAUDE.md Part 3 "Spark
+        // stretching"): the quad's long axis rides the projected velocity so the
+        // spark reads as a streak scaled along motion; the short axis is the
+        // perpendicular. This GLSL mirrors the pure Particles.stretchAxis(vel,
+        // camUp) contract (particles.js) — normalize(aVel), with the uCamUp
+        // fallback when |vel| ~ 0 — evaluated per-vertex on the GPU.
+        vec3 axis = length(aVel) > 1e-4 ? normalize(aVel) : uCamUp;
+        vec3 perp = normalize(cross(axis, uCamRight));
+        world = aCenter + axis * (aCorner.x * uStretch) + perp * aCorner.y;
+      } else {
+        // Billboard: expand the quad along the camera right/up axes so every
+        // sprite faces the camera with NO per-particle CPU matrix (CLAUDE.md Part
+        // 3). uCamRight/uCamUp are the view matrix's row-0/row-1 (columns of its
+        // transpose), supplied by drawPool.
+        world = aCenter + uCamRight * aCorner.x + uCamUp * aCorner.y;
+      }
       gl_Position = uMVP * vec4(world, 1.0);
       vUV = aUV; vColor = aColor;
     }`));
@@ -516,9 +536,11 @@
     aCorner: gl.getAttribLocation(poolProg, "aCorner"),
     aUV: gl.getAttribLocation(poolProg, "aUV"),
     aColor: gl.getAttribLocation(poolProg, "aColor"),
+    aVel: gl.getAttribLocation(poolProg, "aVel"),
     uMVP: gl.getUniformLocation(poolProg, "uMVP"),
     uCamRight: gl.getUniformLocation(poolProg, "uCamRight"),
     uCamUp: gl.getUniformLocation(poolProg, "uCamUp"),
+    uStretch: gl.getUniformLocation(poolProg, "uStretch"),
     uTex: gl.getUniformLocation(poolProg, "uTex"),
   };
   // ONE interleaved ARRAY_BUFFER (DYNAMIC_DRAW), allocated once at cap size and
@@ -759,6 +781,7 @@
   function drawPool(mvp, view, batchTex, opts) {
     const kinds = (opts && opts.kinds) || null;  // Set of kinds to include; null = all (back-compat)
     const tint = (opts && opts.tint) || null;    // REAL decoded rgb override (fire: db.meta.colorSource)
+    const stretch = (opts && opts.stretch) || 0; // FIRE-02: >0 = velocity-aligned stretch factor (spark batch)
     const parts = fxPool.particles;
     const n = Math.min(parts.length, POOL_CAP);
     if (n === 0) return;                       // empty pool → nothing; state stays clean
@@ -775,14 +798,16 @@
     for (let i = 0; i < n; i++) {
       const q = parts[i];
       if (kinds && !kinds.has(q.kind)) continue;   // batch by particle family (D-02)
-      const p = q.pos, c = q.color, size = q.size;
+      const p = q.pos, c = q.color, size = q.size, vel = q.vel;
       // per-particle fade: peak alpha128 (c[3], INFERRED overbright) × life-left.
       const fade = q.life > 0 ? Math.max(0, 1 - q.age / q.life) : 0;
       const a = (c && c.length > 3 ? c[3] : 1) * fade;
-      // Guard non-finite BEFORE the value reaches bufferSubData (V5 / T-06-04-03).
-      // Particles.spawn already rejects non-finite inputs at emission; this is
-      // defense-in-depth for the runtime-derived fade/size so NaN never uploads.
+      // Guard non-finite BEFORE the value reaches bufferSubData (V5 / T-06-04-03,
+      // T-06-06-02). Particles.spawn already rejects non-finite inputs at emission;
+      // this is defense-in-depth for the runtime-derived fade/size AND the spark
+      // stretch velocity (a NaN aVel → a degenerate stretch axis) so NaN never uploads.
       if (!Number.isFinite(p[0]) || !Number.isFinite(p[1]) || !Number.isFinite(p[2]) ||
+          !Number.isFinite(vel[0]) || !Number.isFinite(vel[1]) || !Number.isFinite(vel[2]) ||
           !Number.isFinite(size) || !Number.isFinite(a)) continue;
       // Fire batch overrides per-particle rgb with the REAL decoded fire color
       // (tint = db.meta.colorSource / MAT_pticleMat.blendColor [2,2,2,1] overbright);
@@ -799,6 +824,7 @@
         V[o++] = cor[0] * size; V[o++] = cor[1] * size;     // aCorner (±size)
         V[o++] = cor[2]; V[o++] = cor[3];                   // aUV
         V[o++] = cr; V[o++] = cg; V[o++] = cb; V[o++] = a;  // aColor rgb + alpha128
+        V[o++] = vel[0]; V[o++] = vel[1]; V[o++] = vel[2];  // aVel (FIRE-02 spark stretch axis)
       }
       drawn++;
     }
@@ -807,6 +833,7 @@
     gl.uniformMatrix4fv(poolLocs.uMVP, false, M.mul(mvp, modelMat)); // aCenter is mesh-local
     gl.uniform3f(poolLocs.uCamRight, rx, ry, rz);
     gl.uniform3f(poolLocs.uCamUp, ux, uy, uz);
+    gl.uniform1f(poolLocs.uStretch, stretch);   // FIRE-02: 0 = billboard, >0 = velocity stretch
     gl.uniform1i(poolLocs.uTex, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, poolVertBuf);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, V.subarray(0, drawn * 4 * POOL_FLOATS_PER_VERT));
@@ -814,10 +841,12 @@
     gl.enableVertexAttribArray(poolLocs.aCorner);
     gl.enableVertexAttribArray(poolLocs.aUV);
     gl.enableVertexAttribArray(poolLocs.aColor);
+    gl.enableVertexAttribArray(poolLocs.aVel);
     gl.vertexAttribPointer(poolLocs.aCenter, 3, gl.FLOAT, false, POOL_STRIDE, 0);
     gl.vertexAttribPointer(poolLocs.aCorner, 2, gl.FLOAT, false, POOL_STRIDE, 12);
     gl.vertexAttribPointer(poolLocs.aUV, 2, gl.FLOAT, false, POOL_STRIDE, 20);
     gl.vertexAttribPointer(poolLocs.aColor, 4, gl.FLOAT, false, POOL_STRIDE, 28);
+    gl.vertexAttribPointer(poolLocs.aVel, 3, gl.FLOAT, false, POOL_STRIDE, 44);
     gl.disable(gl.CULL_FACE);
     // Blend + depth ONLY from the MAT table (DEC-01): the new additivePremult
     // mode (ONE,ONE + FUNC_ADD + depthMask off). No hardcoded blendFunc here. Each
@@ -836,6 +865,7 @@
     gl.disableVertexAttribArray(poolLocs.aCorner);
     gl.disableVertexAttribArray(poolLocs.aUV);
     gl.disableVertexAttribArray(poolLocs.aColor);
+    gl.disableVertexAttribArray(poolLocs.aVel);
   }
 
   function drawFx(mvp, view) {
@@ -1004,6 +1034,16 @@
     // MAT_pticleMat has no texName). NO fabricated crimson: the color is decoded
     // (Pitfall 4); only the runtime age fade (life-left in drawPool) is INFERRED.
     drawPool(mvp, view, fireTex, { name: "fxFire", kinds: FIRE_KINDS, tint: db.meta.colorSource.value });
+    // PASS — impact sparks (FIRE-02): velocity-aligned STRETCHED billboards. The pool VS
+    // (uStretch = SPARK_STRETCH > 0) builds each quad's long axis from the per-particle
+    // aVel (the PS2 "stretched spark" look, CLAUDE.md Part 3) — every spark in the on-hit
+    // burst has its own fanned velocity, so the shower reads as a spray of streaks. Color =
+    // the REAL decoded fire color (db.meta.colorSource / MAT_pticleMat.blendColor) as the
+    // per-vertex tint — NO fabricated spark RGB (Pitfall 4); only the stretch factor + the
+    // runtime age fade are INFERRED. Sprite = the in-WAD GFX_swordtrail streak (trailTex,
+    // real bytes, INFERRED assignment — no decoded spark sprite record). Additive-premult,
+    // depth OFF via Fx.applyMaterial, BEFORE restoreFxState (Pitfall 3 leak guard).
+    drawPool(mvp, view, trailTex, { name: "fxImpactSpark", kinds: SPARK_KINDS, tint: db.meta.colorSource.value, stretch: SPARK_STRETCH });
     Fx.restoreFxState(gl);
     gl.useProgram(prog);
   }
