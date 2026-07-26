@@ -695,4 +695,65 @@ function decodeFxTexture(matName, txrName) {
   }
 }
 
-console.log("fxdb.test.js: MSH + PTC + FXC + swordtrail-provenance + full-corpus known-answers passed");
+// ---------------------------------------------------------------------------
+// --- Phase-6 binding contracts ---  BDEsparkemit / CNG (D-08, D-09a; FIRE-01/02, CHAIN-03)
+// ---------------------------------------------------------------------------
+// These PIN the render-wave contracts as ALREADY-REAL facts from Phase 5 — no
+// decode top-up. 06-RESEARCH D-09(a) resolved that FXC_BDEsparkemit is already a
+// real db.fxc key, and that the fire family binds emitter->particle by shapeRef
+// NAME (Pitfall 6: WAD-native fire uses placeholder slot 0x0, deliberately NOT
+// paired in db.refs), while FXC_CNGemit->PTC_CNGpart is a name-confirmed slot pair.
+{
+  const standaloneNames = [
+    "PTC_BFTpart1", "PTC_BGTpart1", "PTC_CNGpart", "PTC_FXCFpart",
+    "FXC_BFTemit1", "FXC_BGTemit1", "FXC_CNGemit", "FXC_FXCFemit",
+  ];
+  const standaloneRecs = standaloneNames.map((n) => ({ name: n, buf: loadBin(n).buf, tag: 0x1e }));
+  const db = FxParse.buildFxDb(recs, buf, standaloneRecs);
+
+  // (1) FXC_BDEsparkemit is a real db.fxc key: subtype 0x3 (spark), shapeRef one of
+  // the level-1 flame shapes — the fire/spark emitter FIRE-01/02 render from directly.
+  const spark = db.fxc["FXC_BDEsparkemit"];
+  assert.ok(spark, "db.fxc['FXC_BDEsparkemit'] is a real key (D-09a: no spark decode top-up needed)");
+  assert.strictEqual(spark.subtype, 0x3, "FXC_BDEsparkemit subtype === 0x3 (spark)");
+  const FLAME_SHAPES = ["flame6Shape", "flame3Shape", "flame5Shape"];
+  assert.ok(
+    FLAME_SHAPES.includes(spark.shapeRef),
+    `FXC_BDEsparkemit shapeRef in {flame6/flame3/flame5}Shape (got ${spark.shapeRef})`
+  );
+
+  // (2) A BDEsparkemit variant resolving to flame3Shape exists (the flame3 half of
+  // the layered flame3+flame6 blade fire — A4/Open-Q2: FXC_BDEsparkemit.0 -> flame3Shape).
+  const flame3Variant = Object.keys(db.fxc).some(
+    (k) => k.startsWith("FXC_BDEsparkemit") && db.fxc[k].shapeRef === "flame3Shape"
+  );
+  assert.ok(flame3Variant, "a FXC_BDEsparkemit* variant resolves to flame3Shape (layered flame3+flame6 fire)");
+
+  // (3) Fire shapeRef-NAME binding (Pitfall 6): FXC_BDEsparkemit uses placeholder
+  // slot 0x0 (NOT paired in db.refs), so the emitter->particle join is by matching
+  // shapeRef strings — a db.ptc entry shares FXC_BDEsparkemit's shapeRef (flame6Shape).
+  const firePtc = Object.keys(db.ptc).filter((k) => db.ptc[k].shapeRef === spark.shapeRef);
+  assert.ok(
+    firePtc.length > 0,
+    `a db.ptc entry shares FXC_BDEsparkemit.shapeRef "${spark.shapeRef}" (name binding, not slot — Pitfall 6): ${firePtc.join(",")}`
+  );
+  // And BDEsparkemit is NOT a name-confirmed slot pair (it rides placeholder slot 0x0):
+  const sparkSlotPair = db.refs.some(
+    (x) => x.kind === "slot" && x.from === "FXC_BDEsparkemit" && x.confidence === "name-confirmed"
+  );
+  assert.ok(!sparkSlotPair, "FXC_BDEsparkemit has NO name-confirmed slot pair (placeholder slot 0x0 — bind by name)");
+
+  // (4) CNG name-confirmed ref (CHAIN-03): FXC_CNGemit -> PTC_CNGpart is a slot pair
+  // whose shapeNameMatch === true (both CNGpartShape, slot 0x1) — the authoritative
+  // chain-glow binding the state-gating wave (06-07) consumes.
+  const cngRef = db.refs.find(
+    (x) => x.kind === "slot" && x.from === "FXC_CNGemit" && x.to === "PTC_CNGpart"
+  );
+  assert.ok(cngRef, "db.refs contains an FXC_CNGemit -> PTC_CNGpart slot pair");
+  assert.strictEqual(cngRef.shapeNameMatch, true, "FXC_CNGemit -> PTC_CNGpart shapeNameMatch === true (name-confirmed)");
+  assert.strictEqual(cngRef.confidence, "name-confirmed", "FXC_CNGemit -> PTC_CNGpart confidence === name-confirmed");
+  assert.strictEqual(db.fxc["FXC_CNGemit"].shapeRef, "CNGpartShape", "FXC_CNGemit shapeRef === CNGpartShape");
+  assert.strictEqual(db.ptc["PTC_CNGpart"].shapeRef, "CNGpartShape", "PTC_CNGpart shapeRef === CNGpartShape");
+}
+
+console.log("fxdb.test.js: MSH + PTC + FXC + swordtrail-provenance + full-corpus + Phase-6 binding-contract known-answers passed");
