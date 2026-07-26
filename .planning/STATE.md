@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 06-08-PLAN.md (per-blade warm point lights — REND-02; Phase 6 complete)
-last_updated: "2026-07-26T09:25:23.831Z"
+status: ready_to_plan
+stopped_at: Phase 06 complete (8/8) — ready to discuss Phase 7
+last_updated: 2026-07-26T09:56:39.201Z
 last_activity: 2026-07-26
 progress:
   total_phases: 7
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-24)
 
 **Core value:** A GoW1 attack in kratos-lab reads 80–90% identical to real gameplay footage — chains, glow, and fire use the game's own decoded textures, particle definitions, colors, and values, not approximations.
-**Current focus:** Phase 06 — particle-runtime-fire-sparks-trails
+**Current focus:** Phase 7 — side by side validation & inferred tuning
 
 ## Current Position
 
-Phase: 06 (particle-runtime-fire-sparks-trails) — EXECUTING
-Plan: 8 of 8
-Status: Phase complete — ready for verification
+Phase: 7
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-07-26
 
 Progress: [█████████░] 91%
@@ -36,7 +36,7 @@ Progress: [█████████░] 91%
 
 **Velocity:**
 
-- Total plans completed: 11
+- Total plans completed: 19
 - Average duration: —
 - Total execution time: 0.0 hours
 
@@ -47,6 +47,7 @@ Progress: [█████████░] 91%
 | 2 | 4 | - | - |
 | 03 | 2 | - | - |
 | 05 | 5 | - | - |
+| 06 | 8 | - | - |
 
 **Recent Trend:**
 
