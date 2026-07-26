@@ -501,9 +501,19 @@
         return;
       }
       if (uTrailRamp > 0.5) {
-        // age fraction: young/hot (t=0) at high alpha -> old/ember (t=1) at low.
+        // age fraction: young/hot (t=0) -> old/ember (t=1).
         float t = clamp(1.0 - vT.z / 0.85, 0.0, 1.0);
-        rgb *= mix(uRampHot, uRampCool, t);   // MODULATE texel by the INFERRED ramp
+        rgb *= mix(uRampHot, uRampCool, t);   // MODULATE amber texel by the INFERRED ramp
+        // INFERRED SOLID RIBBON: 05-04 proved GFX_swordtrail's alpha is concentrated at
+        // the cross-strip edge, so gating additive strength on the texel alpha (c.a)
+        // rendered the ribbon as a thin, invisible sliver — only the bright particle
+        // dots showed. Drive the sheet's additive strength from the ribbon's OWN vertex
+        // age-alpha (vT.z) plus a brightness gain, keeping the decoded amber texel color
+        // and the ramp, so it fills as the thick connected luminous streak. Blend/depth
+        // still come only from MAT_swordtrail via Fx.applyMaterial (DEC-01); the solidity
+        // + 3.0 gain are runtime INFERRED (Phase-7 footage-tunable).
+        gl_FragColor = vec4(rgb * 3.0, vT.z);
+        return;
       }
       gl_FragColor = vec4(rgb, a);
     }`));
@@ -763,7 +773,7 @@
   // biased toward (Pattern 7). INFERRED (A9) from footage analysis in
   // trail-fidelity-from-footage.md — NOT a decoded value. 0.6 makes the trail
   // hug the tip arc (the outer sweep) instead of the full hilt→tip sheet.
-  const TRAIL_INNER_T = 0.3;  // INFERRED: wider trail sheet toward the arc (was 0.6, too narrow) — Phase-7 tune
+  const TRAIL_INNER_T = 0.05; // INFERRED: near-full hilt→tip width for a thick sheet (was 0.6) — Phase-7 tune
   // CHAIN-03 chain-glow combat gains (D-05, A2 — INFERRED, footage-calibrated in
   // Phase 7). No decoded state-gate field exists (verified Phase 5), so the dark<->hot
   // RULE is INFERRED; the brightness it drives is data-grounded (alpha-over-1.0,
@@ -1240,11 +1250,18 @@
       ["l", uLightPosL, uLightIntensityL, bladeLightL],
       ["r", uLightPosR, uLightIntensityR, bladeLightR],
     ]) {
-      if (bladeSim[key].pos) {
-        gl.uniform3fv(uPos, xformM(modelMat, xformM(bladeSim[key].mat, dl.anchor)));
-        gl.uniform1f(uInt, dl.intensity);   // REAL decoded intensity (2.5)
+      const wpos = bladeSim[key].pos ? xformM(modelMat, xformM(bladeSim[key].mat, dl.anchor)) : null;
+      if (wpos && wpos.every(Number.isFinite)) {
+        gl.uniform3fv(uPos, wpos);
+        // BLADE_LIGHT_GAIN (INFERRED runtime calibration): the decoded intensity 2.5 is
+        // in the GAME's lighting units. Applied 1:1 in this renderer (two lights, near-
+        // flat attenuation at range×s0) it blew the hero out — and on a fast attack whip
+        // a non-finite blade matrix pushed NaN into the hero fragment, turning Kratos
+        // black (he "disappeared on attack"). The decoded value stays REAL in the data;
+        // only this display gain is INFERRED (renderer units ≠ game units). Phase-7 tune.
+        gl.uniform1f(uInt, dl.intensity * 0.12);
       } else {
-        gl.uniform1f(uInt, 0.0);            // no live blade yet — dark, no NaN reaches the uniform
+        gl.uniform1f(uInt, 0.0);            // no live/finite blade — dark, no NaN reaches the hero fragment
       }
     }
     gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -1648,7 +1665,7 @@
             // rate/velocity/size/life record exists (Pitfall 1); all Phase-7
             // footage-tunable. Determinism boundary (D-07): the jitter is runtime
             // Math.random, kept OUT of the pure tested Particles paths.
-            const SPARKS_PER_TICK = 8;        // INFERRED emission rate (denser trail riders; was 3) — Phase-7 tune
+            const SPARKS_PER_TICK = 2;        // INFERRED: sparse sparkle ON TOP of the ribbon (the RIBBON is the streak, not dots) — Phase-7 tune
             const SPARK_LIFE = 30 * STEP;     // INFERRED ~30-frame trail-gone anchor (0.5s @60Hz)
             const SPARK_SIZE = 0.24;          // INFERRED billboard half-size (was 0.18) — Phase-7 tune
             const SPARK_ALPHA = 1.6;          // INFERRED peak alpha128 (>1.0 overbright — premult path)
@@ -1686,7 +1703,7 @@
             // TODO(Open Q1): promote rates/lifetimes to REAL if an FXC/PTC param-
             // semantics top-up decodes the emission fields (the upgrade path that
             // removes these INFERRED constants).
-            const FIRE_PER_TICK = 6;      // INFERRED per-system, per-side emission rate (denser flame mass; was 2) — Phase-7 tune
+            const FIRE_PER_TICK = 3;      // INFERRED: modest flame on the blade (the bright blade point), not a scatter of dots — Phase-7 tune
             const FIRE_LIFE = 22 * STEP;  // INFERRED ~22-frame lifetime (0.37s @60Hz)
             const FIRE_SIZE = 0.7;        // INFERRED billboard half-size (fuller flame; was 0.5) — Phase-7 tune
             const FIRE_ALPHA = 1.9;       // INFERRED peak alpha128 (>1.0 overbright — premult path, CLAUDE.md Part 1 alpha-over-1.0)
