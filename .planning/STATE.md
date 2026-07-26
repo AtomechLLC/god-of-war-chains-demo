@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 05-04-PLAN.md (color provenance + full FX corpus + evidence audit; D-06 GS-dump = skip; DEC-02 closed)
-last_updated: "2026-07-26T00:23:16.763Z"
+status: verifying
+stopped_at: "Completed 05-05-PLAN.md (DEC-03: parseAnmType5 type-5 ANM blade-state descriptor decoded; escalation disposition recorded; Phase 5 ready for verification)"
+last_updated: "2026-07-26T00:38:39.109Z"
 last_activity: 2026-07-26
 progress:
   total_phases: 7
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 15
-  completed_plans: 12
-  percent: 29
+  completed_plans: 13
+  percent: 43
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 
 Phase: 05 (fx-record-decode) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-26
 
-Progress: [████████░░] 80%
+Progress: [█████████░] 87%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [████████░░] 80%
 | Phase 05 P02 | 10min | 2 tasks | 2 files |
 | Phase 05 P03 | 12min | 2 tasks | 2 files |
 | Phase 05 P04 | 15min | 2 tasks | 2 files |
+| Phase 05 P05 | 15min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,7 @@ Recent decisions affecting current work:
 - [Phase 05]: (05-02) PTC decoded (parsePtc + buildFxDb 3rd-arg standaloneRecs): BFT/BGT trail defs are real db.ptc keys at slot 0x1d; no color read from PTC (identity RGBA byte-identical fire-vs-swoosh, Pitfall 4); DEC-02 still Pending until FXC (05-03)
 - [Phase ?]: (05-03) DEC-02 COMPLETE: FXC decoded (parseFxc subtype-branched 0x2/0x3/0xd, +0x58 poly branch after u32 count) — MSH+PTC+FXC all decoded with per-field evidence; buildFxDb emits the full JSON-dumpable emitter->particle->shape graph (standalone BFT/BGT emit1 as real db.fxc keys, MSH refs resolved:true, guarded 0x1d BFT/BGT slot pair, placeholder slot 0x00/0xffff skipped)
 - [Phase 05]: (05-04) D-06 GS-dump corroboration = SKIP (user decision): per-effect blend confidence stays MEDIUM, corroborated by differential-decode + Phase-1 footage anchors + cross-record consistency; Phase 6 uses the MAT-decoded blend already pinned in DEC-01. DEC-02 color clause substantiated data-first: effect color traced to MAT_pticleMat.blendColor (real byte value) with the white-hot->orange->ember age->color ramp INFERRED (GFX_swordtrail carries no painted length-wise ramp; static PTC RGBA identity, byte-identical fire-vs-swoosh).
+- [Phase ?]: (05-05) DEC-03 decoded: FxParse.parseAnmType5 decodes the type-5 ANM blade-state descriptor = the gomaiblade scene-binding node (class 1/variant 2, u32@0 0x00020001) into a queryable JSON-dumpable state->visibility result (in-combat->in-hand, out-of-combat->on-back). Escalation disposition (D-04): no class-5 record + no level-1 ANM_maiblade exist, so 'type-5' is a taxonomy label (INFERRED, ELF tiebreaker) not a magic; show/hide mapping is runtime (INFERRED); framing/binding/placement/tier are real. No byte seed fabricated.
 
 ### Pending Todos
 
@@ -102,6 +104,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-26T00:23:16.754Z
-Stopped at: Completed 05-04-PLAN.md (color provenance + full FX corpus + evidence audit; D-06 GS-dump = skip; DEC-02 closed)
+Last session: 2026-07-26T00:38:29.386Z
+Stopped at: Completed 05-05-PLAN.md (DEC-03: parseAnmType5 type-5 ANM blade-state descriptor decoded; escalation disposition recorded; Phase 5 ready for verification)
 Resume file: None

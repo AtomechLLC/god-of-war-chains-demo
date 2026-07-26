@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: WAD/MAT Decode & Render-Pass Foundation** - Raw WAD loading, full MAT decode, single GS→GL blend table, 0x80 convention, 60Hz timestep, native-res toggle (completed 2026-07-25)
 - [x] **Phase 3: Chain Link Ribbon & Glow** - Correctly pitched, per-link-twisted chainlink ribbon plus chainglow additive overlay (completed 2026-07-25)
 - [ ] **Phase 4: Chain Motion** - Catenary drape at rest, whip-lag C-curves in flight, settle behavior on the 60Hz tick
-- [ ] **Phase 5: FX Record Decode** - MSH/PTC/FXC differential decode with evidence tables, type-5 blade-state descriptor, GS-dump blend confirmation
+- [x] **Phase 5: FX Record Decode** - MSH/PTC/FXC differential decode with evidence tables, type-5 blade-state descriptor, GS-dump blend confirmation (completed 2026-07-26)
 - [ ] **Phase 6: Particle Runtime — Fire, Sparks & Trails** - World-space particle pool rendering flames, sparks, dual trails, state glow, and blade lights from decoded values
 - [ ] **Phase 7: Side-by-Side Validation & Inferred Tuning** - In-tool comparison harness vs reference captures; 80–90% in-motion verdict
 
@@ -138,7 +138,7 @@ Note: Research flag — motion mechanism is footage-inferred, not data-backed; p
   3. The type-5 ANM descriptor is decoded and drives blade presentation — blades appear on Kratos's back out of combat and in hands during combat
   4. A PCSX2 GS dump of a blade swing confirms actual per-effect blend configs, and the disc region (NTSC vs PAL) is confirmed before interpreting any rate/lifetime as tick units
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 **Wave 1**
@@ -154,7 +154,7 @@ Plans:
 - [x] 05-04-PLAN.md — Color-provenance (MAT_pticleMat) + swordtrail no-ramp proof + fire/chain-glow corpus + evidence audit + GS-dump decision (DEC-02, checkpoint)
 
 **Wave 5** *(blocked on Wave 4 — DEC-03 deferred to last per D-07)*
-- [ ] 05-05-PLAN.md — Type-5 ANM blade-state descriptor (parseAnmType5): differential-locate + decode blade show/hide (DEC-03)
+- [x] 05-05-PLAN.md — Type-5 ANM blade-state descriptor (parseAnmType5): differential-locate + decode blade show/hide (DEC-03)
 
 Note: Research flag — this is original reverse engineering with no public decode anywhere; planning must include the differential-decode protocol (15+ record instances, stage1 vs god pairs), the GS-dump capture procedure, and the ELF-disassembly escalation path.
 
@@ -203,7 +203,7 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 | 2. WAD/MAT Decode & Render-Pass Foundation | 4/4 | Complete    | 2026-07-25 |
 | 3. Chain Link Ribbon & Glow | 2/2 | Complete   | 2026-07-25 |
 | 4. Chain Motion | 0/TBD | Not started | - |
-| 5. FX Record Decode | 4/5 | In Progress|  |
+| 5. FX Record Decode | 5/5 | Complete   | 2026-07-26 |
 | 6. Particle Runtime — Fire, Sparks & Trails | 0/TBD | Not started | - |
 | 7. Side-by-Side Validation & Inferred Tuning | 0/TBD | Not started | - |
 
