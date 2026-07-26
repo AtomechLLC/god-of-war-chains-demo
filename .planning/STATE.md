@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 06-06-PLAN.md (impact sparks on hit events — velocity-aligned stretched billboards)
-last_updated: "2026-07-26T09:01:44.591Z"
+last_updated: "2026-07-26T09:12:29.801Z"
 last_activity: 2026-07-26
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 23
-  completed_plans: 19
+  completed_plans: 20
   percent: 43
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 ## Current Position
 
 Phase: 06 (particle-runtime-fire-sparks-trails) — EXECUTING
-Plan: 7 of 8
+Plan: 8 of 8
 Status: Ready to execute
 Last activity: 2026-07-26
 
-Progress: [████████░░] 83%
+Progress: [█████████░] 87%
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Progress: [████████░░] 83%
 | Phase 06 P04 | 18min | 2 tasks | 4 files |
 | Phase 06 P05 | 20min | 3 tasks | 2 files |
 | Phase 06 P06 | 16min | 2 tasks | 2 files |
+| Phase 06 P07 | 4min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,10 @@ Recent decisions affecting current work:
 - [Phase ?]: (06-05) Fire color = REAL db.meta.colorSource (MAT_pticleMat.blendColor [2,2,2] overbright) applied as per-vertex tint at draw x INFERRED overbright alpha128 -> additive-premult alpha-over-1.0 (CLAUDE.md Part 1); fire sprite fxTexFromMat(MAT_pticleMat) w/ documented trailTex fallback; drawPool batches by family {kinds,tint}; no fabricated crimson (Pitfall 4)
 - [Phase 06]: (06-06) FIRE-02 impact sparks: edge-detect machine.st.hits per sim tick (prevHits) -> fxPool.burst off each blade from the already-real FXC_BDEsparkemit family (A6/D-09a, no new emitter decode); spawnAnchor(bladeSim[key].mat, sparkFxc.matrix) sampled once then decouple (SC1 blade-lag); edge-triggered once per hit (Pitfall 5), count/vel/size/life INFERRED (A1)
 - [Phase 06]: (06-06) Velocity-aligned stretched-spark render: pool VS gains aVel attribute + uStretch branch (normalize(aVel), camUp fallback = GLSL mirror of Particles.stretchAxis) -> spark batch stretched, fire/trail keep plain billboard; spark color = REAL db.meta.colorSource tint at draw (no fabricated RGB, Pitfall 4), additive-premult+depth-off only via Fx.applyMaterial (DEC-01); ?v 26->27
+- [Phase ?]: (06-07) Chain glow combat-gated via Particles.glowGain(machine.isIdle(),{rest:GLOW_REST=0.3,hot:GLOW_HOT=1.8}) — dark at rest, hot streak on attack; dark<->hot rule INFERRED (no decoded state gate, verified Phase 5), labeled D-05/A2/CHAIN-03
+- [Phase ?]: (06-07) Glow brightness recovered via alpha-over-1.0 premult: fxProg fragment outputs decoded chainglow texel rgb*(alpha128*uGlowGain) with alpha 0, additivePremult ONE,ONE (CLAUDE.md Part 1) — GLOW_HOT>1.0 exceeds the 1.0 clamp, closing the 03-02 glow-too-subtle lever data-grounded, NOT a hand-tuned multiplier
+- [Phase ?]: (06-07) additivePremult reached via a synthesized mat-like {name,mode:'additivePremult',disableDepthWrite:true} so the DEC-01 assert holds and the blend switch stays ONLY in fx.js (no hardcoded blendFunc, D-07); glow color stays the in-WAD decoded chainglowTex (identity material/blend, Pitfall 4); FXC_CNGemit standalone-only, NOT a runtime input (D-08 in-test corroboration)
+- [Phase ?]: (06-07) Leak guard: uGlowGain>0.0 is the premult-branch flag (mirrors uTrailRamp>0.5); reset at drawFx top + off in the trail pass so the fxProg flag is deterministic per frame (T-06-07-01); drawFx still ends with Fx.restoreFxState; uFxMode-enum consolidation stays DEFERRED (WARNING-6)
 
 ### Pending Todos
 
@@ -124,6 +129,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-26T09:01:34.527Z
+Last session: 2026-07-26T09:12:29.790Z
 Stopped at: Completed 06-06-PLAN.md (impact sparks on hit events — velocity-aligned stretched billboards)
 Resume file: None

@@ -19,7 +19,7 @@ Requirements for v1. Each requirement is testable and traceable to a phase.
 
 - [x] **CHAIN-01**: The chain renders as a ribbon textured with the real chainlink strip at correct link pitch (32px/link, 16 links/tile) with visible alpha gaps and "usual" alpha blending, depth-write on
 - [x] **CHAIN-02**: A chainglow additive overlay pass (depth-write off) shares the ribbon UVs and shows the real heat-ramp colors from the decoded texture
-- [ ] **CHAIN-03**: Chain glow is state-dependent — dark links at rest, hot streak during attacks/throws — via decoded mechanism if found (FXC_CNGemit candidate), else a footage-calibrated rule labeled inferred
+- [x] **CHAIN-03**: Chain glow is state-dependent — dark links at rest, hot streak during attacks/throws — via decoded mechanism if found (FXC_CNGemit candidate), else a footage-calibrated rule labeled inferred
 
 ### Chain Motion
 
@@ -72,7 +72,7 @@ Mapped by roadmap creation (2026-07-24). Every v1 requirement maps to exactly on
 | DEC-03 | Phase 5 | Complete |
 | CHAIN-01 | Phase 3 | Complete |
 | CHAIN-02 | Phase 3 | Complete |
-| CHAIN-03 | Phase 6 | Pending |
+| CHAIN-03 | Phase 6 | Complete |
 | MOT-01 | Phase 4 | Pending |
 | MOT-02 | Phase 4 | Pending |
 | FIRE-01 | Phase 6 | Complete |
