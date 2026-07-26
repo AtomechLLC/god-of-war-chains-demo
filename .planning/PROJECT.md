@@ -29,14 +29,14 @@ definitions, colors, and values, not approximations.
 - ✓ Auto-framing camera that keeps blade whips in view — existing
 - ✓ Material/blend modes decoded from MAT records (u16-tag WAD walk, marker-safe nearest-preceding resolution, 2-tuple blend inventory) and applied to every FX draw via the single MAT→GL table; PS2 compositing invariants locked (alpha:false, 0x80=1.0 MODULATE, saturation-to-white) plus fixed 60Hz sim accumulator and native 512×448 render-target toggle — *Validated in Phase 2: WAD/MAT Decode & Render-Pass Foundation*
 - ✓ FX records decoded byte-exact into a queryable, JSON-dumpable `FxDb` (no renderer needed): `MSH_BDepoly*Shape` vertices, `PTC_*` particle defs (flame3/flame6 in-WAD + BFT/BGT standalone), `FXC_*` emitters (subtype-branched 0x2/0x3/0xd), plus the type-5 `gomaiblade` blade-state descriptor — every field tagged real/INFERRED with per-field evidence; effect color honestly traced to `MAT_pticleMat.blendColor` (ramp INFERRED); cross-record refs resolve shapes and mark slot corroboration vs authoritative bindings. NTSC-U/60Hz confirmed (GS-dump corroboration deferred by decision). — *Validated in Phase 5: FX Record Decode (DEC-02, DEC-03)*
+- ✓ World-space particle runtime renders the decoded FxDb values on the locked pass architecture: layered blade fire (flame3+flame6, spawn-decoupled so it lags a whipping blade), impact sparks (BDEsparkemit on combat hit-edges, velocity-aligned stretched billboards), dual swing trails (BFT crimson fire + BGT swoosh with runtime age→color ramp on the real GFX_swordtrail texture), state-dependent chain glow (dark at rest → hot on attacks, alpha-over-1.0 brightness recovery), and per-blade point lights (decoded LeftBladeLight/RightBladeLight, Lambert + range attenuation). One shared billboard pool (CLAUDE.md Part 3), every blend via Fx.applyMaterial (DEC-01), decoded values real / runtime rates·ramp·glow-rule INFERRED. Runtime-verified (pool emits 356–384 particles during combos, additive brightness >clamp, no GL errors). — *Validated in Phase 6: Particle Runtime (FIRE-01/02, TRL-01/02, CHAIN-03, REND-02) — perceptual 80–90%-vs-footage judgment is Phase 7*
 
 ### Active
 
 - [ ] Chains render as segmented 3D-reading links along the chain curve (per-link orientation, correct scale/taper) instead of a flat ribbon
 - [ ] Chain glow/heat pass matches the game (chainglow texture, additive blend, correct color and intensity)
-- [ ] Chain motion matches the game: catenary drape at rest, whip-lag curvature in flight, plausible forearm wrap
-- [ ] Blade fire and spark emission decoded from the weapon WAD's FXC/PTC records (flame6/flame3, BDEsparkemit) and rendered with the game's textures, colors, emission values
-- [ ] Side-by-side comparison against reference gameplay footage judged 80–90% accurate in motion
+- [ ] Chain motion matches the game: catenary drape at rest, whip-lag curvature in flight, plausible forearm wrap (Phase 4 — deferred by the fast-track pivot)
+- [ ] Side-by-side comparison against reference gameplay footage judged 80–90% accurate in motion (Phase 7)
 
 ### Out of Scope
 
@@ -106,4 +106,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-26 after Phase 5 completion*
+*Last updated: 2026-07-26 after Phase 6 completion*
