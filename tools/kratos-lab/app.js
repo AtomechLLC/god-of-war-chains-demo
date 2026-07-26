@@ -121,6 +121,21 @@
   const sparkFxc = (db.fxc && db.fxc["FXC_BDEsparkemit"]) || null;
   console.log(`impact sparks: FXC_BDEsparkemit ${sparkFxc && Array.isArray(sparkFxc.matrix) ? "bound" : "MISSING"} (FIRE-02, same family as blade fire — A6)`);
 
+  // REND-02: decode the two per-blade warm point lights from the REAL LIGHT records
+  // (LeftBladeLight @0x6a60 / RightBladeLight @0x6b20, WAD tag 0x1e, 88 B). The four
+  // core values (color/intensity/range/anchor) are byte-EXACT/REAL via FxParse.parseLight
+  // (06-02) — NOT hardcoded roadmap constants (D-06/D-09b). Each name also carries a
+  // size-0 tag-0x32 back-reference; filter to the data-carrying tag-0x1e copy (size>0) so
+  // the 0-byte dupe never reaches the decoder (mirrors light.test.js). Fail-loud (NOT
+  // wrapped in try/catch) so a missing/short record surfaces in #status via the outer catch.
+  const findLight = (name) => wadRecords.find((r) => r.name === name && r.tag === 0x1e && r.size > 0);
+  const lightRecL = findLight("LeftBladeLight");
+  const lightRecR = findLight("RightBladeLight");
+  if (!lightRecL || !lightRecR) throw new Error("weapon WAD missing LeftBladeLight/RightBladeLight (tag 0x1e)");
+  const bladeLightL = FxParse.parseLight(wadBuf, lightRecL);
+  const bladeLightR = FxParse.parseLight(wadBuf, lightRecR);
+  console.log(`blade lights: color(${bladeLightL.color.map((v) => v.toFixed(3)).join(",")}) intensity ${bladeLightL.intensity} range ${bladeLightL.range} anchor(${bladeLightL.anchor.map((v) => v.toFixed(2)).join(",")}) — REAL/decoded (REND-02), L≡R ${JSON.stringify(bladeLightR) === JSON.stringify(bladeLightL)}`);
+
   status("decoding textures…");
   const texPairs = [
     ["GFX_MAI01F", "PAL_MAI01F"],
@@ -166,17 +181,37 @@
   const vsrc = `
     attribute vec3 aPos; attribute vec2 aUV; attribute vec3 aNrm; attribute vec3 aCol;
     uniform mat4 uMVP; uniform mat4 uRot; uniform mat4 uModel;
-    varying vec2 vUV; varying vec3 vNrm; varying vec3 vCol;
+    varying vec2 vUV; varying vec3 vNrm; varying vec3 vCol; varying vec3 vWorld;
     void main() {
-      gl_Position = uMVP * (uModel * vec4(aPos, 1.0));
+      vec4 world = uModel * vec4(aPos, 1.0);
+      gl_Position = uMVP * world;
+      // world-space position for the per-blade point lights (REND-02). uModel is the
+      // full model->world transform (hero: modelMat; blade: modelMat*bladeSim.mat), so
+      // vWorld is in the SAME world space as the decoded light position uploaded below.
+      vWorld = world.xyz;
       vUV = aUV;
       vNrm = mat3(uRot[0].xyz, uRot[1].xyz, uRot[2].xyz) * aNrm;
       vCol = aCol;
     }`;
   const fsrc = `
     precision mediump float;
-    varying vec2 vUV; varying vec3 vNrm; varying vec3 vCol;
+    varying vec2 vUV; varying vec3 vNrm; varying vec3 vCol; varying vec3 vWorld;
     uniform sampler2D uTex; uniform float uHeat; uniform float uPages;
+    // Per-blade warm point lights (REND-02) — the REAL decoded LeftBladeLight /
+    // RightBladeLight values (FxParse.parseLight, 06-02): Lambert diffuse + LINEAR range
+    // attenuation, NO shadow maps (D-06). Values are byte-exact/REAL, never hardcoded
+    // roadmap constants (D-09b). uLightRange is in world units (decoded range x mesh
+    // scale) so d/range matches vWorld's world-space distances. Summed onto the lit
+    // color as a naive gamma-space add (REND-01 — no bloom, no tonemap).
+    uniform vec3 uLightPosL; uniform vec3 uLightColorL; uniform float uLightIntensityL; uniform float uLightRangeL;
+    uniform vec3 uLightPosR; uniform vec3 uLightColorR; uniform float uLightIntensityR; uniform float uLightRangeR;
+    vec3 bladeLight(vec3 lp, vec3 lcol, float lint, float lrange, vec3 nrm, vec3 world) {
+      vec3 Lp = lp - world;
+      float d = length(Lp);
+      float atten = max(0.0, 1.0 - d / lrange);          // linear falloff (mirrors light.test.js atten)
+      vec3 dir = Lp / max(d, 1e-4);                       // normalize(Lp), guarded against a zero-length NaN
+      return lcol * lint * max(dot(nrm, dir), 0.0) * atten;
+    }
     void main() {
       float page = floor(clamp(vUV.y, 0.0, uPages - 0.001));
       vec2 tc = vec2(fract(vUV.x), (fract(vUV.y) + page) / uPages);
@@ -190,6 +225,10 @@
       vec3 ao = mix(vec3(1.0), vCol, 0.45);   // soften the warm baked AO tint
       vec3 c = tex * ao * diff * 1.75 + vec3(spec);
       c = mix(c, vec3(0.95, 0.25, 0.22) * (0.4 + diff), uHeat * 0.6);
+      // Two per-blade warm point lights added ON TOP of the lit color (D-06; the light
+      // term is additive — REND-01 naive add, the two blade lights are summed).
+      c += bladeLight(uLightPosL, uLightColorL, uLightIntensityL, uLightRangeL, n, vWorld);
+      c += bladeLight(uLightPosR, uLightColorR, uLightIntensityR, uLightRangeR, n, vWorld);
       gl_FragColor = vec4(c, 1.0);
     }`;
   function shader(type, src) {
@@ -588,6 +627,28 @@
     -mesh.ctr[0] * s0, -mesh.ctr[1] * s0, -mesh.ctr[2] * s0, 1,
   ]);
   gl.uniformMatrix4fv(uModel, false, modelMat);
+
+  // REND-02 per-blade point-light uniforms on the mesh program `prog` (prog is the
+  // active program here). COLOR and RANGE are set ONCE — constants from the REAL decode.
+  // range is converted mesh->world by ×s0 (mesh.scale) so the linear attenuation
+  // atten=max(0,1-d/range) matches vWorld's world-space distances. POSITION and INTENSITY
+  // are refreshed per rendered frame (renderFrame) so each light rides its blade; the
+  // missing-blade guard there zeroes intensity so no NaN reaches a uniform (T-06-08-01).
+  const uLightPosL = gl.getUniformLocation(prog, "uLightPosL");
+  const uLightColorL = gl.getUniformLocation(prog, "uLightColorL");
+  const uLightIntensityL = gl.getUniformLocation(prog, "uLightIntensityL");
+  const uLightRangeL = gl.getUniformLocation(prog, "uLightRangeL");
+  const uLightPosR = gl.getUniformLocation(prog, "uLightPosR");
+  const uLightColorR = gl.getUniformLocation(prog, "uLightColorR");
+  const uLightIntensityR = gl.getUniformLocation(prog, "uLightIntensityR");
+  const uLightRangeR = gl.getUniformLocation(prog, "uLightRangeR");
+  gl.uniform3fv(uLightColorL, bladeLightL.color);   // REAL decoded warm amber (1.0,0.622,0.288)
+  gl.uniform3fv(uLightColorR, bladeLightR.color);
+  gl.uniform1f(uLightRangeL, bladeLightL.range * s0);  // decoded range 160 -> world units
+  gl.uniform1f(uLightRangeR, bladeLightR.range * s0);
+  gl.uniform1f(uLightIntensityL, 0.0);              // set per frame (guarded — dark until the blade sim is live)
+  gl.uniform1f(uLightIntensityR, 0.0);
+
   gl.clearColor(0, 0, 0, 1); // opaque clear — FBO-path clears must also be opaque
   gl.enable(gl.DEPTH_TEST);
   // LEQUAL (not the GL default LESS): the chainglow overlay (drawFx PASS 2) is
