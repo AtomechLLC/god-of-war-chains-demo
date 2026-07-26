@@ -172,6 +172,57 @@ const FxParse = (() => {
     };
   }
 
+  // parseLight — decode a LIGHT record (WAD tag 0x1e, 88 B): the per-blade warm
+  // point light REND-02 renders (D-09b RESOLVED — the values are REAL/decoded, not
+  // roadmap constants; D-06). LeftBladeLight @0x6a60 / RightBladeLight @0x6b20 are
+  // byte-identical; the four core values are byte-EXACT (VERIFIED first-party probe
+  // this session — 06-RESEARCH § "Decoded Data Inventory" + § "Code Examples ->
+  // parseLight"):
+  //   +0x10 f32[3] anchor    (-0.32, -8.0, 1.0)   — blade-local light offset
+  //                                                  (z=-8.0 agrees with the type-5
+  //                                                  ANM blade anchor)
+  //   +0x2c f32[3] color     (1.0, 0.622, 0.288)  — warm amber RGB (REAL)
+  //   +0x38 f32    intensity 2.5
+  //   +0x44 f32    range     160                  — linear attenuation range
+  // Ancillary fields (+0x24 (1,1,1) triple, +0x3c=8.0, +0x40=1.5) are read verbatim
+  // as evidence ONLY; their MEANING (ambient? falloff exponent? inner range?) is
+  // INFERRED (A5) — no falloff exponent is ever claimed real (T-06-02-02, Pitfall 4).
+  // Fail-loud (WR-01 / Security V5 / T-06-02-01): size-gate BEFORE any field read,
+  // naming the record — parseWad guarantees the record fits the BUFFER, not that the
+  // decoder stays inside the 88-byte RECORD; a short size would spill into the
+  // adjacent WAD record. Mirrors the parseTxr size-gate-then-DataView idiom.
+  function parseLight(buf, rec) {
+    if (rec.size < 0x48) {
+      throw new Error(`LIGHT ${rec.name}: size ${rec.size} < 0x48 (88-byte LIGHT record)`);
+    }
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    const b = rec.dataOff;
+    const f = (o) => dv.getFloat32(b + o, true);
+
+    const anchor = [f(0x10), f(0x14), f(0x18)]; // blade-local light offset
+    const color = [f(0x2c), f(0x30), f(0x34)]; // warm amber RGB (real)
+    const intensity = f(0x38); // 2.5
+    const range = f(0x44); // 160 — linear attenuation range
+
+    // Ancillary raw values (real bytes, INFERRED meaning — A5): recorded for the
+    // low-priority evidence pass only; never surfaced as a real light parameter.
+    const ambientTriple = [f(0x24), f(0x28), f(0x2c)]; // (1,1,1) — ambient? candidate
+    const ancA = f(0x3c); // 8.0 — falloff-exponent? / inner-range? candidate
+    const ancB = f(0x40); // 1.5 — falloff-exponent? / inner-range? candidate
+
+    // Data-first evidence: the four core values are byte-decoded (real); the
+    // ancillary block's MEANING is INFERRED (never a real-claimed falloff exponent).
+    const evidence = [
+      { field: "anchor", offset: "+0x10", rawHex: `(${anchor.map((v) => v.toFixed(3)).join(", ")})`, interp: "blade-local light anchor offset (transformed by bladeSim[key].mat at render)", corrob: "RESEARCH parseLight (-0.32,-8.0,1.0); z=-8.0 matches the type-5 ANM blade anchor", tag: "real" },
+      { field: "color", offset: "+0x2c", rawHex: `(${color.map((v) => v.toFixed(3)).join(", ")})`, interp: "warm amber light RGB (real, NOT an INFERRED/hand-picked color)", corrob: "RESEARCH REND-02 (1.0,0.622,0.288); Left≡Right byte-identical", tag: "real" },
+      { field: "intensity", offset: "+0x38", rawHex: intensity.toFixed(3), interp: `light intensity ${intensity}`, corrob: "RESEARCH REND-02 intensity 2.5", tag: "real" },
+      { field: "range", offset: "+0x44", rawHex: range.toFixed(3), interp: `linear attenuation range ${range} (atten = max(0, 1 - dist/range))`, corrob: "RESEARCH REND-02 range 160", tag: "real" },
+      { field: "ancillary", offset: "+0x24/+0x3c/+0x40", rawHex: `triple (${ambientTriple.map((v) => v.toFixed(3)).join(", ")}) / ${ancA.toFixed(3)} / ${ancB.toFixed(3)}`, interp: "ancillary fields — ambient / falloff-exponent / inner-range CANDIDATES; raw bytes real, MEANING INFERRED (A5) — REND-02 needs only color/intensity/range/anchor", corrob: "RESEARCH Open Q3 (short evidence pass, low priority)", tag: "INFERRED" },
+    ];
+
+    return { anchor, color, intensity, range, evidence };
+  }
+
   // parseMsh — decode an MSH_BDepoly*Shape record (WAD tag 0x70 "raw data", the
   // record mogaika treats as opaque TAG_GOW1_FILE_RAW_DATA). Layout recovered
   // first-party by differential decode this session (DEC-02; 05-RESEARCH
@@ -716,7 +767,7 @@ const FxParse = (() => {
     return [...tuples.values()];
   }
 
-  return { decodeFlags, buildMats, enumTuples, parseTxr, parseMsh, parsePtc, parseFxc, buildFxDb, parseAnmType5 };
+  return { decodeFlags, buildMats, enumTuples, parseTxr, parseLight, parseMsh, parsePtc, parseFxc, buildFxDb, parseAnmType5 };
 })();
 
 // dual-environment guard: browser <script> global + Node require (no build step)
