@@ -587,6 +587,12 @@ const FxParse = (() => {
     // and passes the bytes; here we synthesize the headerless rec (dataOff:0).
     for (const sr of standaloneRecs) {
       if (!sr.name.startsWith("PTC_")) continue;
+      // WR-02: keep-first, mirroring the FXC standalone loop (:599) and the MSH
+      // (:543) / in-WAD PTC (:561) / in-WAD FXC (:586) loops. Without this guard a
+      // standalone PTC whose name collides with an in-WAD PTC would (a) silently
+      // OVERWRITE the WAD-decoded entry and (b) push a second, contradictory shape
+      // ref — the exact silent-wrong-decode the keep-first contract prevents.
+      if (sr.name in db.ptc) continue; // keep-first (level-1 WAD copy wins)
       const rec = { name: sr.name, idx: 0, tag: sr.tag, size: sr.buf.length, dataOff: 0 };
       const def = parsePtc(sr.buf, rec);
       db.ptc[sr.name] = def;

@@ -284,6 +284,25 @@ const PTC_PARAM_START = 0x64; // f32 params begin here (RESEARCH PTC table)
   assert.doesNotThrow(() => JSON.stringify(db), "FxDb with ptc section is JSON.stringify-able");
 }
 
+// (e2) WR-02: a standalone PTC whose name COLLIDES with an in-WAD PTC must NOT
+// overwrite the WAD entry — keep-first, mirroring the FXC/MSH loops. Feed a
+// standalone under the in-WAD name PTC_flame3 (using BFT bytes, shapeRef
+// "BFTpart1Shape"); the WAD decode ("flame3Shape") must survive and NO duplicate/
+// contradictory shape ref may be pushed for that name.
+{
+  const { buf: bftBuf } = loadBin("PTC_BFTpart1");
+  const collide = [{ name: "PTC_flame3", buf: bftBuf, tag: 0x1e }];
+  const db = FxParse.buildFxDb(recs, buf, collide);
+  assert.strictEqual(
+    db.ptc["PTC_flame3"].shapeRef,
+    "flame3Shape",
+    "colliding standalone PTC_flame3 does NOT overwrite the in-WAD entry (keep-first, not BFTpart1Shape)"
+  );
+  const flame3Refs = db.refs.filter((x) => x.from === "PTC_flame3" && x.kind === "shape");
+  assert.strictEqual(flame3Refs.length, 1, "no duplicate/contradictory shape ref for the colliding PTC name");
+  assert.strictEqual(flame3Refs[0].to, "flame3Shape", "the single shape ref is the WAD value flame3Shape");
+}
+
 // (f) fail-loud: bad-magic + short PTC both throw named errors (WR-01 / T-05-01).
 {
   const big = new Uint8Array(0x64); // magic @0 left 0 (!= 0x13)
