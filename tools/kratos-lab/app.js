@@ -88,6 +88,31 @@
   console.table(matTuples);
   console.log(`weapon WAD: ${wadRecords.length} records, ${matDb.list.length} MATs, ${matTuples.length} blend tuples`);
 
+  // FIRE-01: resolve the two level-1 blade-fire emitters from the runtime `db` ONCE
+  // at load by shapeRef NAME (D-08 / Pitfall 6 — the fire family uses PLACEHOLDER
+  // slot 0x0 and is NOT a db.refs slot pair, so the emitter->particle join is on the
+  // shapeRef STRING, via Particles.fireBindings(db)). Level-1 pair: FXC_BDEsparkemit
+  // -> PTC_flame6 (flame6Shape) + FXC_BDEsparkemit.0 -> PTC_flame3 (flame3Shape). A
+  // shapeRef resolving to flame5Shape is god/other tier — REJECT it for level-1 fire
+  // (Pitfall 7 / A4). Each accepted system stashes its decoded FXC placement matrix
+  // (blade-local, REAL byte-exact); simStep transforms it to world at spawn.
+  const fireBinds = Particles.fireBindings(db);
+  const FIRE_LEVEL1 = { "FXC_BDEsparkemit": "fire6", "FXC_BDEsparkemit.0": "fire3" };
+  const fireSystems = [];
+  for (const bind of fireBinds) {
+    if (/flame5Shape/i.test(bind.shapeRef)) continue; // reject god/other-tier flame5 (Pitfall 7)
+    const kind = FIRE_LEVEL1[bind.emitter];
+    if (!kind) continue;                              // keep ONLY the two level-1 emitters
+    const fxc = db.fxc[bind.emitter];
+    if (!fxc || !Array.isArray(fxc.matrix)) continue; // guard a malformed placement matrix
+    fireSystems.push({ kind, emitter: bind.emitter, particle: bind.particle, matrix: fxc.matrix });
+  }
+  console.log(`blade fire: ${fireSystems.length} level-1 flame systems bound (${fireSystems.map((s) => s.kind).join(", ") || "none"})`);
+  // Pool draw batching by particle family (D-02): fire (flame3+flame6) on the decoded
+  // fire sprite/color; the 06-04 trail-spark riders keep their own sprite+tint.
+  const FIRE_KINDS = new Set(["fire3", "fire6"]);
+  const TRAIL_SPARK_KINDS = new Set(["trailSpark"]);
+
   status("decoding textures…");
   const texPairs = [
     ["GFX_MAI01F", "PAL_MAI01F"],
@@ -1351,6 +1376,49 @@
                 color: [sparkTint[0], sparkTint[1], sparkTint[2], SPARK_ALPHA],
                 kind: "trailSpark",
               });
+            }
+            // FIRE-01 blade fire: both level-1 flame systems (flame3 + flame6) burn
+            // on THIS blade every attacking tick. Each spawns at the decoded FXC
+            // emitter matrix translation transformed to WORLD by the LIVE blade
+            // matrix (Particles.spawnAnchor(bladeSim[key].mat, sys.matrix)), sampled
+            // ONCE here — the particle then advects on its own vel+gravity via
+            // fxPool.integrate and DECOUPLES, so a whipping blade outruns its fire
+            // (SC1 blade-lag / D-03 / Pitfall 4). NEVER re-parent a live fire particle
+            // to bladeSim in an integrate/draw path — sampling here at spawn is the
+            // ONLY blade read (the 06-01 divergence known-answer pins this decouple).
+            // EVERY emission constant below is INFERRED — no decoded fire rate/velocity/
+            // size/life record exists (Pitfall 1 / A1); all Phase-7 footage-tunable.
+            // TODO(Open Q1): promote rates/lifetimes to REAL if an FXC/PTC param-
+            // semantics top-up decodes the emission fields (the upgrade path that
+            // removes these INFERRED constants).
+            const FIRE_PER_TICK = 2;      // INFERRED per-system, per-side emission rate
+            const FIRE_LIFE = 22 * STEP;  // INFERRED ~22-frame lifetime (0.37s @60Hz)
+            const FIRE_SIZE = 0.5;        // INFERRED billboard half-size (mesh-local units)
+            const FIRE_ALPHA = 1.9;       // INFERRED peak alpha128 (>1.0 overbright — premult path, CLAUDE.md Part 1 alpha-over-1.0)
+            const FIRE_POS_JIT = 0.35;    // INFERRED positional jitter radius
+            const FIRE_VEL_JIT = 1.2;     // INFERRED per-axis velocity jitter
+            const FIRE_RISE = 2.0;        // INFERRED upward drift (embers rise before gravity settles them)
+            for (const sys of fireSystems) {
+              // world spawn = decoded blade-local FXC translation × live blade matrix,
+              // sampled ONCE (spawnAnchor); the particle decouples afterward (SC1).
+              const fpos = Particles.spawnAnchor(bladeSim[key].mat, sys.matrix);
+              for (let f = 0; f < FIRE_PER_TICK; f++) {
+                fxPool.spawn({
+                  pos: [fpos[0] + (Math.random() - 0.5) * FIRE_POS_JIT,
+                        fpos[1] + (Math.random() - 0.5) * FIRE_POS_JIT,
+                        fpos[2] + (Math.random() - 0.5) * FIRE_POS_JIT],
+                  vel: [(Math.random() - 0.5) * FIRE_VEL_JIT,
+                        (Math.random() - 0.5) * FIRE_VEL_JIT + FIRE_RISE,   // +upward (INFERRED)
+                        (Math.random() - 0.5) * FIRE_VEL_JIT],
+                  size: FIRE_SIZE,
+                  life: FIRE_LIFE,
+                  // per-particle rgb = identity (1,1,1); the REAL fire color is applied
+                  // at the fire DRAW from db.meta.colorSource (Task 3), mirroring the
+                  // chainglow identity-passthrough. alpha128 = INFERRED overbright peak.
+                  color: [1, 1, 1, FIRE_ALPHA],
+                  kind: sys.kind,   // "fire3" | "fire6" — batches/textures at draw (D-02)
+                });
+              }
             }
           }
         }
