@@ -9,6 +9,9 @@
 //               + blendFuncSeparate(SRC_ALPHA, ONE, ONE, ONE)
 //     subtract: enable(BLEND) + blendEquation(FUNC_REVERSE_SUBTRACT)
 //               + blendFunc(SRC_ALPHA, ONE)
+//     additivePremult: enable(BLEND) + blendEquation(FUNC_ADD)
+//               + blendFunc(ONE, ONE)  — the alpha-over-1.0 brightness path
+//               (premultiplied source Cs·As + Cd, no clamp on As; CLAUDE.md Part 1)
 //     then depthMask(!mat.disableDepthWrite) — from bit 19 ONLY, never the mode
 //     "strange" / anything unmapped: throw /Unmapped blend mode/ with the
 //     material name — the assert is the DEC-01 contract, never a default.
@@ -60,6 +63,21 @@ function makeMockGl() {
     ["blendFuncSeparate", gl.SRC_ALPHA, gl.ONE, gl.ONE, gl.ONE],
     ["depthMask", false],
   ], "additive: enable → FUNC_ADD → (SRC_ALPHA, 1, 1, 1) → depthMask(false)");
+}
+
+// -- additivePremult (fire/glow alpha-over-1.0 pool pass — CLAUDE.md Part 1) ---
+// The premultiplied-source additive path: the fragment outputs rgb·alpha128
+// (alpha may exceed 1.0), so the GS Cs·As + Cd is reproduced with blendFunc(ONE,
+// ONE). Distinct from `additive` (SRC_ALPHA, ONE), which clamps As at 1.0.
+{
+  const gl = makeMockGl();
+  Fx.applyMaterial(gl, { name: "fxPool", mode: "additivePremult", disableDepthWrite: true });
+  assert.deepStrictEqual(gl.calls, [
+    ["enable", gl.BLEND],
+    ["blendEquation", gl.FUNC_ADD],
+    ["blendFunc", gl.ONE, gl.ONE],
+    ["depthMask", false],
+  ], "additivePremult: enable → FUNC_ADD → (ONE, ONE) → depthMask(false)");
 }
 
 // -- subtract (hero-side MAT_Csmoke — untested-in-WAD but present by contract)
