@@ -1290,6 +1290,15 @@
       if (blade) {
         const attacking = !machine.isIdle();
         const track = rig.bladePos(machine.st.current, machine.st.t);
+        // TRL-02: BFT (crimson fire) vs BGT (neutral swoosh) tint for THIS move —
+        // reuses the pure Particles.variantFor + rampColor(0) hot stop (06-03), so
+        // the sparks read the SAME family as the trail sheet. INFERRED runtime
+        // tint, never a fabricated real color (05-04: no painted ramp).
+        const variant = Particles.variantFor(machine.st.current);   // "BFT" | "BGT"
+        const hot = Particles.rampColor(0.0);
+        const sparkTint = variant === "BGT"
+          ? [hot[0] + (1 - hot[0]) * 0.15, hot[1] + (1 - hot[1]) * 0.15, hot[2] + (1 - hot[2]) * 0.15]
+          : [hot[0], hot[1] * 0.50, hot[2] * 0.45];
         for (const [key, hand, trackOff] of [["l", JID.lWeapIH, 0], ["r", JID.rWeapIH, 3]]) {
           const hst = trailHist[key];
           for (const e of hst) e.age += STEP;
@@ -1298,10 +1307,49 @@
           const tp = track ? [track[trackOff], track[trackOff + 1], track[trackOff + 2]] : null;
           const bm = driveBlade(bladeSim[key], world, hand, tp, STEP);
           if (attacking) {
-            hst.push({ tip: xformM(bm, blade.tip), hilt: xformM(bm, blade.hilt), age: 0 });
+            const tip = xformM(bm, blade.tip);
+            const prevTip = hst.length ? hst[hst.length - 1].tip : tip;
+            hst.push({ tip, hilt: xformM(bm, blade.hilt), age: 0 });
             if (hst.length > 26) hst.shift();
+            // TRL-01/02 trail-spark riders (D-04c — the user's #1 richness lever):
+            // a few hot specks spawn on the tip arc each attacking tick, then
+            // DECOUPLE (they advect on their own vel + gravity via fxPool.integrate,
+            // so a whipping blade outruns its sparks — the authentic lag, D-03).
+            // EVERY emission constant here is INFERRED — no decoded trail-spark
+            // rate/velocity/size/life record exists (Pitfall 1); all Phase-7
+            // footage-tunable. Determinism boundary (D-07): the jitter is runtime
+            // Math.random, kept OUT of the pure tested Particles paths.
+            const SPARKS_PER_TICK = 3;        // INFERRED emission rate (few per tick, per side)
+            const SPARK_LIFE = 30 * STEP;     // INFERRED ~30-frame trail-gone anchor (0.5s @60Hz)
+            const SPARK_SIZE = 0.18;          // INFERRED billboard half-size (mesh-local units)
+            const SPARK_ALPHA = 1.6;          // INFERRED peak alpha128 (>1.0 overbright — premult path)
+            const POS_JIT = 0.25;             // INFERRED positional jitter radius
+            const VEL_JIT = 1.5;              // INFERRED per-axis velocity jitter
+            // swing velocity along the tip arc (tip - prevTip)/STEP; sparks inherit
+            // a SMALL fraction so they trail the blade rather than track it (lag),
+            // plus a slight INFERRED upward drift so embers rise before gravity.
+            const sw = [(tip[0] - prevTip[0]) / STEP, (tip[1] - prevTip[1]) / STEP, (tip[2] - prevTip[2]) / STEP];
+            for (let s = 0; s < SPARKS_PER_TICK; s++) {
+              fxPool.spawn({
+                pos: [tip[0] + (Math.random() - 0.5) * POS_JIT,
+                      tip[1] + (Math.random() - 0.5) * POS_JIT,
+                      tip[2] + (Math.random() - 0.5) * POS_JIT],
+                vel: [sw[0] * 0.10 + (Math.random() - 0.5) * VEL_JIT,
+                      sw[1] * 0.10 + (Math.random() - 0.5) * VEL_JIT + 1.2,   // +upward (INFERRED)
+                      sw[2] * 0.10 + (Math.random() - 0.5) * VEL_JIT],
+                size: SPARK_SIZE,
+                life: SPARK_LIFE,
+                color: [sparkTint[0], sparkTint[1], sparkTint[2], SPARK_ALPHA],
+                kind: "trailSpark",
+              });
+            }
           }
         }
+        // Advect + age-cull the whole pool ONCE per sim tick at exactly Loop.STEP
+        // (Pitfall 5: NEVER a wall delta — emission/advection must read identical
+        // at 60Hz and 144Hz). Runs every tick so sparks keep drifting/fading after
+        // the attack ends; an empty pool is a cheap no-op.
+        fxPool.integrate(STEP);
       }
       // blend-window bookkeeping: sim owns time; uploadSkinnedVerts only reads
       if (skin.blendLeft > 0) skin.blendLeft -= STEP;
@@ -1344,6 +1392,9 @@
     // independent 60Hz witness: scripts can sample this across wall time to
     // prove the sim cadence (60±1 steps/s on any display).
     get simStepCount() { return simStepCount; },
+    // live particle-pool population — a plain integer for the 60Hz-vs-144Hz
+    // particle-count parity check (spawn/integrate cadence). NO GL handles.
+    get fxPoolCount() { return fxPool.count; },
     STEP: Loop.STEP,
     wadRecords, matDb, matTuples,
     gl, fxLog,
