@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: ready_to_plan
-stopped_at: Phase 05 complete (5/5) — ready to discuss Phase 6
-last_updated: 2026-07-26T04:34:08.005Z
+status: planning
+stopped_at: Phase 6 context gathered (auto-selected, operator away)
+last_updated: "2026-07-26T06:31:15.260Z"
 last_activity: 2026-07-26
 progress:
   total_phases: 7
@@ -105,6 +105,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-26T00:38:29.386Z
-Stopped at: Completed 05-05-PLAN.md (DEC-03: parseAnmType5 type-5 ANM blade-state descriptor decoded; escalation disposition recorded; Phase 5 ready for verification)
-Resume file: None
+Last session: 2026-07-26T06:31:15.249Z
+Stopped at: Phase 6 context gathered (auto-selected, operator away)
+Resume file: .planning/phases/06-particle-runtime-fire-sparks-trails/06-CONTEXT.md
