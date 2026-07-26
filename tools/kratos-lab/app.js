@@ -785,7 +785,8 @@
   // biased toward (Pattern 7). INFERRED (A9) from footage analysis in
   // trail-fidelity-from-footage.md — NOT a decoded value. 0.6 makes the trail
   // hug the tip arc (the outer sweep) instead of the full hilt→tip sheet.
-  const TRAIL_INNER_T = 0.05; // INFERRED: near-full hilt→tip width for a thick sheet (was 0.6) — Phase-7 tune
+  const TRAIL_INNER_T = 0.05; // INFERRED: near-full hilt→tip inner edge for a thick sheet (was 0.6) — Phase-7 tune
+  const TRAIL_WEAPON_LEN = 1.35; // INFERRED "Weapon Length" (ELF tweak): outer ribbon edge extends past the tip for a fuller swept sheet — Phase-7 tune
   // CHAIN-03 chain-glow combat gains (D-05, A2 — INFERRED, footage-calibrated in
   // Phase 7). No decoded state-gate field exists (verified Phase 5), so the dark<->hot
   // RULE is INFERRED; the brightness it drives is data-grounded (alpha-over-1.0,
@@ -1044,8 +1045,12 @@
           // inner edge biased toward the tip arc (Pattern 7, fair-game overlap);
           // u/v orientation is unchanged — the decoded swordtrail texture
           // confirms bright ember edge at v=1 (tip) and age ramp toward u=1.
-          a: lerp3(e.hilt, e.tip, TRAIL_INNER_T), b: e.tip, u: i / (hst.length - 1),
-          alpha: Math.max(0, 1 - e.age / TRAIL_AGE) * 1.0,   // INFERRED brightness (was 0.85) — additive streak (Phase-7 tune)
+          // Ribbon cross-section: from the hilt to PAST the tip. The game's trail is a
+          // thick swept SHEET (ELF tweak "Weapon Length" controls its extent) — the raw
+          // hilt→tip span reads thin, so extend the outer edge beyond the tip by an
+          // INFERRED "Weapon Length" factor for a fuller sheet (Phase-7 footage-tunable).
+          a: lerp3(e.hilt, e.tip, TRAIL_INNER_T), b: lerp3(e.hilt, e.tip, TRAIL_WEAPON_LEN), u: i / (hst.length - 1),
+          alpha: Math.max(0, 1 - e.age / TRAIL_AGE) * 1.0,   // INFERRED brightness — additive streak (Phase-7 tune)
         }));
         pushRibbon(rows, trailV);
       }
