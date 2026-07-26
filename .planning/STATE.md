@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-04-PLAN.md (billboard particle pool + trail-spark riders)
-last_updated: "2026-07-26T08:43:33.190Z"
+stopped_at: Completed 06-06-PLAN.md (impact sparks on hit events — velocity-aligned stretched billboards)
+last_updated: "2026-07-26T09:01:44.591Z"
 last_activity: 2026-07-26
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 23
-  completed_plans: 18
+  completed_plans: 19
   percent: 43
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 ## Current Position
 
 Phase: 06 (particle-runtime-fire-sparks-trails) — EXECUTING
-Plan: 6 of 8
+Plan: 7 of 8
 Status: Ready to execute
 Last activity: 2026-07-26
 
-Progress: [████████░░] 78%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [████████░░] 78%
 | Phase 06 P03 | 9min | 2 tasks | 2 files |
 | Phase 06 P04 | 18min | 2 tasks | 4 files |
 | Phase 06 P05 | 20min | 3 tasks | 2 files |
+| Phase 06 P06 | 16min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,8 @@ Recent decisions affecting current work:
 - [Phase ?]: (06-05) Runtime FxDb now built in app.js: const db = FxParse.buildFxDb(wadRecords, wadBuf) (NO 3rd arg — in-WAD fire family + db.meta.colorSource only, D-09a) + KratosLab.fxdb() accessor; the render db existed only after this plan (BLOCKER fix)
 - [Phase ?]: (06-05) Blade fire flame3+flame6 emit world-space per attacking tick via spawnAnchor(bladeSim[key].mat, sys.matrix) sampled once -> decouple (SC1 blade-lag, D-03); bound emitter->particle by shapeRef NAME (fireBindings), flame5 god-tier rejected; emission rate/vel/size/life INFERRED+labeled (Open-Q1 TODO)
 - [Phase ?]: (06-05) Fire color = REAL db.meta.colorSource (MAT_pticleMat.blendColor [2,2,2] overbright) applied as per-vertex tint at draw x INFERRED overbright alpha128 -> additive-premult alpha-over-1.0 (CLAUDE.md Part 1); fire sprite fxTexFromMat(MAT_pticleMat) w/ documented trailTex fallback; drawPool batches by family {kinds,tint}; no fabricated crimson (Pitfall 4)
+- [Phase 06]: (06-06) FIRE-02 impact sparks: edge-detect machine.st.hits per sim tick (prevHits) -> fxPool.burst off each blade from the already-real FXC_BDEsparkemit family (A6/D-09a, no new emitter decode); spawnAnchor(bladeSim[key].mat, sparkFxc.matrix) sampled once then decouple (SC1 blade-lag); edge-triggered once per hit (Pitfall 5), count/vel/size/life INFERRED (A1)
+- [Phase 06]: (06-06) Velocity-aligned stretched-spark render: pool VS gains aVel attribute + uStretch branch (normalize(aVel), camUp fallback = GLSL mirror of Particles.stretchAxis) -> spark batch stretched, fire/trail keep plain billboard; spark color = REAL db.meta.colorSource tint at draw (no fabricated RGB, Pitfall 4), additive-premult+depth-off only via Fx.applyMaterial (DEC-01); ?v 26->27
 
 ### Pending Todos
 
@@ -121,6 +124,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-26T08:43:00.949Z
-Stopped at: Completed 06-04-PLAN.md (billboard particle pool + trail-spark riders)
+Last session: 2026-07-26T09:01:34.527Z
+Stopped at: Completed 06-06-PLAN.md (impact sparks on hit events — velocity-aligned stretched billboards)
 Resume file: None

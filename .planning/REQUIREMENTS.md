@@ -29,7 +29,7 @@ Requirements for v1. Each requirement is testable and traceable to a phase.
 ### Blade Fire & Sparks
 
 - [x] **FIRE-01**: Both layered flame systems per blade (flame3 + flame6 chains) render with the game's textures and runtime particle colors from decoded PTC records, hugging the blade in every combat frame
-- [ ] **FIRE-02**: Impact sparks (BDEsparkemit) fire on hit events from the combat state machine with decoded rate/velocity/color
+- [x] **FIRE-02**: Impact sparks (BDEsparkemit) fire on hit events from the combat state machine with decoded rate/velocity/color
 
 ### Swing Trails
 
@@ -76,7 +76,7 @@ Mapped by roadmap creation (2026-07-24). Every v1 requirement maps to exactly on
 | MOT-01 | Phase 4 | Pending |
 | MOT-02 | Phase 4 | Pending |
 | FIRE-01 | Phase 6 | Complete |
-| FIRE-02 | Phase 6 | Pending |
+| FIRE-02 | Phase 6 | Complete |
 | TRL-01 | Phase 6 | Complete |
 | TRL-02 | Phase 6 | Complete |
 | REND-01 | Phase 2 | Complete |
