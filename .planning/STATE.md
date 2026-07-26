@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 6 context gathered (auto-selected, operator away)
-last_updated: "2026-07-26T07:41:48.023Z"
-last_activity: 2026-07-26 -- Phase 06 planning complete
+last_updated: "2026-07-26T07:56:26.557Z"
+last_activity: 2026-07-26
 progress:
   total_phases: 7
   completed_phases: 3
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-24)
 
 **Core value:** A GoW1 attack in kratos-lab reads 80–90% identical to real gameplay footage — chains, glow, and fire use the game's own decoded textures, particle definitions, colors, and values, not approximations.
-**Current focus:** Phase 6 — particle runtime — fire, sparks & trails
+**Current focus:** Phase 06 — particle-runtime-fire-sparks-trails
 
 ## Current Position
 
-Phase: 6
-Plan: Not started
+Phase: 06 (particle-runtime-fire-sparks-trails) — EXECUTING
+Plan: 2 of 8
 Status: Ready to execute
-Last activity: 2026-07-26 -- Phase 06 planning complete
+Last activity: 2026-07-26
 
-Progress: [█████████░] 87%
+Progress: [██████░░░░] 57%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: [█████████░] 87%
 | Phase 05 P03 | 12min | 2 tasks | 2 files |
 | Phase 05 P04 | 15min | 2 tasks | 2 files |
 | Phase 05 P05 | 15min | 2 tasks | 2 files |
+| Phase 06 P01 | 5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,9 @@ Recent decisions affecting current work:
 - [Phase ?]: (05-03) DEC-02 COMPLETE: FXC decoded (parseFxc subtype-branched 0x2/0x3/0xd, +0x58 poly branch after u32 count) — MSH+PTC+FXC all decoded with per-field evidence; buildFxDb emits the full JSON-dumpable emitter->particle->shape graph (standalone BFT/BGT emit1 as real db.fxc keys, MSH refs resolved:true, guarded 0x1d BFT/BGT slot pair, placeholder slot 0x00/0xffff skipped)
 - [Phase 05]: (05-04) D-06 GS-dump corroboration = SKIP (user decision): per-effect blend confidence stays MEDIUM, corroborated by differential-decode + Phase-1 footage anchors + cross-record consistency; Phase 6 uses the MAT-decoded blend already pinned in DEC-01. DEC-02 color clause substantiated data-first: effect color traced to MAT_pticleMat.blendColor (real byte value) with the white-hot->orange->ember age->color ramp INFERRED (GFX_swordtrail carries no painted length-wise ramp; static PTC RGBA identity, byte-identical fire-vs-swoosh).
 - [Phase ?]: (05-05) DEC-03 decoded: FxParse.parseAnmType5 decodes the type-5 ANM blade-state descriptor = the gomaiblade scene-binding node (class 1/variant 2, u32@0 0x00020001) into a queryable JSON-dumpable state->visibility result (in-combat->in-hand, out-of-combat->on-back). Escalation disposition (D-04): no class-5 record + no level-1 ANM_maiblade exist, so 'type-5' is a taxonomy label (INFERRED, ELF tiebreaker) not a magic; show/hide mapping is runtime (INFERRED); framing/binding/placement/tier are real. No byte seed fabricated.
+- [Phase ?]: (06-01) particles.js is a PURE Node-testable sim module (no gl/DOM) mirroring chain.js/loop.js: makePool spawn/integrate/burst + spawnAnchor/stretchAxis/variantFor/glowGain/rampColor/fireBindings; GL submission stays in app.js (D-02)
+- [Phase ?]: (06-01) SC1 blade-lag pinned by known-answer: spawnAnchor transforms the REAL decoded FXC translation (idx 12..14) by the live blade matrix ONCE at spawn; particle then advects in world space and DECOUPLES (>=49u divergence from a moved blade) (D-03)
+- [Phase ?]: (06-01) data-first labeling: spawn-anchor transform is REAL; gravity/jitter/variantFor/glowGain/rampColor are INFERRED (rampColor never a fabricated real color, 05-04); Security: reject-when-full pool cap + non-finite pos/vel/size/life/color guards (V5)
 
 ### Pending Todos
 
@@ -105,6 +109,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-26T06:31:15.249Z
+Last session: 2026-07-26T07:53:37.134Z
 Stopped at: Phase 6 context gathered (auto-selected, operator away)
-Resume file: .planning/phases/06-particle-runtime-fire-sparks-trails/06-CONTEXT.md
+Resume file: None
