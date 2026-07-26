@@ -12,7 +12,15 @@ findings:
   warning: 3
   info: 3
   total: 6
-status: issues_found
+status: resolved
+resolution:
+  resolved_at: 2026-07-26T01:30:00Z
+  warnings_fixed:
+    - WR-01: a9ce257 (parseMsh bounds first-vertex evidence reads by rec.size; NAMED fail-loud)
+    - WR-02: 3307267 (keep-first guard on standalone-PTC merge loop)
+    - WR-03: 0f9c769 (slot refs self-describing via/corroborationOnly/shapeNameMatch/confidence)
+  info_disposition: IN-01/IN-02/IN-03 left as documented non-blocking notes (no code change)
+  tests: all six suites (fxdb/anm/wad/fx/chain/loop) green after fixes
 ---
 
 # Phase 05: Code Review Report

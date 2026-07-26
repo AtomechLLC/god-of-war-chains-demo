@@ -1,12 +1,22 @@
 ---
 phase: 05-fx-record-decode
 verified: 2026-07-26T00:53:55Z
-status: human_needed
-score: 4/4 ROADMAP success criteria verified in code (all decode checks pass); 1 human-acceptance item on the SC3/DEC-03 INFERRED escalation disposition
+resolved: 2026-07-26T01:30:00Z
+status: passed
+score: 4/4 ROADMAP success criteria verified in code; both human-acceptance items resolved (SC3 disposition accepted by developer; WR-03 remediated + re-verified)
 overrides_applied: 0
 re_verification:
-  previous_status: none
-  previous_score: none
+  previous_status: human_needed
+  previous_score: 4/4 (2 human-acceptance items pending)
+  resolution: >-
+    Item 1 (SC3/DEC-03 INFERRED escalation disposition) ACCEPTED by developer on 2026-07-26 — the
+    plan-sanctioned D-04 branch satisfies SC3 for unblocking Phase-6. Item 2 (WR-03 slot-ref cross-links)
+    developer chose "fix first"; remediated by fix 0f9c769 (slot refs now carry via/corroborationOnly/
+    shapeNameMatch/confidence markers so group-collision edges are distinguishable from authoritative
+    bindings — grounded against real disc bytes: 0x1d and 0x1 groups split exactly on shapeRef equality),
+    with WR-01 (a9ce257, named fail-loud on truncated MSH) and WR-02 (3307267, keep-first guard on
+    standalone-PTC merge) fixed alongside. All six test suites (fxdb/anm/wad/fx/chain/loop) green after
+    fixes; working tree clean. Status advanced human_needed -> passed.
 human_verification:
   - test: >-
       Confirm the DEC-03 / SC3 deliverable is accepted as "the type-5 ANM descriptor is decoded and drives
@@ -50,7 +60,7 @@ human_verification:
 
 **Phase Goal:** The game's particle and emitter data is decoded with per-field evidence, so the runtime can be driven by real values instead of approximations
 **Verified:** 2026-07-26T00:53:55Z
-**Status:** human_needed
+**Status:** passed _(was human_needed; both human-acceptance items resolved 2026-07-26 — see frontmatter `re_verification.resolution`)_
 **Re-verification:** No — initial verification
 
 ## Goal Achievement
@@ -66,7 +76,7 @@ I ran all six test suites myself, independently re-assembled the FxDb from the r
 | SC3 | The type-5 ANM descriptor is decoded and drives blade presentation (on-back out of combat, in-hand during combat) | ⚠ VERIFIED-WITH-CAVEAT (human acceptance) | `parseAnmType5` decodes gomaiblade (0xD580, size 92, u32@0=0x00020001) — framing/binding/placement/tier all byte-exact real; anchorOffset.z=-8.0 real back-anchor candidate. Exposes JSON-dumpable states[] + visibilityFor(). BUT: the show/hide MAPPING is a hardcoded INFERRED runtime mapping (not decoded bytes) and the "type-5" label is INFERRED (no class-5 record exists in the WAD). This is the sanctioned D-04 escalation disposition (05-05 truth #5) — surfaced for developer acceptance (human item 1). |
 | SC4 | GS dump confirms per-effect blend; disc region (NTSC vs PAL) confirmed before interpreting rate/lifetime as ticks | ✓ VERIFIED (region) / deferred-by-decision (GS-dump) | Region: db.meta.region="NTSC-U", tickHz=60, corroborated by disc serial SCUS-97399 (fxparse.js:500-502). Decode does NOT depend on a GS-dump (no GS reference in fxparse.js; blend uses DEC-01 MAT decode). GS-dump sub-item was deliberately SKIPPED at the 05-04 D-06 checkpoint (recorded user decision); per instructions, treated as an optional not-done corroboration, not a gap. |
 
-**Score:** 4/4 ROADMAP success criteria verified in code. Status `human_needed` — SC3 disposition requires developer sign-off.
+**Score:** 4/4 ROADMAP success criteria verified in code. Status `passed` — SC3 disposition accepted by developer (2026-07-26); WR-03 slot-ref concern remediated (fix 0f9c769, +WR-01 a9ce257, +WR-02 3307267) with all six suites green.
 
 ### Plan-Frontmatter Must-Have Truths (sampled, notable)
 

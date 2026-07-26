@@ -1,14 +1,14 @@
 ---
-status: partial
+status: complete
 phase: 05-fx-record-decode
 source: [05-VERIFICATION.md]
 started: 2026-07-26T00:53:55Z
-updated: 2026-07-26T00:53:55Z
+updated: 2026-07-26T01:30:00Z
 ---
 
 ## Current Test
 
-[awaiting human testing]
+[complete — both items resolved 2026-07-26]
 
 ## Tests
 
@@ -23,7 +23,7 @@ expected: >-
   taxonomy label is itself INFERRED because a class-histogram over every data-carrying tag-0x1e WAD
   record shows NO class-5 record exists (no level-1 ANM_maiblade, only god-tier ANM_maigodblade). This
   disposition was sanctioned by 05-05's plan (must-have truth #5); DEC-03 is marked Complete.
-result: [pending]
+result: passed — developer ACCEPTED the D-04 escalation disposition (2026-07-26); satisfies SC3 to unblock Phase-6.
 
 ### 2. WR-03 — accept the slot-ref cross-link hand-off to Phase-6 as-is
 expected: >-
@@ -37,15 +37,21 @@ expected: >-
   from the real bindings. SC2's authoritative shape refs (resolved:true/false) are correct; slot noise is
   a documented corroboration-only design choice (tracked quality follow-up, not a goal-level gap).
 
-result: [pending]
+result: >-
+  passed — developer chose "fix first"; WR-03 remediated by fix 0f9c769 (slot refs now carry
+  via/corroborationOnly/shapeNameMatch/confidence markers; group-collision edges distinguishable from
+  authoritative bindings, grounded against real disc bytes). WR-01 (a9ce257) and WR-02 (3307267) fixed
+  alongside. All six suites green after fixes.
 
 ## Summary
 
 total: 2
-passed: 0
+passed: 2
 issues: 0
-pending: 2
+pending: 0
 skipped: 0
 blocked: 0
 
 ## Gaps
+
+None — both items resolved (item 1 accepted, item 2 fixed + verified).
