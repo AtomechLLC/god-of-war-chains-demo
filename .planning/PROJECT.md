@@ -28,6 +28,7 @@ definitions, colors, and values, not approximations.
 - ✓ Basic chain ribbon (flat quad strip, chainlink texture) + basic additive swing trail — existing
 - ✓ Auto-framing camera that keeps blade whips in view — existing
 - ✓ Material/blend modes decoded from MAT records (u16-tag WAD walk, marker-safe nearest-preceding resolution, 2-tuple blend inventory) and applied to every FX draw via the single MAT→GL table; PS2 compositing invariants locked (alpha:false, 0x80=1.0 MODULATE, saturation-to-white) plus fixed 60Hz sim accumulator and native 512×448 render-target toggle — *Validated in Phase 2: WAD/MAT Decode & Render-Pass Foundation*
+- ✓ FX records decoded byte-exact into a queryable, JSON-dumpable `FxDb` (no renderer needed): `MSH_BDepoly*Shape` vertices, `PTC_*` particle defs (flame3/flame6 in-WAD + BFT/BGT standalone), `FXC_*` emitters (subtype-branched 0x2/0x3/0xd), plus the type-5 `gomaiblade` blade-state descriptor — every field tagged real/INFERRED with per-field evidence; effect color honestly traced to `MAT_pticleMat.blendColor` (ramp INFERRED); cross-record refs resolve shapes and mark slot corroboration vs authoritative bindings. NTSC-U/60Hz confirmed (GS-dump corroboration deferred by decision). — *Validated in Phase 5: FX Record Decode (DEC-02, DEC-03)*
 
 ### Active
 
@@ -54,11 +55,12 @@ definitions, colors, and values, not approximations.
 - **Reverse-engineering base**: WAD container, TOC/PAK, mesh (VIF/DMA), skeleton,
   ANM streams, TWK trees, GFX/PAL textures (8bpp swizzled + 4bpp linear) are all
   decoded. Format knowledge cross-checked against mogaika/god_of_war_browser.
-- **Known FX data not yet decoded** (primary targets): weapon WAD records
-  `FXC_BDepoly3/6` (emitter configs), `PTC_flame3/flame6` (particle defs),
-  `FXC_BDEsparkemit` (sparks), `MSH_BDepoly3Shape/6Shape` (ribbon/poly shapes),
-  `MAT_*` blend/flags fields beyond the texture reference, hero WAD `FXC_BFT/BGT`
-  (blade fire trail?) records, and the type-5 ANM descriptor (blade state track).
+- **FX data — DECODED in Phase 5** (`FxDb`, `tools/kratos-lab/fxparse.js`): weapon WAD
+  `FXC_BDepoly3/6` + `MSH_BDepoly3Shape/6Shape`, `PTC_flame3/flame6`, hero WAD
+  `FXC_BFT/BGT` + `PTC_BFT/BGT` (standalone), fire/chain-glow families (FXCF/flame5/EG/CNG),
+  and the type-5 `gomaiblade` blade-state descriptor are all decoded byte-exact with
+  evidence tables. `MAT_*` blend/flags were decoded in Phase 2. Remaining: the Phase-6
+  runtime that renders these decoded values (fire, sparks, dual trails, state glow).
 - **Reference method** (user-specified): read the ISO/code to break down how it
   works — particle generation, textures, values, colors — use those values, then
   compare with gameplay video for 80–90% accuracy (emission is random).
@@ -104,4 +106,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-25 after Phase 2 completion*
+*Last updated: 2026-07-26 after Phase 5 completion*
