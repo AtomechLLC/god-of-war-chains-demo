@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 06-06-PLAN.md (impact sparks on hit events — velocity-aligned stretched billboards)
-last_updated: "2026-07-26T09:12:29.801Z"
+status: verifying
+stopped_at: Completed 06-08-PLAN.md (per-blade warm point lights — REND-02; Phase 6 complete)
+last_updated: "2026-07-26T09:25:23.831Z"
 last_activity: 2026-07-26
 progress:
   total_phases: 7
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 23
-  completed_plans: 20
-  percent: 43
+  completed_plans: 21
+  percent: 57
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 
 Phase: 06 (particle-runtime-fire-sparks-trails) — EXECUTING
 Plan: 8 of 8
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-26
 
-Progress: [█████████░] 87%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ Progress: [█████████░] 87%
 | Phase 06 P05 | 20min | 3 tasks | 2 files |
 | Phase 06 P06 | 16min | 2 tasks | 2 files |
 | Phase 06 P07 | 4min | 2 tasks | 2 files |
+| Phase 06 P08 | 14min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,7 @@ Recent decisions affecting current work:
 - [Phase ?]: (06-07) Glow brightness recovered via alpha-over-1.0 premult: fxProg fragment outputs decoded chainglow texel rgb*(alpha128*uGlowGain) with alpha 0, additivePremult ONE,ONE (CLAUDE.md Part 1) — GLOW_HOT>1.0 exceeds the 1.0 clamp, closing the 03-02 glow-too-subtle lever data-grounded, NOT a hand-tuned multiplier
 - [Phase ?]: (06-07) additivePremult reached via a synthesized mat-like {name,mode:'additivePremult',disableDepthWrite:true} so the DEC-01 assert holds and the blend switch stays ONLY in fx.js (no hardcoded blendFunc, D-07); glow color stays the in-WAD decoded chainglowTex (identity material/blend, Pitfall 4); FXC_CNGemit standalone-only, NOT a runtime input (D-08 in-test corroboration)
 - [Phase ?]: (06-07) Leak guard: uGlowGain>0.0 is the premult-branch flag (mirrors uTrailRamp>0.5); reset at drawFx top + off in the trail pass so the fxProg flag is deterministic per frame (T-06-07-01); drawFx still ends with Fx.restoreFxState; uFxMode-enum consolidation stays DEFERRED (WARNING-6)
+- [Phase 06]: (06-08) Per-blade warm point lights land in the mesh shader from REAL FxParse.parseLight values (color 1.0/0.622/0.288, intensity 2.5, range 160, anchor -0.32/-8.0/1.0 — not hardcoded, D-06/D-09b): vWorld world-space varying + fragment Lambert + linear range attenuation (atten=max(0,1-d/range)), summed for L/R, no shadows; light world pos = anchor × live bladeSim[key].mat × modelMat per frame (rides the blade), range ×s0 mesh→world, missing-blade guard zeroes intensity (no NaN, T-06-08-01). REND-02 complete; Phase 6 done. — REND-02 final slice; data-first vertex-lit point light per D-06
 
 ### Pending Todos
 
@@ -129,6 +131,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-26T09:12:29.790Z
-Stopped at: Completed 06-06-PLAN.md (impact sparks on hit events — velocity-aligned stretched billboards)
+Last session: 2026-07-26T09:23:07.782Z
+Stopped at: Completed 06-08-PLAN.md (per-blade warm point lights — REND-02; Phase 6 complete)
 Resume file: None

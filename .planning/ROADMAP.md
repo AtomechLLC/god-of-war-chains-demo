@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Chain Link Ribbon & Glow** - Correctly pitched, per-link-twisted chainlink ribbon plus chainglow additive overlay (completed 2026-07-25)
 - [ ] **Phase 4: Chain Motion** - Catenary drape at rest, whip-lag C-curves in flight, settle behavior on the 60Hz tick
 - [x] **Phase 5: FX Record Decode** - MSH/PTC/FXC differential decode with evidence tables, type-5 blade-state descriptor, GS-dump blend confirmation (completed 2026-07-26)
-- [ ] **Phase 6: Particle Runtime — Fire, Sparks & Trails** - World-space particle pool rendering flames, sparks, dual trails, state glow, and blade lights from decoded values
+- [x] **Phase 6: Particle Runtime — Fire, Sparks & Trails** - World-space particle pool rendering flames, sparks, dual trails, state glow, and blade lights from decoded values (completed 2026-07-26)
 - [ ] **Phase 7: Side-by-Side Validation & Inferred Tuning** - In-tool comparison harness vs reference captures; 80–90% in-motion verdict
 
 ## Phase Details
@@ -172,7 +172,7 @@ Note: Research flag — this is original reverse engineering with no public deco
   4. Chain glow is state-dependent — dark links at rest, hot streak during attacks/throws — via the decoded mechanism if Phase 5 found one (FXC_CNGemit candidate), else a footage-calibrated rule labeled INFERRED
   5. Per-blade warm point lights use the decoded LeftBladeLight/RightBladeLight values (color 1.0/0.622/0.288, intensity 2.5, range 160), vertex-lit, no shadows
 
-**Plans:** 7/8 plans executed
+**Plans:** 8/8 plans complete
 
 Plans:
 **Wave 1** *(parallel — no shared files: pure sim vs decoder)*
@@ -202,7 +202,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 — shares app.js)*
 
-- [ ] 06-08-PLAN.md — Per-blade point lights: decoded parseLight values, Lambert + range attenuation in the mesh shader, no shadows (REND-02)
+- [x] 06-08-PLAN.md — Per-blade point lights: decoded parseLight values, Lambert + range attenuation in the mesh shader, no shadows (REND-02)
 
 ### Phase 7: Side-by-Side Validation & Inferred Tuning
 
@@ -234,7 +234,7 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 | 3. Chain Link Ribbon & Glow | 2/2 | Complete   | 2026-07-25 |
 | 4. Chain Motion | 0/TBD | Not started | - |
 | 5. FX Record Decode | 5/5 | Complete   | 2026-07-26 |
-| 6. Particle Runtime — Fire, Sparks & Trails | 7/8 | In Progress|  |
+| 6. Particle Runtime — Fire, Sparks & Trails | 8/8 | Complete   | 2026-07-26 |
 | 7. Side-by-Side Validation & Inferred Tuning | 0/TBD | Not started | - |
 
 ---

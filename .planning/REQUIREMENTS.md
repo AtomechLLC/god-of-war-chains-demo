@@ -39,7 +39,7 @@ Requirements for v1. Each requirement is testable and traceable to a phase.
 ### Renderer Authenticity
 
 - [x] **REND-01**: The renderer enforces PS2-authentic compositing: clamped LDR gamma-space additive blending saturating to flat white, 0x80=1.0 conventions applied at texture/CLUT/modulate/blend stages, no bloom/tonemap/soft-particles (locked invariant)
-- [ ] **REND-02**: Per-blade warm point lights use the decoded LeftBladeLight/RightBladeLight values (color 1.0/0.622/0.288, intensity 2.5, range 160), vertex-lit, no shadows
+- [x] **REND-02**: Per-blade warm point lights use the decoded LeftBladeLight/RightBladeLight values (color 1.0/0.622/0.288, intensity 2.5, range 160), vertex-lit, no shadows
 - [x] **REND-03**: Fixed 60Hz simulation timestep and a native-res (512×448-class) render-target toggle exist before formal footage comparison begins
 
 ## v2 Requirements (deferred)
@@ -80,7 +80,7 @@ Mapped by roadmap creation (2026-07-24). Every v1 requirement maps to exactly on
 | TRL-01 | Phase 6 | Complete |
 | TRL-02 | Phase 6 | Complete |
 | REND-01 | Phase 2 | Complete |
-| REND-02 | Phase 6 | Pending |
+| REND-02 | Phase 6 | Complete |
 | REND-03 | Phase 2 | Complete |
 
 ---
