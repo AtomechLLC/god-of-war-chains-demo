@@ -172,7 +172,37 @@ Note: Research flag — this is original reverse engineering with no public deco
   4. Chain glow is state-dependent — dark links at rest, hot streak during attacks/throws — via the decoded mechanism if Phase 5 found one (FXC_CNGemit candidate), else a footage-calibrated rule labeled INFERRED
   5. Per-blade warm point lights use the decoded LeftBladeLight/RightBladeLight values (color 1.0/0.622/0.288, intensity 2.5, range 160), vertex-lit, no shadows
 
-**Plans**: TBD
+**Plans:** 8 plans, 7 waves (sequential from Wave 2 — all render slices share app.js)
+
+Plans:
+**Wave 1** *(parallel — no shared files: pure sim vs decoder)*
+
+- [ ] 06-01-PLAN.md — Pure particles.js sim module (spawn/integrate/cull/spawnAnchor/stretchAxis/variantFor/glowGain/rampColor/fireBindings) + particles.test.js (blade-lag divergence, pool cap, NaN guards)
+- [ ] 06-02-PLAN.md — parseLight decoder (real Left/RightBladeLight values) + light.test.js + fxdb.test.js BDEsparkemit/CNG binding assertions (D-09 top-ups)
+
+**Wave 2** *(blocked on Wave 1 — shares app.js)*
+
+- [ ] 06-03-PLAN.md — Trail ribbon richness: runtime age→color ramp (INFERRED) + BFT/BGT per-move variant on the existing swordtrail ribbon (TRL-01/02)
+
+**Wave 3** *(blocked on Wave 2 — shares app.js/fx.js)*
+
+- [ ] 06-04-PLAN.md — additivePremult (ONE,ONE) blend mode + shared world-space billboard particle pool + trail-spark riders (TRL-01/02, the #1 richness lever)
+
+**Wave 4** *(blocked on Wave 3 — shares app.js)*
+
+- [ ] 06-05-PLAN.md — Blade fire flame3/flame6 world-space spawn-decouple (blade-lag), real MAT_pticleMat color, additive-premult (FIRE-01)
+
+**Wave 5** *(blocked on Wave 4 — shares app.js)*
+
+- [ ] 06-06-PLAN.md — Impact sparks: hit-edge burst (st.hits) + velocity-aligned stretched billboards (FIRE-02)
+
+**Wave 6** *(blocked on Wave 5 — shares app.js)*
+
+- [ ] 06-07-PLAN.md — Chain-glow state gating: combat-gated glowGain (INFERRED) + alpha-over-1.0 premult brightness recovery (CHAIN-03)
+
+**Wave 7** *(blocked on Wave 6 — shares app.js)*
+
+- [ ] 06-08-PLAN.md — Per-blade point lights: decoded parseLight values, Lambert + range attenuation in the mesh shader, no shadows (REND-02)
 
 ### Phase 7: Side-by-Side Validation & Inferred Tuning
 
@@ -204,7 +234,7 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 | 3. Chain Link Ribbon & Glow | 2/2 | Complete   | 2026-07-25 |
 | 4. Chain Motion | 0/TBD | Not started | - |
 | 5. FX Record Decode | 5/5 | Complete   | 2026-07-26 |
-| 6. Particle Runtime — Fire, Sparks & Trails | 0/TBD | Not started | - |
+| 6. Particle Runtime — Fire, Sparks & Trails | 0/8 | Not started | - |
 | 7. Side-by-Side Validation & Inferred Tuning | 0/TBD | Not started | - |
 
 ---
@@ -212,3 +242,5 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 *Phase 1 planned: 2026-07-24 — 4 plans, 3 waves*
 *Phase 2 planned: 2026-07-24 — 4 plans, 4 waves (sequential — all share app.js)*
 *Phase 3 planned: 2026-07-25 — 2 plans, 2 waves (sequential — share app.js/index.html)*
+*Phase 5 planned: 2026-07-26 — 5 plans, 5 waves (sequential — share fxparse.js/fxdb.test.js)*
+*Phase 6 planned: 2026-07-26 — 8 plans, 7 waves (Wave 1 parallel; Waves 2-7 sequential — render slices share app.js)*
