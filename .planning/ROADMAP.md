@@ -172,7 +172,7 @@ Note: Research flag — this is original reverse engineering with no public deco
   4. Chain glow is state-dependent — dark links at rest, hot streak during attacks/throws — via the decoded mechanism if Phase 5 found one (FXC_CNGemit candidate), else a footage-calibrated rule labeled INFERRED
   5. Per-blade warm point lights use the decoded LeftBladeLight/RightBladeLight values (color 1.0/0.622/0.288, intensity 2.5, range 160), vertex-lit, no shadows
 
-**Plans:** 3/8 plans executed
+**Plans:** 4/8 plans executed
 
 Plans:
 **Wave 1** *(parallel — no shared files: pure sim vs decoder)*
@@ -186,7 +186,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 — shares app.js/fx.js)*
 
-- [ ] 06-04-PLAN.md — additivePremult (ONE,ONE) blend mode + shared world-space billboard particle pool + trail-spark riders (TRL-01/02, the #1 richness lever)
+- [x] 06-04-PLAN.md — additivePremult (ONE,ONE) blend mode + shared world-space billboard particle pool + trail-spark riders (TRL-01/02, the #1 richness lever)
 
 **Wave 4** *(blocked on Wave 3 — shares app.js)*
 
@@ -234,7 +234,7 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 | 3. Chain Link Ribbon & Glow | 2/2 | Complete   | 2026-07-25 |
 | 4. Chain Motion | 0/TBD | Not started | - |
 | 5. FX Record Decode | 5/5 | Complete   | 2026-07-26 |
-| 6. Particle Runtime — Fire, Sparks & Trails | 3/8 | In Progress|  |
+| 6. Particle Runtime — Fire, Sparks & Trails | 4/8 | In Progress|  |
 | 7. Side-by-Side Validation & Inferred Tuning | 0/TBD | Not started | - |
 
 ---
