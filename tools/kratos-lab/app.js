@@ -112,6 +112,14 @@
   // fire sprite/color; the 06-04 trail-spark riders keep their own sprite+tint.
   const FIRE_KINDS = new Set(["fire3", "fire6"]);
   const TRAIL_SPARK_KINDS = new Set(["trailSpark"]);
+  const SPARK_KINDS = new Set(["spark"]);   // FIRE-02 impact sparks — their own stretched batch
+  // FIRE-02: the impact-spark emitter IS the SAME already-real FXC_BDEsparkemit family as
+  // blade fire (A6 — continuous fire and on-hit sparks are one emitter family, differing
+  // ONLY by trigger; NO new emitter decode, D-09a). Its decoded blade-local placement
+  // matrix (REAL byte-exact) anchors the on-hit burst via Particles.spawnAnchor, exactly
+  // like the fire systems. Consumed from the runtime `db` — NOT rebuilt.
+  const sparkFxc = (db.fxc && db.fxc["FXC_BDEsparkemit"]) || null;
+  console.log(`impact sparks: FXC_BDEsparkemit ${sparkFxc && Array.isArray(sparkFxc.matrix) ? "bound" : "MISSING"} (FIRE-02, same family as blade fire — A6)`);
 
   status("decoding textures…");
   const texPairs = [
@@ -1347,6 +1355,11 @@
   // Loop.STEP (1/60s) ticks. Phases 4-6 author rates/lifetimes per-tick
   // against this cadence; on a 144Hz display the sim still runs 60 steps/s.
   let simStepCount = 0;
+  // FIRE-02 impact-spark edge state: the combat hit counter (machine.st.hits) as of the
+  // PREVIOUS sim tick. st.hits starts at 0 (combat.js) and only increments on landed
+  // (non-idle) moves; a change since last tick == a new hit → burst sparks. Kept at
+  // simStep scope so the edge is detected per SIM TICK, never per rendered frame (Pitfall 5).
+  let prevHits = 0;
   function simStep() {
     const STEP = Loop.STEP;
     tickAutoplay(); // dev/QA capture aid — fires the next scripted input when active
@@ -1368,6 +1381,12 @@
       // trail history being sampled at exactly 60Hz.
       if (blade) {
         const attacking = !machine.isIdle();
+        // FIRE-02: edge-detect the landed-hit counter ONCE per tick (combat.js start()
+        // increments st.hits on each non-idle move, combat.js:172). A change since last
+        // tick is a new hit → burst impact sparks off the blade (below). prevHits advances
+        // AFTER the per-blade loop so BOTH blades see the same edge. Edge-triggered (once
+        // per hit), NEVER per attacking frame (Pitfall 5 — a discrete event, not a rate).
+        const hitEdge = machine.st.hits !== prevHits;
         const track = rig.bladePos(machine.st.current, machine.st.t);
         // TRL-02: BFT (crimson fire) vs BGT (neutral swoosh) tint for THIS move —
         // reuses the pure Particles.variantFor + rampColor(0) hot stop (06-03), so
@@ -1385,6 +1404,40 @@
           if (hand === undefined) continue;
           const tp = track ? [track[trackOff], track[trackOff + 1], track[trackOff + 2]] : null;
           const bm = driveBlade(bladeSim[key], world, hand, tp, STEP);
+          // FIRE-02 impact-spark burst: on the hit edge, erupt a shower of sparks off THIS
+          // blade from the decoded FXC_BDEsparkemit family (A6 — same family as blade fire).
+          // World spawn anchor = the emitter's REAL blade-local placement translation
+          // transformed by the LIVE blade matrix (Particles.spawnAnchor), sampled ONCE — the
+          // sparks then DECOUPLE and advect on their own vel via fxPool.integrate (SC1
+          // blade-lag / D-03 / Pitfall 4). Rendered as velocity-aligned STRETCHED billboards
+          // (Task 2). EVERY emission constant here is INFERRED (A1 — spark rate/velocity/
+          // size/life param semantics undecoded, Pitfall 1); all Phase-7 footage-tunable.
+          // The color is NOT set here — the REAL MAT_pticleMat.blendColor is applied at the
+          // spark DRAW (Pitfall 4 — never fabricate a real effect color).
+          if (hitEdge && sparkFxc && Array.isArray(sparkFxc.matrix)) {
+            const SPARK_BURST_N = 14;             // INFERRED sparks per hit (A1/A6)
+            const SPARK_BURST_LIFE = 20 * STEP;   // INFERRED ~0.33s short shower (A1)
+            const SPARK_BURST_SIZE = 0.16;        // INFERRED billboard half-size; stretched at draw (A1)
+            const SPARK_BURST_ALPHA = 1.8;        // INFERRED peak alpha128 (>1.0 overbright — premult path, A1)
+            const SPARK_BURST_RISE = 2.2;         // INFERRED upward base velocity (impact fountain bias, A1)
+            const SPARK_BURST_SPREAD = 5.0;       // INFERRED per-component pos+vel fan half-range (units/s, A1)
+            // world spawn anchor = decoded blade-local FXC translation × live blade matrix,
+            // sampled ONCE (spawnAnchor); the sparks decouple afterward (SC1 / Pitfall 4).
+            const spos = Particles.spawnAnchor(bladeSim[key].mat, sparkFxc.matrix);
+            // burst() jitters BOTH pos and vel per-component by the sampler (runtime
+            // Math.random — the fan, so each spark flies its own direction; D-07 keeps RNG
+            // OUT of the pure tested paths). Higher energy than continuous fire = the
+            // "impact" burst (A6). Identity rgb (1,1,1); the REAL fire color is applied at
+            // the DRAW (Task 2), mirroring the fire batch (single source of truth, Pitfall 4).
+            fxPool.burst(SPARK_BURST_N, {
+              pos: spos,
+              vel: [0, SPARK_BURST_RISE, 0],
+              size: SPARK_BURST_SIZE,
+              life: SPARK_BURST_LIFE,
+              color: [1, 1, 1, SPARK_BURST_ALPHA],
+              kind: "spark",
+            }, () => (Math.random() - 0.5) * SPARK_BURST_SPREAD);
+          }
           if (attacking) {
             const tip = xformM(bm, blade.tip);
             const prevTip = hst.length ? hst[hst.length - 1].tip : tip;
@@ -1467,6 +1520,9 @@
             }
           }
         }
+        // FIRE-02: advance the hit-edge state AFTER both blades have burst, so a single
+        // hit fires exactly one burst per blade (not a spurious re-trigger on the 2nd blade).
+        if (hitEdge) prevHits = machine.st.hits;
         // Advect + age-cull the whole pool ONCE per sim tick at exactly Loop.STEP
         // (Pitfall 5: NEVER a wall delta — emission/advection must read identical
         // at 60Hz and 144Hz). Runs every tick so sparks keep drifting/fading after
