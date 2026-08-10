@@ -515,16 +515,16 @@
       if (uTrailRamp > 0.5) {
         // age fraction: young/hot (t=0) -> old/ember (t=1).
         float t = clamp(1.0 - vT.z / 0.85, 0.0, 1.0);
-        rgb *= mix(uRampHot, uRampCool, t);   // MODULATE amber texel by the INFERRED ramp
-        // INFERRED SOLID RIBBON: 05-04 proved GFX_swordtrail's alpha is concentrated at
-        // the cross-strip edge, so gating additive strength on the texel alpha (c.a)
-        // rendered the ribbon as a thin, invisible sliver — only the bright particle
-        // dots showed. Drive the sheet's additive strength from the ribbon's OWN vertex
-        // age-alpha (vT.z) plus a brightness gain, keeping the decoded amber texel color
-        // and the ramp, so it fills as the thick connected luminous streak. Blend/depth
-        // still come only from MAT_swordtrail via Fx.applyMaterial (DEC-01); the solidity
-        // + 3.0 gain are runtime INFERRED (Phase-7 footage-tunable).
-        gl_FragColor = vec4(rgb * 3.0, vT.z);
+        // SOLID Trail-Tint ribbon (ELF): the game's trail is one tinted RGBA sheet, not
+        // the raw GFX_swordtrail texel. Sampling that texture across the swept ribbon
+        // banded it into disconnected blade-shaped segments (its alpha/detail is cross-
+        // strip, not length-wise). Drive the ribbon from the SOLID age-ramp tint × the
+        // texture's LUMINANCE only (keeps the amber body glow, drops the banding), with
+        // additive strength from the ribbon's own vertex age-alpha so it fills as one
+        // continuous luminous sheet. Ramp/tint/solidity are runtime INFERRED (Phase-7).
+        float lum = clamp(max(max(c.r, c.g), c.b) * uLayerColor.a, 0.35, 1.0); // amber body, no gaps
+        vec3 tint = mix(uRampHot, uRampCool, t) * lum;
+        gl_FragColor = vec4(tint * 3.0, vT.z);
         return;
       }
       gl_FragColor = vec4(rgb, a);
@@ -1005,7 +1005,9 @@
   function variantTint(variant, c, whiteK) {
     return variant === "BGT"
       ? [c[0] + (1 - c[0]) * whiteK, c[1] + (1 - c[1]) * whiteK, c[2] + (1 - c[2]) * whiteK]
-      : [c[0], c[1] * 0.50, c[2] * 0.45];
+      // BFT (fire trail): keep the warm AMBER/GOLD ramp — GoW1's swing trail reads gold,
+      // not crimson. Only a light warm shift (was ×0.50/×0.45, which crushed it to red).
+      : [c[0], c[1] * 0.88, c[2] * 0.62];
   }
 
   function drawFx(mvp, view) {
