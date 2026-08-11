@@ -1023,7 +1023,13 @@
     if (skin.blendLeft > 0 && skin.prevAct) {
       const saved = skin.out;
       skin.out = new Float32Array(saved.length);
-      skinPose(rig.computePose(skin.prevAct, skin.prevTime));
+      const pw = rig.computePose(skin.prevAct, skin.prevTime);
+      // root-motion: the PREV clip uses its own base (px/pz) so both blend poses
+      // meet at the transition seam (the re-base was constructed for continuity).
+      if (rootMotion.on && (rootMotion.px || rootMotion.pz)) {
+        for (let j = 0; j < pw.length; j += 16) { pw[j + 12] += rootMotion.px; pw[j + 14] += rootMotion.pz; }
+      }
+      skinPose(pw);
       prevOut = skin.out;
       skin.out = saved;
     }
@@ -1556,10 +1562,19 @@
   }
 
   const stack = []; // branch panel entries {name, el, state}
+  // ROOT MOTION chaining (toggle btnRootMo, default ON): the ANM clips carry REAL
+  // baked root translation (e.g. combo3B lunges ~0.42 m), but each clip is authored
+  // in its own coordinates — without re-basing, every transition snaps the root back
+  // and displacement never accumulates. On each move transition we shift a persistent
+  // XZ base so the incoming clip's first frame lands exactly where the outgoing clip
+  // left the root (game behavior: combos carry you across the arena). px/pz hold the
+  // PREVIOUS clip's base so the blend window lerps two poses that meet at the seam.
+  const rootMotion = { on: true, x: 0, z: 0, px: 0, pz: 0, lastAuth: null, pendingRebase: false };
   let lastState = { name: "idleCombat", t: 0 };
   const machine = Combat.makeMachine((n) => DUR[n], {
     onMove(name, prev, via) {
       heat = machine.st.rage ? 0.75 : 0.35;
+      rootMotion.pendingRebase = true; // re-base the incoming clip at the current root (chaining)
       if (skin && prev) {
         const bl = CLIP[name] && CLIP[name].blend > 0 && CLIP[name].blend <= 0.5 ? CLIP[name].blend : 0.08;
         skin.prevAct = prev;
@@ -1766,6 +1781,11 @@
     arenaOn = !arenaOn;
     $("btnArena").classList.toggle("latched", arenaOn);
   });
+  $("btnRootMo").addEventListener("click", () => {
+    rootMotion.on = !rootMotion.on;
+    rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0; // reset home on toggle
+    $("btnRootMo").classList.toggle("latched", rootMotion.on);
+  });
   // Replay controls: pause / frame-step / slow-mo (dev/QA capture aid).
   $("btnPause").addEventListener("click", () => {
     paused = !paused;
@@ -1949,6 +1969,28 @@
     heat = Math.max(machine.st.rage ? 0.45 : 0, heat - STEP * 0.8);
     if (rig && skin) {
       const world = rig.computePose(machine.st.current, machine.st.t);
+      // ROOT MOTION chaining: on a move transition, shift the persistent base so the
+      // new clip's first authored root lands where the old clip left it — authored
+      // lunges then ACCUMULATE across the combo (see rootMotion decl). The base is
+      // clamped to the arena so looping combos can't walk Kratos through the walls.
+      // The clips' root translation is authored on the PELVIS (joint 0 stays ~fixed),
+      // so continuity must track the pelvis: its authored path is what snaps at seams.
+      const rootJ = (JID.pelvis !== undefined ? JID.pelvis : 0) * 16;
+      if (rootMotion.pendingRebase) {
+        rootMotion.px = rootMotion.x; rootMotion.pz = rootMotion.z; // prev clip's base (blend window)
+        if (rootMotion.on && rootMotion.lastAuth) {
+          rootMotion.x += rootMotion.lastAuth[0] - world[rootJ + 12];
+          rootMotion.z += rootMotion.lastAuth[1] - world[rootJ + 14];
+          const lim = ARENA_HALF - ARENA_M;
+          rootMotion.x = Math.max(-lim, Math.min(lim, rootMotion.x));
+          rootMotion.z = Math.max(-lim, Math.min(lim, rootMotion.z));
+        }
+        rootMotion.pendingRebase = false;
+      }
+      rootMotion.lastAuth = [world[rootJ + 12], world[rootJ + 14]]; // authored pelvis, pre-offset
+      if (rootMotion.on && (rootMotion.x || rootMotion.z)) {
+        for (let j = 0; j < world.length; j += 16) { world[j + 12] += rootMotion.x; world[j + 14] += rootMotion.z; }
+      }
       // CR-01: computePose fills and returns ONE internal buffer reused across
       // calls (anim.js makeRig closure). Aliasing it here let the blend-window
       // prev-pose call in uploadSkinnedVerts clobber it — freezing the rendered
@@ -1968,7 +2010,13 @@
         // AFTER the per-blade loop so BOTH blades see the same edge. Edge-triggered (once
         // per hit), NEVER per attacking frame (Pitfall 5 — a discrete event, not a rate).
         const hitEdge = machine.st.hits !== prevHits;
-        const track = rig.bladePos(machine.st.current, machine.st.t);
+        // copy before offsetting — bladePos may return a shared internal buffer
+        const track0 = rig.bladePos(machine.st.current, machine.st.t);
+        const track = track0 ? Array.from(track0) : null;
+        if (track && rootMotion.on && (rootMotion.x || rootMotion.z)) {
+          track[0] += rootMotion.x; track[2] += rootMotion.z;   // left blade xz
+          track[3] += rootMotion.x; track[5] += rootMotion.z;   // right blade xz
+        }
         for (const [key, hand, trackOff] of [["l", JID.lWeapIH, 0], ["r", JID.rWeapIH, 3]]) {
           const hst = trailHist[key];
           for (const e of hst) e.age += STEP;
