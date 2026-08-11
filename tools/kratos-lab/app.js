@@ -523,7 +523,11 @@
         // Alpha = REAL Trail Tint A=0.8 x age fade (the fade matters after the swing
         // ends, when rows age out in place). Gain (INFERRED): only the small bright
         // rib corner exceeds 1.0 — a hot core, no field-wide blowout.
-        vec3 tex = texture2D(uTex, vec2(vT.x, mix(0.78, 1.0, vT.y))).rgb;
+        // v-curve (INFERRED from footage): pow > 1 keeps most of the width in the
+        // dark/pale part of the band and compresses the bright gold rows into the
+        // outer ~15% — the crisp thin YELLOW RIM on the tip arc over a translucent
+        // body, as in reference footage of the swing disc.
+        vec3 tex = texture2D(uTex, vec2(vT.x, mix(0.78, 1.0, pow(vT.y, 2.2)))).rgb;
         float a = 0.8 * pow(vT.z, 0.9);
         gl_FragColor = vec4(tex * 2.2, a);
         return;
