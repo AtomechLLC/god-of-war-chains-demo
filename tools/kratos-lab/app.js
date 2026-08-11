@@ -816,6 +816,11 @@
   const JID = {};
   if (rig) for (const j of rig.obj.joints) JID[j.name] = j.id;
   const trailHist = { l: [], r: [] };
+  // Segment tracking: a push gap (attacking paused between combo moves) starts a NEW
+  // segment — each swing gets its OWN swoosh decal + ribbon strip. Connecting across
+  // gaps stretched quads between disjoint arcs (hard radial cuts) and spread one
+  // decal over multiple swings (only the last swing got the bright leading section).
+  const trailSeg = { l: { last: -9, id: 0 }, r: { last: -9, id: 0 } };
   const TRAIL_AGE = 0.9;   // INFERRED: footage sweeps persist near a full revolution (~0.9s) — the texture's u-ramp shapes the tail, age only expires it
 
   // ---- blade transforms from the game's authored type-10 tracks ------------
@@ -1096,38 +1101,45 @@
       }
       const hst = trailHist[key];
       if (hst.length >= 2) {
-        // SWEPT BLADE-EDGE ribbon: each row is the blade's world length (hilt→tip),
-        // extended a touch past both ends (TRAIL_EXT) for a fuller sheet. pushRibbon
-        // connects consecutive rows → the surface the blade edge swept. v=0 at the
-        // back (hilt) end, v=1 at the tip (bright leading ember of the decoded
-        // swordtrail); u = age along the sweep, alpha fades with age (additive streak).
-        const n = hst.length;
-        const rows = hst.map((e, i) => {
-          const fresh = i / (n - 1); // 0 = oldest tail, 1 = live blade edge
-          // Row cross-section spans the WHOLE chain+blade assembly: hand (grip/chain
-          // anchor) → blade tip. Footage shows the trail extending DOWN THE CHAIN at
-          // full extension, not just off the blade — the texture's near-black inner
-          // band keeps the chain-span translucent (no hub artifact), while the bright
-          // rim rides the tip arc. Gripped blades degrade to ~hilt→tip automatically.
-          const hand = e.hand || e.hilt;
-          const sx = e.tip[0] - hand[0], sy = e.tip[1] - hand[1], sz = e.tip[2] - hand[2];
-          const dx = e.tip[0] - e.hilt[0], dy = e.tip[1] - e.hilt[1], dz = e.tip[2] - e.hilt[2];
-          // SWOOSH taper (INFERRED): full span at the live edge, narrowing toward the
-          // tail (converging on the tip arc) — a tapered crescent, not a constant slab.
-          const w = TRAIL_TAPER + (1 - TRAIL_TAPER) * fresh; // span fraction at this age
-          const ext = TRAIL_EXT * w; // slight overhang past the tip, along the BLADE axis
-          return {
-            a: [e.tip[0] - sx * w, e.tip[1] - sy * w, e.tip[2] - sz * w],
-            b: [e.tip[0] + dx * ext, e.tip[1] + dy * ext, e.tip[2] + dz * ext],
-            // u = ONE texture per swoosh (0 tail -> 1 live blade edge). The decoded
-            // texture is a complete swoosh DECAL: luminance ramps along u toward the
-            // blade AND carries the baked rib striations (irregular bright/dark columns)
-            // seen in footage — so it must NOT be tiled; the graphic rides the blade
-            // like a stamp, exactly as in-game. Its u-ramp handles the along-arc fade.
-            u: fresh, alpha: Math.max(0, 1 - e.age / TRAIL_AGE),
-          };
-        });
-        pushRibbon(rows, trailV);
+        // PER-SEGMENT swoosh ribbons: split the history at push gaps (e.seg — each
+        // swing is its own segment) and emit ONE ribbon + ONE decal per segment.
+        // Connecting across gaps stretched quads between disjoint arcs (hard radial
+        // cuts) and spread one decal over several swings (only the last swing got
+        // the bright leading section) — footage gives every slash its own crescent.
+        const segs = [];
+        let cur = null, curSeg = null;
+        for (const e of hst) {
+          if (!cur || e.seg !== curSeg) { cur = []; segs.push(cur); curSeg = e.seg; }
+          cur.push(e);
+        }
+        for (const seg of segs) {
+          if (seg.length < 2) continue;
+          const n = seg.length;
+          const rows = seg.map((e, i) => {
+            const fresh = i / (n - 1); // 0 = segment tail, 1 = segment leading edge
+            // Row cross-section spans the WHOLE chain+blade assembly: hand (grip/
+            // chain anchor) → blade tip. Footage shows the trail extending DOWN THE
+            // CHAIN at full extension — the texture's near-black inner band keeps
+            // the chain-span translucent; the intense band rides the leading edge.
+            const hand = e.hand || e.hilt;
+            const sx = e.tip[0] - hand[0], sy = e.tip[1] - hand[1], sz = e.tip[2] - hand[2];
+            const dx = e.tip[0] - e.hilt[0], dy = e.tip[1] - e.hilt[1], dz = e.tip[2] - e.hilt[2];
+            // SWOOSH taper (INFERRED): full span at the leading edge, narrowing
+            // toward the segment tail (converging on the tip arc).
+            const w = TRAIL_TAPER + (1 - TRAIL_TAPER) * fresh; // span fraction at this age
+            const ext = TRAIL_EXT * w; // slight overhang past the tip, along the BLADE axis
+            return {
+              a: [e.tip[0] - sx * w, e.tip[1] - sy * w, e.tip[2] - sz * w],
+              b: [e.tip[0] + dx * ext, e.tip[1] + dy * ext, e.tip[2] + dz * ext],
+              // u = ONE decal per SEGMENT (0 tail -> 1 leading edge): the complete
+              // swoosh graphic rides each swing like a stamp, never tiled and never
+              // shared across swings. The fragment maps it 90°-rotated (long axis
+              // along the chain, band rows along the sweep).
+              u: fresh, alpha: Math.max(0, 1 - e.age / TRAIL_AGE),
+            };
+          });
+          pushRibbon(rows, trailV);
+        }
       }
     }
     // Reach the pool pass even when chain/trail are empty (the pool draws its own
@@ -1877,7 +1889,10 @@
             // hand = the grip/chain anchor at this sample — the trail sheet is swept by
             // the WHOLE chain+blade assembly (footage: at full extension the trail
             // extends down the chain), so rows span hand→tip, not hilt→tip.
-            hst.push({ tip, hilt: xformM(bm, blade.hilt), hand: [world[hand * 16 + 12], world[hand * 16 + 13], world[hand * 16 + 14]], age: 0 });
+            const ts = trailSeg[key];
+            if (simStepCount - ts.last > 2) ts.id++; // push gap → new swing → new segment
+            ts.last = simStepCount;
+            hst.push({ tip, hilt: xformM(bm, blade.hilt), hand: [world[hand * 16 + 12], world[hand * 16 + 13], world[hand * 16 + 14]], age: 0, seg: ts.id });
             if (hst.length > 64) hst.shift();   // INFERRED: hold ~54-frame (TRAIL_AGE 0.9) sweep + margin
             // TRL-01/02 trail-spark riders (D-04c — the user's #1 richness lever):
             // a few hot specks spawn on the tip arc each attacking tick, then
