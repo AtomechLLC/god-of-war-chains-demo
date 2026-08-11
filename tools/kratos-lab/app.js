@@ -513,16 +513,18 @@
         return;
       }
       if (uTrailRamp > 0.5) {
-        // SOLID-FILL ribbon (one continuous sheet). Sampling the raw GFX_swordtrail texel
-        // reads near-gray in the lab AND its cross-strip structure bands the swept sheet
-        // into disconnected segments — so fill SOLID instead. Alpha uses the REAL decoded
-        // Trail Tint A = 0.8 (part1.pak /Player/ Weapon Level 1). Color: footage reads
-        // amber/gold with a white-hot leading edge (INFERRED — the real Trail Tint RGB is
-        // 1,1,1 white, so the gold is the texture/fire the lab can't cleanly sample yet).
-        vec3 amber = vec3(1.0, 0.62, 0.22);                   // INFERRED gold body (footage)
-        vec3 col = mix(amber, vec3(1.0), pow(vT.z, 3.0) * 0.6); // white-hot fresh leading edge
-        float a = 0.8 * clamp(vT.z, 0.30, 1.0);               // REAL Trail Tint A=0.8 x age-fade (floored, no gaps)
-        gl_FragColor = vec4(col * 2.4, a);                    // additive gain (INFERRED)
+        // SOLID-FILL swoosh (the decoded GFX_swordtrail texel is ~black + uniform alpha —
+        // it carries NO color, so the amber is a RUNTIME tint, as in-game). Color is now
+        // DATA-GROUNDED: uRampCool = the decoded warm blade-glow amber (blade light
+        // (1.0,0.622,0.288)); the thin live leading edge eases toward uRampHot (a hot
+        // warm-white). vT.z = freshness (1 at the live blade edge -> 0 at the tail).
+        // Additive (MAT_swordtrail): the GENTLE gain keeps the amber body from clamping to
+        // white where the sweep overlaps itself (the old 2.4 gain blew dense areas white
+        // and thin areas olive). Alpha = REAL Trail Tint A=0.8, eased to 0 at the tail for
+        // a soft trailing fade. Only the gain/curve are INFERRED; the amber traces to data.
+        vec3 col = mix(uRampCool, uRampHot, pow(vT.z, 2.5));
+        float a = 0.8 * pow(vT.z, 0.9);
+        gl_FragColor = vec4(col * (0.75 + 0.5 * vT.z), a);
         return;
       }
       gl_FragColor = vec4(rgb, a);
@@ -803,6 +805,7 @@
   // the edge lies across the motion, so the swept surface is a wide smooth sheet that
   // sheds off the whole back edge of the blade — not a point-source fan at the hilt.
   const TRAIL_EXT = 0.15; // INFERRED overhang past hilt/tip (fraction of blade length) for a fuller sheet
+  const TRAIL_TAPER = 0.45; // INFERRED tail width fraction (swoosh): 1.0 = constant slab, lower = narrower tail
   // CHAIN-03 chain-glow combat gains (D-05, A2 — INFERRED, footage-calibrated in
   // Phase 7). No decoded state-gate field exists (verified Phase 5), so the dark<->hot
   // RULE is INFERRED; the brightness it drives is data-grounded (alpha-over-1.0,
@@ -1062,11 +1065,19 @@
         // swordtrail); u = age along the sweep, alpha fades with age (additive streak).
         const n = hst.length;
         const rows = hst.map((e, i) => {
+          const fresh = i / (n - 1); // 0 = oldest tail, 1 = live blade edge
           const dx = e.tip[0] - e.hilt[0], dy = e.tip[1] - e.hilt[1], dz = e.tip[2] - e.hilt[2];
+          // SWOOSH taper (INFERRED): the sheet is full blade-width at the live edge and
+          // narrows toward the tail (converging on the tip arc), so the trail reads as a
+          // tapered crescent instead of a constant slab. The inner (hilt) end is pulled
+          // toward the tip for older rows; the tip edge stays anchored to the real arc.
+          const w = TRAIL_TAPER + (1 - TRAIL_TAPER) * fresh; // width fraction at this age
+          const hx = e.tip[0] - dx * w, hy = e.tip[1] - dy * w, hz = e.tip[2] - dz * w;
+          const ext = TRAIL_EXT * w;
           return {
-            a: [e.hilt[0] - dx * TRAIL_EXT, e.hilt[1] - dy * TRAIL_EXT, e.hilt[2] - dz * TRAIL_EXT],
-            b: [e.tip[0] + dx * TRAIL_EXT, e.tip[1] + dy * TRAIL_EXT, e.tip[2] + dz * TRAIL_EXT],
-            u: i / (n - 1), alpha: Math.max(0, 1 - e.age / TRAIL_AGE),
+            a: [hx - dx * ext, hy - dy * ext, hz - dz * ext],
+            b: [e.tip[0] + dx * ext, e.tip[1] + dy * ext, e.tip[2] + dz * ext],
+            u: fresh, alpha: Math.max(0, 1 - e.age / TRAIL_AGE),
           };
         });
         pushRibbon(rows, trailV);
@@ -1177,25 +1188,19 @@
       // Endpoints come from the tested-pure Particles.rampColor stops; blend and
       // depth still come ONLY from MAT_swordtrail via Fx.applyMaterial (DEC-01).
       //
-      // TRL-02 dual variant: Particles.variantFor(machine.st.current) picks BFT
-      // (crimson fire) vs BGT (neutral swoosh) per move. BOTH variants reuse this
-      // ONE decoded GFX_swordtrail texture + MAT_swordtrail blend — only the
-      // runtime tint on the ramp stops differs. The per-variant tint is INFERRED
-      // and traces to the runtime ramp; it NEVER introduces a fabricated real
-      // color (Pitfall 4). An unknown/idle move defaults safely inside variantFor.
-      const variant = Particles.variantFor(machine.st.current);   // "BFT" | "BGT"
-      const hot0 = Particles.rampColor(0.0);    // INFERRED white-hot core (t=0)
-      const cool0 = Particles.rampColor(1.0);   // INFERRED ember (t=1)
-      // Per-variant ramp stops via the shared variantTint helper (IN-01): BGT pulls
-      // the hot/cool stops toward white by 0.15/0.70 (a faint, near-hueless streak);
-      // BFT damps green/blue to crimson (whiteK ignored). Same rule the impact sparks
-      // use in simStep — one source of truth (INFERRED tint; Phase-7 footage-tunable).
-      const rampHot = variantTint(variant, hot0, 0.15);
-      const rampCool = variantTint(variant, cool0, 0.70);
+      // Trail color is DATA-GROUNDED to the blades' own decoded warm glow: uRampCool =
+      // bladeLightL.color (REAL decoded (1.0,0.622,0.288), the same amber the blade lights
+      // and fire use), uRampHot = a hot warm-white leading edge (INFERRED). Both blades use
+      // this one amber so they read identically (the earlier white-vs-olive split was pure
+      // additive-density blowout, now tamed by the gentle gain in the fragment). The BFT/BGT
+      // variant tint still drives the impact/trail SPARKS in simStep; the sheet itself stays
+      // the decoded amber (footage L1 trail is amber/gold, not crimson or white).
+      const TRAIL_HOT = [1.0, 0.72, 0.40]; // INFERRED hot warm-gold for the live leading edge (kept warm, not white)
+      const trailAmber = (bladeLightL && bladeLightL.color) ? bladeLightL.color : [1.0, 0.622, 0.288];
       gl.uniform1f(fxLocs.uTrailRamp, 1.0);
       gl.uniform1f(fxLocs.uGlowGain, 0.0); // glow premult OFF for the trail (no bleed, T-06-07-01)
-      gl.uniform3fv(fxLocs.uRampHot, rampHot);
-      gl.uniform3fv(fxLocs.uRampCool, rampCool);
+      gl.uniform3fv(fxLocs.uRampHot, TRAIL_HOT);
+      gl.uniform3fv(fxLocs.uRampCool, trailAmber);
       gl.bindTexture(gl.TEXTURE_2D, trailTex);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(trailV), gl.DYNAMIC_DRAW);
       gl.drawArrays(gl.TRIANGLES, 0, trailV.length / 6);
