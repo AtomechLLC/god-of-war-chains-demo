@@ -847,6 +847,7 @@
   // sheds off the whole back edge of the blade — not a point-source fan at the hilt.
   const TRAIL_EXT = 0.15; // INFERRED overhang past hilt/tip (fraction of blade length) for a fuller sheet
   const TRAIL_TAPER = 0.45; // INFERRED tail width fraction (swoosh): 1.0 = constant slab, lower = narrower tail
+  const SWOOSH_ROWS = 28; // INFERRED: the decal spans a FIXED ~0.47s window behind the blade (footage crescent length) — long swings shed rows off its dark end instead of stretching the graphic
   // CHAIN-03 chain-glow combat gains (D-05, A2 — INFERRED, footage-calibrated in
   // Phase 7). No decoded state-gate field exists (verified Phase 5), so the dark<->hot
   // RULE is INFERRED; the brightness it drives is data-grounded (alpha-over-1.0,
@@ -1116,7 +1117,12 @@
           if (seg.length < 2) continue;
           const n = seg.length;
           const rows = seg.map((e, i) => {
-            const fresh = i / (n - 1); // 0 = segment tail, 1 = segment leading edge
+            // FIXED-WINDOW decal: fresh = 1 at the leading edge, reaching 0 exactly
+            // SWOOSH_ROWS behind it — the graphic is a constant-length stamp trailing
+            // the blade. Rows older than the window clamp to 0 and sample the decal's
+            // black end (invisible), so a long swing sheds its tail instead of
+            // STRETCHING one swoosh across the whole arc. Short jabs compress it.
+            const fresh = Math.max(0, 1 - (n - 1 - i) / SWOOSH_ROWS);
             // Row cross-section spans the WHOLE chain+blade assembly: hand (grip/
             // chain anchor) → blade tip. Footage shows the trail extending DOWN THE
             // CHAIN at full extension — the texture's near-black inner band keeps
