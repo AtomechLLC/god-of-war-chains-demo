@@ -511,19 +511,21 @@
         return;
       }
       if (uTrailRamp > 0.5) {
-        // REAL GFX_swordtrail sampling. The decoded 64x32 texture is a feathered STREAK:
-        // ~top 78% black (black IS transparent under the additive MAT_swordtrail blend —
-        // no alpha channel needed, classic GS) and a bright ember band at the bottom that
-        // ramps dark-amber -> gold (243,176,18) with per-texel speckle. Bright band lives
-        // at v in [~0.78, 1.0]; the sheet's v (0 = inner tapered edge, 1 = tip) is REMAPPED
-        // into that band so the REAL feather gradient + speckle span the sheet's width
-        // (UV remap is the only INFERRED part — every color is a real texel). u follows
-        // the sweep (anchored per-row, REPEAT-S), so embers stick to arc positions.
-        // Alpha = REAL Trail Tint A=0.8 x age fade; gentle gain (INFERRED) — the texture
-        // body is dark so overlap can't clamp dense areas to white.
+        // REAL GFX_swordtrail sampling. The decoded 64x32 texture is a complete swoosh
+        // DECAL (black = transparent under the additive MAT_swordtrail blend — classic
+        // GS, no alpha needed): luminance ramps toward the bright corner at (u=1, v=1)
+        // — dark-amber -> gold (243,176,18) — and carries baked RIB striations
+        // (irregular bright/dark columns along u) — the multi-streak look in footage.
+        // Mapping: u = 0 tail -> 1 live blade edge (ONE texture per swoosh, never
+        // tiled — its u-ramp IS the along-arc fade); the sheet's v (inner -> tip) is
+        // remapped into the visible band [~0.78, 1.0] so the REAL feather spans the
+        // width. The remap is the only INFERRED part — every color is a real texel.
+        // Alpha = REAL Trail Tint A=0.8 x age fade (the fade matters after the swing
+        // ends, when rows age out in place). Gain (INFERRED): only the small bright
+        // rib corner exceeds 1.0 — a hot core, no field-wide blowout.
         vec3 tex = texture2D(uTex, vec2(vT.x, mix(0.78, 1.0, vT.y))).rgb;
         float a = 0.8 * pow(vT.z, 0.9);
-        gl_FragColor = vec4(tex * 1.7, a);
+        gl_FragColor = vec4(tex * 2.2, a);
         return;
       }
       gl_FragColor = vec4(rgb, a);
@@ -777,7 +779,6 @@
   const JID = {};
   if (rig) for (const j of rig.obj.joints) JID[j.name] = j.id;
   const trailHist = { l: [], r: [] };
-  const trailSeq = { l: 0, r: 0 }; // monotonically increasing push counter — anchors the streak texture's u to arc positions (REPEAT-S wraps)
   const TRAIL_AGE = 0.5;   // INFERRED: ~30-frame trail persistence (footage ~0.5s @60Hz) — long luminous sweep (Phase-7 tune)
 
   // ---- blade transforms from the game's authored type-10 tracks ------------
@@ -1075,10 +1076,12 @@
           return {
             a: [hx - dx * ext, hy - dy * ext, hz - dz * ext],
             b: [e.tip[0] + dx * ext, e.tip[1] + dy * ext, e.tip[2] + dz * ext],
-            // u anchored to the push counter (not the buffer position) so the streak
-            // texture's ember speckle sticks to arc positions instead of crawling as
-            // the history shifts; REPEAT-S wraps u past 1. ~44 rows = one texture length.
-            u: e.seq / 44, alpha: Math.max(0, 1 - e.age / TRAIL_AGE),
+            // u = ONE texture per swoosh (0 tail -> 1 live blade edge). The decoded
+            // texture is a complete swoosh DECAL: luminance ramps along u toward the
+            // blade AND carries the baked rib striations (irregular bright/dark columns)
+            // seen in footage — so it must NOT be tiled; the graphic rides the blade
+            // like a stamp, exactly as in-game. Its u-ramp handles the along-arc fade.
+            u: fresh, alpha: Math.max(0, 1 - e.age / TRAIL_AGE),
           };
         });
         pushRibbon(rows, trailV);
@@ -1823,7 +1826,7 @@
           if (attacking) {
             const tip = xformM(bm, blade.tip);
             const prevTip = hst.length ? hst[hst.length - 1].tip : tip;
-            hst.push({ tip, hilt: xformM(bm, blade.hilt), age: 0, seq: trailSeq[key]++ });
+            hst.push({ tip, hilt: xformM(bm, blade.hilt), age: 0 });
             if (hst.length > 44) hst.shift();   // INFERRED: hold ~30-frame (TRAIL_AGE 0.5) sweep + margin (was 26)
             // TRL-01/02 trail-spark riders (D-04c — the user's #1 richness lever):
             // a few hot specks spawn on the tip arc each attacking tick, then
