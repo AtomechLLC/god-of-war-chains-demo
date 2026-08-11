@@ -1,8 +1,9 @@
 # Deploy the public site for the GoW1 Chains demo to GitHub Pages.
 #
-# The site ships: a landing page, the kratos-lab viewer (code only), and the
-# designer .twk sheets. Extracted game assets are NOT in the repo and are never
-# deployed — the viewer detects their absence and explains how to run locally.
+# The site ships: a landing page, the kratos-lab viewer, the git-tracked
+# assets/ curated subset the viewer loads (~10 MB — the full extracted/ set
+# stays local-only/gitignored), and the designer .twk sheets (including the
+# decoded design/twk/decoded/ exports).
 name: Deploy static content to Pages
 
 on:
@@ -34,6 +35,7 @@ jobs:
           cp index.html _site/
           cp -r tools _site/tools
           cp -r design _site/design
+          cp -r assets _site/assets
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
