@@ -1996,7 +1996,7 @@
       if (rootMotion.on) {
         const rv = rig.rootDisp(machine.st.current, machine.st.t);
         if (!rootMotion.pendingRebase && rv !== null && rootMotion.prevTrack !== null) {
-          rootMotion.z += -(rv - rootMotion.prevTrack); // advance = -Δchannel, along +Z (INFERRED axis)
+          rootMotion.z += (rv - rootMotion.prevTrack); // advance along -Z (user-corrected axis; channel decreases forward)
         }
         rootMotion.prevTrack = rv;
         rootMotion.px = rootMotion.x; rootMotion.pz = rootMotion.z;
