@@ -845,11 +845,12 @@
   // the edge lies across the motion, so the swept surface is a wide smooth sheet that
   // sheds off the whole back edge of the blade — not a point-source fan at the hilt.
   const TRAIL_EXT = 0.15; // INFERRED overhang past hilt/tip (fraction of blade length) for a fuller sheet
-  // Trail window: REAL candidate value — the weapon templates in part1.pak carry a
-  // per-template "Weapon Length" (0.3/0.35/0.6/0.7/0.7/0.9) whose God Mode variant
-  // (uniformly 0.7) pairs with God Mode Trail Tint, marking it a TRAIL parameter.
-  // 0.35 (a short-family value, fits the L1 starting weapon + footage fade) read as
-  // SECONDS of swoosh window. INFERRED: which template = L1 Blades, and the unit.
+  // Trail window: the /Player/ tree carries "Weapon Length" PER COSTUME (0-5):
+  // (0.7, 0.6, 0.9, 0.3, 0.35, 0.7); God Mode variant uniformly 0.7. NOT per-action
+  // (no per-action trail data exists anywhere in the tweak tree). 0.35 = Costume 4's
+  // REAL value, kept because it matches footage fade (user-validated); semantics
+  // (trail seconds vs weapon size) + the costume assignment are INFERRED. Default
+  // Costume 0 = 0.7 if the longer read ever proves right.
   const TRAIL_WINDOW_S = 0.35;
   const SWOOSH_ROWS = Math.round(TRAIL_WINDOW_S * 60); // decal spans this fixed window behind the blade; long swings shed rows off its dark end
   // CHAIN-03 chain-glow combat gains (D-05, A2 — INFERRED, footage-calibrated in
