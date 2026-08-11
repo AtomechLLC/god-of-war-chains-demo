@@ -1,0 +1,27 @@
+; =====================================================================
+; TweakTemplates_CameraFilter_008.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x369660, TWK instance uid 9 (magic 0xfedcba98)
+; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
+; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
+; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
+; "God Mode" = Rage of the Gods.
+; =====================================================================
+
+/TweakTemplates/CameraFilter/008/
+  @hash(0x55b00cf6)                    "brightWhiteAdd"   ; [real] str32
+  @hash(0x24266bed)                                 1   ; [real] f32
+  @hash(0x24266be2)                                 1   ; [real] f32
+  @hash(0x24266bdd)                              0.75   ; [real] f32
+  @hash(0x24266bdc)                               0.5   ; [real] f32
+  @hash(0xa23a1ead)                                 1   ; [real] f32
+  @hash(0xa23a1ea2)                                 1   ; [real] f32
+  @hash(0xa23a1e9d)                              0.82   ; [real] f32
+  @hash(0xa23a1e9c)                              0.75   ; [real] f32
+  @hash(0x1fb9eac3)                                 1   ; [real] f32
+  @hash(0x1fb9eab8)                                 1   ; [real] f32
+  @hash(0x1fb9eab3)                              0.75   ; [real] f32
+  @hash(0x1fb9eab2)                               0.5   ; [real] f32
+  @hash(0x0b1ec59b)                                 0   ; [real] f32
+  @hash(0x5caae128)                               0.5   ; [real] f32
+  @hash(0xb83947a5)                                 1   ; [real] f32
+  Blend Mode                                        1   ; [real] f32

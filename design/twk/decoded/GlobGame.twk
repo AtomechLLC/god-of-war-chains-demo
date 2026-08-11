@@ -1,0 +1,195 @@
+; =====================================================================
+; GlobGame.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x36adf0, TWK instance uid 199 (magic 0xfedcba98)
+; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
+; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
+; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
+; "God Mode" = Rage of the Gods.
+; =====================================================================
+
+/GlobGame/
+  Gravity                                          50   ; [real] f32
+  Walkable Slope Angle                             60   ; [real] f32
+  Circle Sound Delay                              0.2   ; [real] f32
+  Difficulty                                 0.199219   ; [real] f32
+  Unfreeze Speed                             0.199219   ; [real] f32
+  Thing On A Spring Factor 1                       20   ; [real] f32
+  Thing On A Spring Factor 2                     0.05   ; [real] f32
+
+/GlobGame/Easy/
+  Damage Mult                                       2   ; [real] f32
+  AI Damage Mult                                  0.5   ; [real] f32
+  AI Recovery Time Mult                             2   ; [real] f32
+
+/GlobGame/Normal/
+  Damage Mult                                       1   ; [real] f32
+  AI Damage Mult                                    1   ; [real] f32
+  AI Recovery Time Mult                             1   ; [real] f32
+
+/GlobGame/Hard/
+  Damage Mult                                    0.75   ; [real] f32
+  AI Damage Mult                                  2.5   ; [real] f32
+  AI Recovery Time Mult                          0.75   ; [real] f32
+
+/GlobGame/Impossible/
+  Damage Mult                                     0.5   ; [real] f32
+  AI Damage Mult                                    5   ; [real] f32
+  AI Recovery Time Mult                           0.5   ; [real] f32
+
+/GlobGame/BMI/
+  @hash(0xf9463d9e)                               0.5   ; [real] f32
+  @hash(0xed4244e0)                                 0   ; [real] f32
+  Camera Target Weight                           0.35   ; [real] f32
+  Camera Target Radius                              2   ; [real] f32
+  Damage Per Vent Stage                           100   ; [real] f32
+  Damage Per Armor Stage                          150   ; [real] f32
+  No Armor Health Threshold                        99   ; [real] f32
+  Walk Forward                                     99   ; [real] f32
+  Leap Back                                        99   ; [real] f32
+  Dodge                                       99.0017   ; [real] f32
+  Stagger First Time                          99.0019   ; [real] f32
+  Stagger                                     99.0015   ; [real] f32
+  Stunned                                     99.0015   ; [real] f32
+  Armor Stagger                               99.0018   ; [real] f32
+  Armor Stunned                               99.0018   ; [real] f32
+  No Armor Stunned                            99.0018   ; [real] f32
+  Platform Stagger First Time                 99.0019   ; [real] f32
+  Platform Stagger                            99.0016   ; [real] f32
+  Platform Stunned                            99.0016   ; [real] f32
+  Platform Armor Stagger                      99.0018   ; [real] f32
+  Platform Armor Stunned                      99.0018   ; [real] f32
+  Platform No Armor Stunned                   99.0018   ; [real] f32
+  Platform Mount                              99.0001   ; [real] f32
+  Platform Dismount                                99   ; [real] f32
+  Victory                                          99   ; [real] f32
+  Platform Victory                            99.0001   ; [real] f32
+  Retreat                                     99.0003   ; [real] f32
+  Behind Close Dist                               2.5   ; [real] f32
+  Close Mid Dist                                   12   ; [real] f32
+  Mid Far Dist                                     18   ; [real] f32
+  Far Walk Dist                                    34   ; [real] f32
+  Center Angle                                     30   ; [real] f32
+  Retreat Dist                                     45   ; [real] f32
+  Platform Dist                                    53   ; [real] f32
+  Platform Back Dist                               75   ; [real] f32
+  Platform Center Angle                            55   ; [real] f32
+  S0 Close Left                               55.0003   ; [real] f32
+  S0 Close Center                             55.0006   ; [real] f32
+  S0 Close Right                              55.0003   ; [real] f32
+  S0 Mid Left                                      55   ; [real] f32
+  S0 Mid Center                               55.0006   ; [real] f32
+  S0 Mid Right                                     55   ; [real] f32
+  S0 Far Left                                      55   ; [real] f32
+  S0 Far Center                               55.0006   ; [real] f32
+  S0 Far Right                                     55   ; [real] f32
+  S0 Idle Time                                    0.5   ; [real] f32
+  S0 Platform Left                           0.500006   ; [real] f32
+  S0 Platform Center                         0.500006   ; [real] f32
+  S0 Platform Right                          0.500006   ; [real] f32
+  S0 Platform Back                           0.500006   ; [real] f32
+  S0 Platform Idle Time                          0.25   ; [real] f32
+  S1 Close Left                              0.250002   ; [real] f32
+  S1 Close Center                            0.250005   ; [real] f32
+  S1 Close Right                             0.250002   ; [real] f32
+  S1 Mid Left                                    0.25   ; [real] f32
+  S1 Mid Center                              0.250005   ; [real] f32
+  S1 Mid Right                                   0.25   ; [real] f32
+  S1 Far Left                                0.250002   ; [real] f32
+  S1 Far Center                              0.250005   ; [real] f32
+  S1 Far Right                               0.250002   ; [real] f32
+  S1 Idle Time                                    0.5   ; [real] f32
+  S1 Platform Left                           0.500006   ; [real] f32
+  S1 Platform Center                         0.500006   ; [real] f32
+  S1 Platform Right                          0.500006   ; [real] f32
+  S1 Platform Back                           0.500006   ; [real] f32
+  S1 Platform Idle Time                          0.15   ; [real] f32
+  S2 Close Left                              0.149415   ; [real] f32
+  S2 Close Center                            0.149417   ; [real] f32
+  S2 Close Right                             0.149415   ; [real] f32
+  S2 Mid Left                                0.149414   ; [real] f32
+  S2 Mid Center                              0.149417   ; [real] f32
+  S2 Mid Right                               0.149414   ; [real] f32
+  S2 Far Left                                0.149415   ; [real] f32
+  S2 Far Center                              0.149417   ; [real] f32
+  S2 Far Right                               0.149415   ; [real] f32
+  S2 Idle Time                                   0.25   ; [real] f32
+  S2 Platform Left                           0.250003   ; [real] f32
+  S2 Platform Center                         0.250003   ; [real] f32
+  S2 Platform Right                          0.250003   ; [real] f32
+  S2 Platform Back                           0.250003   ; [real] f32
+  S2 Platform Idle Time                         0.075   ; [real] f32
+  S3 Close Left                             0.0747076   ; [real] f32
+  S3 Close Center                           0.0747084   ; [real] f32
+  S3 Close Right                            0.0747076   ; [real] f32
+  S3 Mid Left                                0.074707   ; [real] f32
+  S3 Mid Center                             0.0747084   ; [real] f32
+  S3 Mid Right                               0.074707   ; [real] f32
+  S3 Far Left                               0.0747076   ; [real] f32
+  S3 Far Center                             0.0747084   ; [real] f32
+  S3 Far Right                              0.0747076   ; [real] f32
+  S3 Idle Time                                      0   ; [real] f32
+  S3 Platform Left                         0x00000069   ; [real] raw
+  S3 Platform Center                       0x00000064   ; [real] raw
+  S3 Platform Right                        0x00000067   ; [real] raw
+  S3 Platform Back                         0x00000067   ; [real] raw
+  S3 Platform Idle Time                             0   ; [real] f32
+
+/GlobGame/BAR/
+  Player Soldier Tweaks                    0x00000001   ; [real] raw
+  pause AI                                          0   ; [real] f32
+  Camera Target Weight                           0.35   ; [real] f32
+  Camera Target Radius                            1.4   ; [real] f32
+  f line symetrical                           1.39844   ; [real] f32
+  f line angle                                     60   ; [real] f32
+  f line weight                                     0   ; [real] f32
+  seperating min                                    0   ; [real] f32
+  seperating max                                   40   ; [real] f32
+  seperating weight                                10   ; [real] f32
+  obscured symetrical                              10   ; [real] f32
+  obscured weight                             80.6001   ; [real] f32
+  dolly rot angle                                 -90   ; [real] f32
+  dolly rot limit                                  10   ; [real] f32
+  dolly rot weight                                  0   ; [real] f32
+  distance min                                      8   ; [real] f32
+  distance min weight                             100   ; [real] f32
+  inside rim min                                   25   ; [real] f32
+  inside rim weight                                10   ; [real] f32
+  horizontal max                              35.0003   ; [real] f32
+  horizontal weight                               500   ; [real] f32
+  vertical max                                     25   ; [real] f32
+  vertical weight                                1000   ; [real] f32
+  minimum dist                                    6.9   ; [real] f32
+  minimum dist weight                             100   ; [real] f32
+  maximum dist                                      8   ; [real] f32
+  maximum dist weight                              10   ; [real] f32
+  slope weight                                     10   ; [real] f32
+  bay floor                                   -0.4125   ; [real] f32
+  bowl base                                  0.519999   ; [real] f32
+  bowl centre x                                     0   ; [real] f32
+  bowl centre z                              -3.11994   ; [real] f32
+  bowl radius                                 8.99987   ; [real] f32
+  bowl slope                                     1.25   ; [real] f32
+  max rail speed                             0.360001   ; [real] f32
+  boom speed in                               -3.9999   ; [real] f32
+  boom speed out                              27.0005   ; [real] f32
+
+/GlobGame/BloodSpots/
+  Offset                                          0.1   ; [real] f32
+  Cone                                             25   ; [real] f32
+  Impulse                                           1   ; [real] f32
+  Gravity                                          18   ; [real] f32
+  Nominal Distance                                  8   ; [real] f32
+  Nominal Particles                                36   ; [real] f32
+  Nominal Size                                      3   ; [real] f32
+  Fall Time                                   3.00031   ; [real] f32
+  Emit Time                                   3.00007   ; [real] f32
+  Clamp Spread Size                               1.3   ; [real] f32
+  Clamp Part Size                                0.65   ; [real] f32
+  Clamp Num Part                           0x0000000a   ; [real] raw
+  Particle System 1 Light               "goBloodSpot"   ; [real] str32
+  Particle System 1 Dark                   0x6c426f00   ; [real] raw
+  Particle System 2 Light                  0x6c426f00   ; [real] raw
+  Particle System 2 Dark                   0x6c426f00   ; [real] raw
+  Particle System 3 Light                  0x6c426f00   ; [real] raw
+  Particle System 3 Dark                   0x6c426f00   ; [real] raw
+  @hash(0x1ddd50d7)                        0x6c420000   ; [real] raw

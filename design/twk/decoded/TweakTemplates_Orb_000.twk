@@ -1,0 +1,23 @@
+; =====================================================================
+; TweakTemplates_Orb_000.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x36bc70, TWK instance uid 7 (magic 0xfedcba98)
+; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
+; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
+; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
+; "God Mode" = Rage of the Gods.
+; =====================================================================
+
+/TweakTemplates/Orb/000/
+  @hash(0x55b00cf6)                    6865616c74684f726200624269670053…   ; [real] hex32
+  @hash(0xb6aab6b0)                               0.5   ; [real] f32
+  @hash(0xb60d39a0)                              0.15   ; [real] f32
+  @hash(0xf0864672)                               0.4   ; [real] f32
+  @hash(0x117c872e)                                10   ; [real] f32
+  @hash(0xb93f0272)                              0.75   ; [real] f32
+  @hash(0xd0053b6c)                              0.25   ; [real] f32
+  @hash(0x3a05c371)                                20   ; [real] f32
+  Gravity                                        9.82   ; [real] f32
+  Type                                         9.8125   ; [real] f32
+  Points                                           10   ; [real] f32
+  @hash(0x40b798cb)                    534e445f5049434b5550535f4f524253…   ; [real] hex32
+  GO Name                              676f4865616c74684f7262004f524253…   ; [real] hex32

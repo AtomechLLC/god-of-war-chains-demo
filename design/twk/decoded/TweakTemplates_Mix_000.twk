@@ -1,0 +1,27 @@
+; =====================================================================
+; TweakTemplates_Mix_000.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x36c6a0, TWK instance uid 7 (magic 0xfedcba98)
+; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
+; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
+; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
+; "God Mode" = Rage of the Gods.
+; =====================================================================
+
+/TweakTemplates/Mix/000/
+  @hash(0x55b00cf6)                              3500   ; [real] f32
+  SFX                                            1024   ; [real] f32
+  Music                                          1024   ; [real] f32
+  Mime Dialogue                                  1024   ; [real] f32
+  Ambient Streams (U1)                           1024   ; [real] f32
+  IOP Streams     (U2)                           1024   ; [real] f32
+  Footsteps       (U3)                            775   ; [real] f32
+  Menu Sounds     (U4)                            800   ; [real] f32
+  Interactives    (U5)                           1024   ; [real] f32
+  MPEG            (U6)                           1024   ; [real] f32
+  Music UW no mod (U7)                           1024   ; [real] f32
+  SFX UW pitch    (U8)                           1024   ; [real] f32
+  SFX UW no mod   (U9)                           1024   ; [real] f32
+  Ambient UW nomod(U10)                          1024   ; [real] f32
+  IOP UW no mod   (U11)                          1024   ; [real] f32
+  Dry Effects     (U12)                          1024   ; [real] f32
+  Base Reverb                                    3500   ; [real] f32

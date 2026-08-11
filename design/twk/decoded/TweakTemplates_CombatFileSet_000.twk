@@ -1,0 +1,34 @@
+; =====================================================================
+; TweakTemplates_CombatFileSet_000.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x3684c0, TWK instance uid 5 (magic 0xfedcba98)
+; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
+; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
+; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
+; "God Mode" = Rage of the Gods.
+; =====================================================================
+
+/TweakTemplates/CombatFileSet/000/
+  @hash(0x55b00cf6)                            "Hero"   ; [real] str32
+  @hash(0x0000247b)                        0x6f720000   ; [real] raw
+  Circle Health Threshold                  0x6f72ffff   ; [real] raw
+  @hash(0x5cb5773a)                                 1   ; [real] f32
+  @hash(0x7ed79e0a)                               0.5   ; [real] f32
+  @hash(0x2bb626fe)                                 1   ; [real] f32
+  @hash(0xa58b9446)                                 0   ; [real] f32
+  Target Weight                                   0.5   ; [real] f32
+  @hash(0xdf4375e3)                                 1   ; [real] f32
+  @hash(0x7a4a8930)                                 1   ; [real] f32
+  @hash(0x35f40b1b)                                 1   ; [real] f32
+  @hash(0x4e16ee9c)                                 1   ; [real] f32
+  @hash(0x595ad8ad)                                 1   ; [real] f32
+  @hash(0x35199881)                                 1   ; [real] f32
+  @hash(0xb538db82)                                 1   ; [real] f32
+  @hash(0x9c811767)                                 1   ; [real] f32
+  File 0                                            1   ; [real] f32
+  File 1                                            1   ; [real] f32
+  File 2                                            1   ; [real] f32
+  File 3                                            1   ; [real] f32
+  File 4                                            1   ; [real] f32
+  File 5                                            1   ; [real] f32
+  File 6                                            1   ; [real] f32
+  File 7                                      1.00781   ; [real] f32

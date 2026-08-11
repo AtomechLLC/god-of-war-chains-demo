@@ -1,0 +1,35 @@
+; =====================================================================
+; TweakTemplates_OrbEmitter_015.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x36c310, TWK instance uid 5 (magic 0xfedcba98)
+; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
+; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
+; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
+; "God Mode" = Rage of the Gods.
+; =====================================================================
+
+/TweakTemplates/OrbEmitter/015/
+  @hash(0x55b00cf6)                    4d616769634368657374000054484954…   ; [real] hex32
+  @hash(0xe019d6fe)                        0x0000000b   ; [real] raw
+  @hash(0x76df37cd)                        0x0000000e   ; [real] raw
+  @hash(0x22c9b7fe)                        0x00000002   ; [real] raw
+  @hash(0xbd2b62f8)                                 0   ; [real] f32
+  @hash(0x88bfc764)                                 0   ; [real] f32
+  @hash(0x8856843b)                                 0   ; [real] f32
+  Target Radius                                     5   ; [real] f32
+  @hash(0x7d4c53a0)                                 1   ; [real] f32
+  @hash(0x7ff9cc47)                                 1   ; [real] f32
+  @hash(0x7ff9c859)                                 1   ; [real] f32
+  @hash(0x062a9be1)                                 1   ; [real] f32
+  @hash(0xddc72386)                                 1   ; [real] f32
+  @hash(0xddc71f98)                                 1   ; [real] f32
+  @hash(0x523e34a0)                                 0   ; [real] f32
+  @hash(0x99d76b47)                                 0   ; [real] f32
+  @hash(0x99d76759)                                 0   ; [real] f32
+  Health Threshold                                  0   ; [real] f32
+  @hash(0x46cb1dcd)                                 1   ; [real] f32
+  @hash(0x2eeaab9a)                                 1   ; [real] f32
+  @hash(0x2eeaa7ac)                                 1   ; [real] f32
+  @hash(0xe91f1418)                                 0   ; [real] f32
+  @hash(0xb51b7b34)                                 1   ; [real] f32
+  @hash(0x6431dab3)                                 1   ; [real] f32
+  @hash(0x6431d6c5)                                 1   ; [real] f32

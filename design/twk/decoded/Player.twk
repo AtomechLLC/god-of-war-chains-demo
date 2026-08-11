@@ -1,0 +1,468 @@
+; =====================================================================
+; Player.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x369bf0, TWK instance uid 273 (magic 0xfedcba98)
+; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
+; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
+; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
+; "God Mode" = Rage of the Gods.
+; =====================================================================
+
+/Player/
+  @hash(0x7a70f320)                                20   ; [real] f32
+  Max Hit Points Level 0                          100   ; [real] f32
+  Max Hit Points Level 1                          125   ; [real] f32
+  Max Hit Points Level 2                          150   ; [real] f32
+  Max Hit Points Level 3                          175   ; [real] f32
+  Max Hit Points Level 4                          200   ; [real] f32
+  Max Magic Level 0                                 0   ; [real] f32
+  Max Magic Level 1                               100   ; [real] f32
+  Max Magic Level 2                               125   ; [real] f32
+  Max Magic Level 3                               150   ; [real] f32
+  Max Magic Level 4                               175   ; [real] f32
+  Max Magic Level 5                               200   ; [real] f32
+  Targeting Range                                  10   ; [real] f32
+  Manual Targeting Range                           50   ; [real] f32
+  Deaths Before Easy Offer                 0x00000005   ; [real] raw
+  Shards Per Meter Level                   0x00000006   ; [real] raw
+  Death Menu Time                                   1   ; [real] f32
+  Hit Counter Reset Time                            1   ; [real] f32
+  Meter Bar Hold Time                               2   ; [real] f32
+  Wiggle Meter Drain                                2   ; [real] f32
+  Frozen Invulnerable Time                    2.00107   ; [real] f32
+  Statue Vertical Break Speed                       7   ; [real] f32
+  Soldier Tweaks                                    0   ; [real] f32
+  God Mode On Threshold                            99   ; [real] f32
+  God Mode Off Threshold                            1   ; [real] f32
+  God Mode Loop Name                   "SND_TRANSFORM_LP"   ; [real] str32
+  God Mode End Name                    "SND_TRANSFORM_END"   ; [real] str32
+  God Mode End Threshold                            3   ; [real] f32
+  Low Health Threshold                        49.9998   ; [real] f32
+  Low Health Min Freq                             0.7   ; [real] f32
+  Low Health Min Volume                           500   ; [real] f32
+  Low Health Max Freq                             2.9   ; [real] f32
+  Low Health Death Freq                           0.7   ; [real] f32
+  Low Health Death Timer                            4   ; [real] f32
+  Blade Damping                                   0.4   ; [real] f32
+  Blade Scale On Back                               1   ; [real] f32
+  Blade Scale In Hand                               1   ; [real] f32
+  Blade Scale Out Hand                              1   ; [real] f32
+  Blade Collision Tolerance                       0.5   ; [real] f32
+  Segment Length                                 0.25   ; [real] f32
+  Link Diameter                                  0.13   ; [real] f32
+  Glow Diameter                                  0.18   ; [real] f32
+  Shadow Diameter                                0.13   ; [real] f32
+  Control Tween Safety                              7   ; [real] f32
+  Control Tween Speed                               7   ; [real] f32
+  Control Tween Threshold                         0.1   ; [real] f32
+
+/Player/Weapon Level 0/
+  Dmg Mult                                          1   ; [real] f32
+  Trail Tint R                                      1   ; [real] f32
+  Trail Tint G                                      1   ; [real] f32
+  Trail Tint B                                      1   ; [real] f32
+  Trail Tint A                                    0.8   ; [real] f32
+  Allow God Mode                             0.796875   ; [real] f32
+  Allow God Mode Inf Magic                   0.796875   ; [real] f32
+  God Mode Meter Drain                              0   ; [real] f32
+  God Mode Dmg Mult                                 0   ; [real] f32
+  God Mode Enmy Dmg Mult                            0   ; [real] f32
+  God Mode Tint R                                   0   ; [real] f32
+  God Mode Tint G                                   0   ; [real] f32
+  God Mode Tint B                                   0   ; [real] f32
+  God Mode Trail Tint R                             0   ; [real] f32
+  God Mode Trail Tint G                             0   ; [real] f32
+  God Mode Trail Tint B                             0   ; [real] f32
+  God Mode Trail Tint A                             0   ; [real] f32
+
+/Player/Weapon Level 1/
+  Dmg Mult                                        1.5   ; [real] f32
+  Trail Tint R                                      1   ; [real] f32
+  Trail Tint G                                      1   ; [real] f32
+  Trail Tint B                                      1   ; [real] f32
+  Trail Tint A                                    0.8   ; [real] f32
+  Allow God Mode                             0.796875   ; [real] f32
+  Allow God Mode Inf Magic                   0.796875   ; [real] f32
+  God Mode Meter Drain                         7.0715   ; [real] f32
+  God Mode Dmg Mult                                 2   ; [real] f32
+  God Mode Enmy Dmg Mult                         0.75   ; [real] f32
+  God Mode Tint R                                 0.5   ; [real] f32
+  God Mode Tint G                                 0.6   ; [real] f32
+  God Mode Tint B                                0.75   ; [real] f32
+  God Mode Trail Tint R                             1   ; [real] f32
+  God Mode Trail Tint G                             1   ; [real] f32
+  God Mode Trail Tint B                             1   ; [real] f32
+  God Mode Trail Tint A                             1   ; [real] f32
+
+/Player/Weapon Level 2/
+  Dmg Mult                                          2   ; [real] f32
+  Trail Tint R                                      1   ; [real] f32
+  Trail Tint G                                      1   ; [real] f32
+  Trail Tint B                                      1   ; [real] f32
+  Trail Tint A                                    0.8   ; [real] f32
+  Allow God Mode                             0.796875   ; [real] f32
+  Allow God Mode Inf Magic                   0.796875   ; [real] f32
+  God Mode Meter Drain                         7.0715   ; [real] f32
+  God Mode Dmg Mult                                 2   ; [real] f32
+  God Mode Enmy Dmg Mult                          0.6   ; [real] f32
+  God Mode Tint R                                 0.5   ; [real] f32
+  God Mode Tint G                                 0.6   ; [real] f32
+  God Mode Tint B                                0.75   ; [real] f32
+  God Mode Trail Tint R                             1   ; [real] f32
+  God Mode Trail Tint G                             1   ; [real] f32
+  God Mode Trail Tint B                             1   ; [real] f32
+  God Mode Trail Tint A                             1   ; [real] f32
+
+/Player/Weapon Level 3/
+  Dmg Mult                                          3   ; [real] f32
+  Trail Tint R                                      1   ; [real] f32
+  Trail Tint G                                      1   ; [real] f32
+  Trail Tint B                                      1   ; [real] f32
+  Trail Tint A                                    0.8   ; [real] f32
+  Allow God Mode                             0.796875   ; [real] f32
+  Allow God Mode Inf Magic                   0.796875   ; [real] f32
+  God Mode Meter Drain                         7.0715   ; [real] f32
+  God Mode Dmg Mult                                 2   ; [real] f32
+  God Mode Enmy Dmg Mult                         0.45   ; [real] f32
+  God Mode Tint R                                 0.5   ; [real] f32
+  God Mode Tint G                                 0.6   ; [real] f32
+  God Mode Tint B                                0.75   ; [real] f32
+  God Mode Trail Tint R                             1   ; [real] f32
+  God Mode Trail Tint G                             1   ; [real] f32
+  God Mode Trail Tint B                             1   ; [real] f32
+  God Mode Trail Tint A                             1   ; [real] f32
+
+/Player/Weapon Level 4/
+  Dmg Mult                                          4   ; [real] f32
+  Trail Tint R                                      1   ; [real] f32
+  Trail Tint G                                      1   ; [real] f32
+  Trail Tint B                                      1   ; [real] f32
+  Trail Tint A                                    0.8   ; [real] f32
+  Allow God Mode                             0.796875   ; [real] f32
+  Allow God Mode Inf Magic                   0.796875   ; [real] f32
+  God Mode Meter Drain                         7.0715   ; [real] f32
+  God Mode Dmg Mult                                 2   ; [real] f32
+  God Mode Enmy Dmg Mult                          0.3   ; [real] f32
+  God Mode Tint R                                   1   ; [real] f32
+  God Mode Tint G                                   0   ; [real] f32
+  God Mode Tint B                                   0   ; [real] f32
+  God Mode Trail Tint R                             1   ; [real] f32
+  God Mode Trail Tint G                             0   ; [real] f32
+  God Mode Trail Tint B                             0   ; [real] f32
+  God Mode Trail Tint A                             1   ; [real] f32
+
+/Player/Weapon Level 5/
+  Dmg Mult                                          5   ; [real] f32
+  Trail Tint R                                      1   ; [real] f32
+  Trail Tint G                                      1   ; [real] f32
+  Trail Tint B                                      1   ; [real] f32
+  Trail Tint A                                    0.8   ; [real] f32
+  Allow God Mode                             0.796875   ; [real] f32
+  Allow God Mode Inf Magic                   0.796875   ; [real] f32
+  God Mode Meter Drain                         7.0715   ; [real] f32
+  God Mode Dmg Mult                                 2   ; [real] f32
+  God Mode Enmy Dmg Mult                          0.3   ; [real] f32
+  God Mode Tint R                                   1   ; [real] f32
+  God Mode Tint G                                   0   ; [real] f32
+  God Mode Tint B                                   0   ; [real] f32
+  God Mode Trail Tint R                             1   ; [real] f32
+  God Mode Trail Tint G                             0   ; [real] f32
+  God Mode Trail Tint B                             0   ; [real] f32
+  God Mode Trail Tint A                             1   ; [real] f32
+
+/Player/Costume 0/
+  Damage Mult                                       1   ; [real] f32
+  AI Damage Mult                                    1   ; [real] f32
+  Infinite Magic                                    1   ; [real] f32
+  Health Orb Mult                                   1   ; [real] f32
+  Magic Orb Mult                                    1   ; [real] f32
+  Weapon Orb Mult                                   1   ; [real] f32
+  Weapon Length                                   0.7   ; [real] f32
+  God Mode Weapon Length                          0.7   ; [real] f32
+
+/Player/Costume 1/
+  Damage Mult                                       1   ; [real] f32
+  AI Damage Mult                                    1   ; [real] f32
+  Infinite Magic                                    1   ; [real] f32
+  Health Orb Mult                                 1.5   ; [real] f32
+  Magic Orb Mult                                    3   ; [real] f32
+  Weapon Orb Mult                                   1   ; [real] f32
+  Weapon Length                                   0.6   ; [real] f32
+  God Mode Weapon Length                          0.7   ; [real] f32
+
+/Player/Costume 2/
+  Damage Mult                                     0.5   ; [real] f32
+  AI Damage Mult                                    1   ; [real] f32
+  Infinite Magic                                    1   ; [real] f32
+  Health Orb Mult                                   3   ; [real] f32
+  Magic Orb Mult                                  1.5   ; [real] f32
+  Weapon Orb Mult                                   1   ; [real] f32
+  Weapon Length                                   0.9   ; [real] f32
+  God Mode Weapon Length                          0.7   ; [real] f32
+
+/Player/Costume 3/
+  Damage Mult                                       2   ; [real] f32
+  AI Damage Mult                                    4   ; [real] f32
+  Infinite Magic                                    4   ; [real] f32
+  Health Orb Mult                                   1   ; [real] f32
+  Magic Orb Mult                                    1   ; [real] f32
+  Weapon Orb Mult                                   4   ; [real] f32
+  Weapon Length                                   0.3   ; [real] f32
+  God Mode Weapon Length                          0.7   ; [real] f32
+
+/Player/Costume 4/
+  Damage Mult                                     0.5   ; [real] f32
+  AI Damage Mult                                    1   ; [real] f32
+  Infinite Magic                                    1   ; [real] f32
+  Health Orb Mult                                   2   ; [real] f32
+  Magic Orb Mult                                    2   ; [real] f32
+  Weapon Orb Mult                                   2   ; [real] f32
+  Weapon Length                                  0.35   ; [real] f32
+  God Mode Weapon Length                          0.7   ; [real] f32
+
+/Player/Costume 5/
+  Damage Mult                                       2   ; [real] f32
+  AI Damage Mult                                 0.25   ; [real] f32
+  Infinite Magic                                 0.25   ; [real] f32
+  Health Orb Mult                                   2   ; [real] f32
+  Magic Orb Mult                                    1   ; [real] f32
+  Weapon Orb Mult                                   2   ; [real] f32
+  Weapon Length                                   0.7   ; [real] f32
+  God Mode Weapon Length                          0.7   ; [real] f32
+
+/Player/Bonus/
+  Threshold                                  0.699219   ; [real] f32
+  Milestone 0 Hits                           0.699219   ; [real] f32
+  Template 0                                 0.699219   ; [real] f32
+  Milestone 1 Hits                            0.69922   ; [real] f32
+  Template 1                                 0.699219   ; [real] f32
+  Milestone 2 Hits                           0.699221   ; [real] f32
+  Template 2                                 0.699219   ; [real] f32
+  Milestone 3 Hits                           0.699221   ; [real] f32
+  Template 3                                 0.699219   ; [real] f32
+  Milestone 4 Hits                           0.699222   ; [real] f32
+  Template 4                                 0.699219   ; [real] f32
+  Milestone 5 Hits                           0.699223   ; [real] f32
+  Template 5                                 0.699219   ; [real] f32
+  Milestone 6 Hits                           0.699225   ; [real] f32
+  Template 6                                 0.699219   ; [real] f32
+  Milestone 7 Hits                           0.699226   ; [real] f32
+  Template 7                                 0.699219   ; [real] f32
+  Milestone 8 Hits                           0.699228   ; [real] f32
+  Template 8                                 0.699219   ; [real] f32
+  Milestone 9 Hits                           0.699229   ; [real] f32
+  Template 9                                 0.699219   ; [real] f32
+  Milestone 10 Hits                          0.699231   ; [real] f32
+  Template 10                                0.699219   ; [real] f32
+  Milestone 11 Hits                          0.699234   ; [real] f32
+  Template 11                                0.699219   ; [real] f32
+  Milestone 12 Hits                          0.699237   ; [real] f32
+  Template 12                                0.699219   ; [real] f32
+  Milestone 13 Hits                          0.699243   ; [real] f32
+  Template 13                                 0.69922   ; [real] f32
+  Milestone 14 Hits                          0.699249   ; [real] f32
+  Template 14                                 0.69922   ; [real] f32
+  Milestone 15 Hits                          0.699255   ; [real] f32
+  Template 15                                 0.69922   ; [real] f32
+  @hash(0xde59256b)                           0.69926   ; [real] f32
+  @hash(0x973f0d2b)                           0.69922   ; [real] f32
+  @hash(0x8f96a7ea)                          0.699266   ; [real] f32
+  @hash(0x973f0d2c)                           0.69922   ; [real] f32
+  @hash(0x40d42a69)                          0.699272   ; [real] f32
+  @hash(0x973f0d2d)                           0.69922   ; [real] f32
+  @hash(0xf211ace8)                          0.699278   ; [real] f32
+  @hash(0x973f0d2e)                           0.69922   ; [real] f32
+
+/Player/Reticle/
+  Valid Tint R                                    0.2   ; [real] f32
+  Valid Tint G                                    0.2   ; [real] f32
+  Valid Tint B                                    0.4   ; [real] f32
+  Invalid Tint R                                  0.4   ; [real] f32
+  Invalid Tint G                                 0.15   ; [real] f32
+  Invalid Tint B                                 0.15   ; [real] f32
+
+/Player/BerserkBlade/
+  Stage 0 Damage Multiplier                      1.75   ; [real] f32
+  Stage 0 GO Name                      676f4265727365726b426c616465004e…   ; [real] hex32
+  Stage 1 Damage Multiplier                      2.25   ; [real] f32
+  Stage 1 GO Name                      676f4265727365726b426c616465004e…   ; [real] hex32
+  Stage 2 Damage Multiplier                         3   ; [real] f32
+  Stage 2 GO Name                      676f4265727365726b426c616465004e…   ; [real] hex32
+
+/Player/Lightning/
+  Damage Freq                              0x6542000c   ; [real] raw
+  Mash Max Spin                                  1200   ; [real] f32
+  Allow Movement                                 1200   ; [real] f32
+  Movement Speed                                   10   ; [real] f32
+  From Above Bolt Freq                             10   ; [real] f32
+  Hit Sound                                        10   ; [real] f32
+  Hit Context                              0x0000000f   ; [real] raw
+  Ground Impulse Away                            -500   ; [real] f32
+  Ground Impulse Up                                 0   ; [real] f32
+  Ground Impulse Right                              0   ; [real] f32
+  Air Impulse Away                                 50   ; [real] f32
+  Air Impulse Up                                  500   ; [real] f32
+  Air Impulse Right                                 0   ; [real] f32
+  Stage 0 Damage Per Second                        30   ; [real] f32
+  Stage 0 Magic Drain                              33   ; [real] f32
+  Stage 0 Duration                                  1   ; [real] f32
+  Stage 0 Reach                                     5   ; [real] f32
+  Stage 0 Mash Damage Scale                         1   ; [real] f32
+  Stage 0 Mash Reach Scale                          1   ; [real] f32
+  Stage 0 Mashometer Drain                          1   ; [real] f32
+  Stage 0 Mashometer Max                            1   ; [real] f32
+  Stage 0 Allow Mashing                             1   ; [real] f32
+  Stage 0 Tint Red                                  1   ; [real] f32
+  Stage 0 Tint Green                                1   ; [real] f32
+  Stage 0 Tint Blue                                 1   ; [real] f32
+  Stage 0 Bright Camera Filter                      1   ; [real] f32
+  Stage 0 Dark Camera Filter                  1.00781   ; [real] f32
+  Stage 0 Flash Freq                                1   ; [real] f32
+  Stage 0 Fog Template                              1   ; [real] f32
+  Stage 1 Damage Per Second                        40   ; [real] f32
+  Stage 1 Magic Drain                              42   ; [real] f32
+  Stage 1 Duration                                  2   ; [real] f32
+  Stage 1 Reach                                     5   ; [real] f32
+  Stage 1 Mash Damage Scale                       1.5   ; [real] f32
+  Stage 1 Mash Reach Scale                          2   ; [real] f32
+  Stage 1 Mashometer Drain                          3   ; [real] f32
+  Stage 1 Mashometer Max                           15   ; [real] f32
+  Stage 1 Allow Mashing                            15   ; [real] f32
+  Stage 1 Tint Red                                  1   ; [real] f32
+  Stage 1 Tint Green                                1   ; [real] f32
+  Stage 1 Tint Blue                                 1   ; [real] f32
+  Stage 1 Bright Camera Filter                      1   ; [real] f32
+  Stage 1 Dark Camera Filter                  1.00781   ; [real] f32
+  Stage 1 Flash Freq                                1   ; [real] f32
+  Stage 1 Fog Template                              1   ; [real] f32
+  Stage 2 Damage Per Second                        50   ; [real] f32
+  Stage 2 Magic Drain                              50   ; [real] f32
+  Stage 2 Duration                                  3   ; [real] f32
+  Stage 2 Reach                                     5   ; [real] f32
+  Stage 2 Mash Damage Scale                       1.5   ; [real] f32
+  Stage 2 Mash Reach Scale                          3   ; [real] f32
+  Stage 2 Mashometer Drain                          3   ; [real] f32
+  Stage 2 Mashometer Max                           10   ; [real] f32
+  Stage 2 Allow Mashing                            10   ; [real] f32
+  Stage 2 Tint Red                                  1   ; [real] f32
+  Stage 2 Tint Green                                1   ; [real] f32
+  Stage 2 Tint Blue                                 1   ; [real] f32
+  Stage 2 Bright Camera Filter                      1   ; [real] f32
+  Stage 2 Dark Camera Filter                  1.00781   ; [real] f32
+  Stage 2 Flash Freq                                1   ; [real] f32
+  Stage 2 Fog Template                              1   ; [real] f32
+
+/Player/MedusaHead/
+  HeadName                             676f4d65774800726b426c616465004e…   ; [real] hex32
+  JointName                            72576561704948006b426c616465004e…   ; [real] hex32
+  Up Angle Degree                          0x61650050   ; [real] raw
+  Down Angle Degree                        0x6165003c   ; [real] raw
+  Aim Speed                                       0.2   ; [real] f32
+  Flash Anim Pos                                0.647   ; [real] f32
+  Anim Rate                                         1   ; [real] f32
+  Stage 0 Distance                                 15   ; [real] f32
+  Stage 0 Cone Top Rad                            0.5   ; [real] f32
+  Stage 0 Cone Base Rad                          3.25   ; [real] f32
+  Stage 0 Drain                                  12.5   ; [real] f32
+  Stage 0 Freeze Factor                       12.5001   ; [real] f32
+  Stage 0 Effect                       676f4579654265616d006c616465004e…   ; [real] hex32
+  Stage 0 Flash Distance                            0   ; [real] f32
+  Stage 0 Flash Cone Top Rad                        0   ; [real] f32
+  Stage 0 Flash Cone Base Rad                       0   ; [real] f32
+  Stage 0 Flash Points                              0   ; [real] f32
+  Stage 0 Flash Freeze Factor              0x00002710   ; [real] raw
+  Stage 0 Allow Flash Freeze                        0   ; [real] f32
+  Stage 0 Flash Effect                 676f4d656448656164466c617368004e…   ; [real] hex32
+  Stage 0 Nuke Points                               0   ; [real] f32
+  Stage 0 Allow Nuke                                0   ; [real] f32
+  Stage 1 Distance                                 15   ; [real] f32
+  Stage 1 Cone Top Rad                            0.5   ; [real] f32
+  Stage 1 Cone Base Rad                          3.25   ; [real] f32
+  Stage 1 Drain                                    10   ; [real] f32
+  Stage 1 Freeze Factor                       10.0001   ; [real] f32
+  Stage 1 Effect                       676f4579654265616d006c617368004e…   ; [real] hex32
+  Stage 1 Flash Distance                           14   ; [real] f32
+  Stage 1 Flash Cone Top Rad                      0.5   ; [real] f32
+  Stage 1 Flash Cone Base Rad                     2.5   ; [real] f32
+  Stage 1 Flash Points                             20   ; [real] f32
+  Stage 1 Flash Freeze Factor                 20.0153   ; [real] f32
+  Stage 1 Allow Flash Freeze                       20   ; [real] f32
+  Stage 1 Flash Effect                 676f4d656448656164466c617368004e…   ; [real] hex32
+  Stage 1 Nuke Points                               0   ; [real] f32
+  Stage 1 Allow Nuke                                0   ; [real] f32
+  Stage 2 Distance                                 15   ; [real] f32
+  Stage 2 Cone Top Rad                            0.5   ; [real] f32
+  Stage 2 Cone Base Rad                          3.25   ; [real] f32
+  Stage 2 Drain                               8.33333   ; [real] f32
+  Stage 2 Freeze Factor                       8.31262   ; [real] f32
+  Stage 2 Effect                       676f4579654265616d006c617368004e…   ; [real] hex32
+  Stage 2 Flash Distance                           18   ; [real] f32
+  Stage 2 Flash Cone Top Rad                      0.5   ; [real] f32
+  Stage 2 Flash Cone Base Rad                     2.5   ; [real] f32
+  Stage 2 Flash Points                             20   ; [real] f32
+  Stage 2 Flash Freeze Factor                 20.0153   ; [real] f32
+  Stage 2 Allow Flash Freeze                       20   ; [real] f32
+  Stage 2 Flash Effect                 676f4d656448656164466c617368004e…   ; [real] hex32
+  Stage 2 Nuke Points                             100   ; [real] f32
+  Stage 2 Allow Nuke                              100   ; [real] f32
+
+/Player/RaiseTheDead/
+  Hit Context                              0x00000013   ; [real] raw
+  Stage 0 Num Dead Guys                    0x00000003   ; [real] raw
+  Stage 0 Magic Drain                              25   ; [real] f32
+  Stage 0 Max Time                                 15   ; [real] f32
+  Stage 0 Max Damage                              125   ; [real] f32
+  Stage 0 Damage Per Hit                           10   ; [real] f32
+  Stage 0 Max Velocity                           12.5   ; [real] f32
+  Stage 0 Max Reach                                25   ; [real] f32
+  Stage 0 Homing Amount                            10   ; [real] f32
+  Stage 1 Num Dead Guys                    0x00000004   ; [real] raw
+  Stage 1 Magic Drain                           18.75   ; [real] f32
+  Stage 1 Max Time                                 15   ; [real] f32
+  Stage 1 Max Damage                              120   ; [real] f32
+  Stage 1 Damage Per Hit                           15   ; [real] f32
+  Stage 1 Max Velocity                             15   ; [real] f32
+  Stage 1 Max Reach                                50   ; [real] f32
+  Stage 1 Homing Amount                            10   ; [real] f32
+  Stage 2 Num Dead Guys                    0x00000006   ; [real] raw
+  Stage 2 Magic Drain                            12.5   ; [real] f32
+  Stage 2 Max Time                                 15   ; [real] f32
+  Stage 2 Max Damage                              115   ; [real] f32
+  Stage 2 Damage Per Hit                           20   ; [real] f32
+  Stage 2 Max Velocity                           17.5   ; [real] f32
+  Stage 2 Max Reach                                75   ; [real] f32
+  Stage 2 Homing Amount                            10   ; [real] f32
+
+/Player/Thunderbolt/
+  Stage 0 Arrow Emitter                    0x00000002   ; [real] raw
+  Stage 0 Magic Drain                               5   ; [real] f32
+  Stage 0 Playback Speed                         1.15   ; [real] f32
+  Stage 0 Charge Time                             0.5   ; [real] f32
+  Stage 0 Allow Charging                          0.5   ; [real] f32
+  Stage 0 Ch1 Arrow Emitter                         0   ; [real] f32
+  Stage 0 Ch1 Threshold                             0   ; [real] f32
+  Stage 0 Ch1 Magic Drain                           0   ; [real] f32
+  Stage 0 Ch2 Arrow Emitter                         0   ; [real] f32
+  Stage 0 Ch2 Threshold                             0   ; [real] f32
+  Stage 0 Ch2 Magic Drain                           0   ; [real] f32
+  Stage 1 Arrow Emitter                    0x00000002   ; [real] raw
+  Stage 1 Magic Drain                         3.33333   ; [real] f32
+  Stage 1 Playback Speed                         1.35   ; [real] f32
+  Stage 1 Charge Time                             0.5   ; [real] f32
+  Stage 1 Allow Charging                          0.5   ; [real] f32
+  Stage 1 Ch1 Arrow Emitter                0x00000003   ; [real] raw
+  Stage 1 Ch1 Threshold                          0.25   ; [real] f32
+  Stage 1 Ch1 Magic Drain                          10   ; [real] f32
+  Stage 1 Ch2 Arrow Emitter                0x00000003   ; [real] raw
+  Stage 1 Ch2 Threshold                           0.5   ; [real] f32
+  Stage 1 Ch2 Magic Drain                          10   ; [real] f32
+  Stage 2 Arrow Emitter                    0x00000002   ; [real] raw
+  Stage 2 Magic Drain                             2.5   ; [real] f32
+  Stage 2 Playback Speed                         1.75   ; [real] f32
+  Stage 2 Charge Time                            0.75   ; [real] f32
+  Stage 2 Allow Charging                         0.75   ; [real] f32
+  Stage 2 Ch1 Arrow Emitter                0x00000003   ; [real] raw
+  Stage 2 Ch1 Threshold                         0.375   ; [real] f32
+  Stage 2 Ch1 Magic Drain                          10   ; [real] f32
+  Stage 2 Ch2 Arrow Emitter                0x00000005   ; [real] raw
+  Stage 2 Ch2 Threshold                          0.75   ; [real] f32
+  Stage 2 Ch2 Magic Drain                          20   ; [real] f32

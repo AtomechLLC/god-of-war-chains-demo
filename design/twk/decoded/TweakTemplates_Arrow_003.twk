@@ -1,0 +1,50 @@
+; =====================================================================
+; TweakTemplates_Arrow_003.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x369370, TWK instance uid 44 (magic 0xfedcba98)
+; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
+; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
+; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
+; "God Mode" = Rage of the Gods.
+; =====================================================================
+
+/TweakTemplates/Arrow/003/
+  @hash(0x55b00cf6)                    7468756e646572626f6c742063683100…   ; [real] hex32
+  @hash(0x117c872e)                                 5   ; [real] f32
+  @hash(0x126eecd1)                                 0   ; [real] f32
+  Impulse                                         100   ; [real] f32
+  Velocity                                         60   ; [real] f32
+  @hash(0x9fdb479c)                                 0   ; [real] f32
+  Gravity                                        9.82   ; [real] f32
+  @hash(0x83b7589e)                           9.81982   ; [real] f32
+  @hash(0x7c3c9275)                           9.81982   ; [real] f32
+  @hash(0x3f23934f)                           9.81982   ; [real] f32
+  @hash(0x5dfc4510)                           9.81982   ; [real] f32
+  @hash(0xf676b63b)                           9.81982   ; [real] f32
+  GO Name                              676f426f6c7400626f6c742063683100…   ; [real] hex32
+  @hash(0x355722e5)                    676f537464426f6c7400742063683100…   ; [real] hex32
+  @hash(0x886ca383)                        0x74536f00   ; [real] raw
+  @hash(0x5ea85bfe)                    676f426f6c7448697400742063683100…   ; [real] hex32
+  @hash(0x0b404e79)                        0x6f426f01   ; [real] raw
+  @hash(0x8aa28c7c)                        0x6f426f00   ; [real] raw
+  @hash(0x11f28939)                        0x6f426f00   ; [real] raw
+  Hit Sound 1                              0x6f426f00   ; [real] raw
+  Hit Sound 2                              0x6f426f00   ; [real] raw
+  Hit Sound 3                              0x6f426f00   ; [real] raw
+  Hit Sound 4                              0x6f426f00   ; [real] raw
+  Hit Sound 5                              0x6f426f00   ; [real] raw
+  Hit Sound 6                              0x6f426f00   ; [real] raw
+  Bright Camera Filter                     0x00000009   ; [real] raw
+  Dark Camera Filter                                0   ; [real] f32
+  Fog Template                             0xffffffff   ; [real] raw
+  Flash Freq                               0x00000006   ; [real] raw
+  @hash(0x8ae891cf)                               0.4   ; [real] f32
+  Context                                  0x00000011   ; [real] raw
+  Concussion                               0x00000005   ; [real] raw
+  Damage                                   0x00000014   ; [real] raw
+  @hash(0x22bb37bb)                        0x00000208   ; [real] raw
+  Ground Impulse Away                             600   ; [real] f32
+  Ground Impulse Up                                 0   ; [real] f32
+  Ground Impulse Right                              0   ; [real] f32
+  Air Impulse Away                                600   ; [real] f32
+  Air Impulse Up                                 1000   ; [real] f32
+  Air Impulse Right                                 0   ; [real] f32

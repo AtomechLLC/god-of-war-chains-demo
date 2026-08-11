@@ -1,0 +1,47 @@
+; =====================================================================
+; System_Sound.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x36b490, TWK instance uid 31 (magic 0xfedcba98)
+; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
+; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
+; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
+; "God Mode" = Rage of the Gods.
+; =====================================================================
+
+/System/Sound/
+  Override Reverb                                   0   ; [real] f32
+  Outdoor Small                            0x00000aa8   ; [real] raw
+  Outdoor Medium                           0x00000d68   ; [real] raw
+  Outdoor Large                            0x000012b8   ; [real] raw
+  Indoor Small                             0x00000820   ; [real] raw
+  Indoor Medium                            0x00000a30   ; [real] raw
+  Indoor Large                             0x00000d90   ; [real] raw
+  Underwater                               0x00000ea8   ; [real] raw
+  Doppler                                           0   ; [real] f32
+  Directionality                                    0   ; [real] f32
+  Doppler Limit                                  1000   ; [real] f32
+  Slow Mo Scale                                     0   ; [real] f32
+  Slow Mo Max Slew                               1020   ; [real] f32
+  @hash(0x64ca7b94)                              1020   ; [real] f32
+  Underwater Volume Scale                  0x00000200   ; [real] raw
+  Underwater Pitch Offset                  0xfffffa0c   ; [real] raw
+  Underwater Music Vol Scale               0x00000300   ; [real] raw
+  Underwater Tween Time                     0.0999998   ; [real] f32
+  Mic Max Distance                            10.0094   ; [real] f32
+  Mic Boom Ratio                             0.749999   ; [real] f32
+  @hash(0x7fa63f9b)                               0.5   ; [real] f32
+  SFX                                            1024   ; [real] f32
+  Music                                          1024   ; [real] f32
+  Mime Dialogue                                  1024   ; [real] f32
+  Ambient Streams (U1)                           1024   ; [real] f32
+  IOP Streams     (U2)                           1024   ; [real] f32
+  Footsteps       (U3)                            775   ; [real] f32
+  Menu Sounds     (U4)                            800   ; [real] f32
+  Interactives    (U5)                           1024   ; [real] f32
+  MPEG            (U6)                           1024   ; [real] f32
+  Music UW no mod (U7)                           1024   ; [real] f32
+  SFX UW pitch    (U8)                           1024   ; [real] f32
+  SFX UW no mod   (U9)                           1024   ; [real] f32
+  Ambient UW nomod(U10)                          1024   ; [real] f32
+  IOP UW no mod   (U11)                          1024   ; [real] f32
+  Dry Effects     (U12)                          1024   ; [real] f32
+  Base Reverb                                    3500   ; [real] f32
