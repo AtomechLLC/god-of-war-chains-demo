@@ -1569,13 +1569,11 @@
   // XZ base so the incoming clip's first frame lands exactly where the outgoing clip
   // left the root (game behavior: combos carry you across the arena). px/pz hold the
   // PREVIOUS clip's base so the blend window lerps two poses that meet at the seam.
-  // DEFAULT OFF — VERIFIED (2026-08): the ANM data carries NO baked locomotion.
-  // The root joint ("main", id 0) never translates in ANY clip, and runF — the
-  // run cycle — is authored fully in place (every joint 0 XZ span). The pelvis
-  // swings in attack clips are pose choreography over a planted root; in-game
-  // displacement is ENGINE-driven velocity (no decoded data exists for it).
-  // ON = experimental pelvis-delta chaining for inspection only.
-  const rootMotion = { on: false, x: 0, z: 0, px: 0, pz: 0, prevAuth: null, pendingRebase: false };
+  // DEFAULT ON — the REAL controller-displacement channel was FOUND (2026-08):
+  // ANM type-5 comp 422, a cumulative per-attack movement scalar the pose decoder
+  // never read (the skeleton itself is authored in place — root joint static,
+  // pelvis swings are pose). See decodeRootTrack in anim.js.
+  const rootMotion = { on: true, x: 0, z: 0, px: 0, pz: 0, prevTrack: null, pendingRebase: false };
   let lastState = { name: "idleCombat", t: 0 };
   const machine = Combat.makeMachine((n) => DUR[n], {
     onMove(name, prev, via) {
@@ -1790,7 +1788,7 @@
   $("btnRootMo").addEventListener("click", () => {
     rootMotion.on = !rootMotion.on;
     rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0; // return home on toggle
-    rootMotion.prevAuth = null;
+    rootMotion.prevTrack = null;
     $("btnRootMo").classList.toggle("latched", rootMotion.on);
   });
   // Replay controls: pause / frame-step / slow-mo (dev/QA capture aid).
@@ -1987,26 +1985,26 @@
       // every transition shifted the base backward — the reported backward slide.
       // Combo clips are authored from a shared origin stance, so seams stay close
       // and the blend window absorbs the residual pose difference.
-      // ROOT MOTION — minimal frame-by-frame model (user-specified restart): the
-      // authored pelvis motion plays VERBATIM frame by frame. A persistent XZ offset
-      // absorbs ONLY the cross-clip jump at each transition, so the new clip's first
-      // frame lands exactly where the old clip's last frame displayed — the
-      // transition/blend itself is never captured as root motion. No ratchets, no
-      // direction sampling, no hold radii, no clamps, no resets.
-      const rootJ = (JID.pelvis !== undefined ? JID.pelvis : 0) * 16;
-      const ax = world[rootJ + 12], az = world[rootJ + 14]; // authored pelvis this tick
+      // ROOT MOTION — the REAL decoded controller channel (ANM type-5 comp 422):
+      // each attack carries a cumulative 1-D displacement scalar (combo3A 24.3 units
+      // = 1.74 m ... combo3F 73.7 = 5.26 m, comboLR3/Plume 40.7 = 2.9 m). Per tick we
+      // difference the channel WITHIN the current clip (transition ticks contribute
+      // nothing — the blend is never captured) and advance the character along his
+      // forward. The AMOUNT and timing are REAL; the world axis the engine applies
+      // it along is INFERRED (+Z here = the direction the authored combos lunge; the
+      // channel decreases as the character advances, hence the negation).
       if (rootMotion.on) {
-        if (rootMotion.pendingRebase && rootMotion.prevAuth) {
-          rootMotion.px = rootMotion.x; rootMotion.pz = rootMotion.z; // old clip's offset (blend window)
-          rootMotion.x += rootMotion.prevAuth[0] - ax; // absorb the cross-clip jump
-          rootMotion.z += rootMotion.prevAuth[1] - az;
+        const rv = rig.rootDisp(machine.st.current, machine.st.t);
+        if (!rootMotion.pendingRebase && rv !== null && rootMotion.prevTrack !== null) {
+          rootMotion.z += -(rv - rootMotion.prevTrack); // advance = -Δchannel, along +Z (INFERRED axis)
         }
+        rootMotion.prevTrack = rv;
+        rootMotion.px = rootMotion.x; rootMotion.pz = rootMotion.z;
         if (rootMotion.x || rootMotion.z) {
           for (let j = 0; j < world.length; j += 16) { world[j + 12] += rootMotion.x; world[j + 14] += rootMotion.z; }
         }
       }
       rootMotion.pendingRebase = false;
-      rootMotion.prevAuth = [ax, az];
       // CR-01: computePose fills and returns ONE internal buffer reused across
       // calls (anim.js makeRig closure). Aliasing it here let the blend-window
       // prev-pose call in uploadSkinnedVerts clobber it — freezing the rendered

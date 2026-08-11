@@ -274,6 +274,51 @@ const GowAnim = (() => {
     return act.bladeTrack;
   }
 
+  // Type-5 descriptor: the engine's CHARACTER-CONTROLLER channels (decoded
+  // 2026-08). State0 carries per-frame floats for comps 4/5/6 (pelvis xyz,
+  // mirroring the pose) AND comp 422 — a cumulative 1-D DISPLACEMENT scalar
+  // (decreases as the character advances) that drives the controller: the REAL
+  // per-attack movement (combo3A -24.3 units = 1.74 m ... combo3F -73.7 = 5.26 m,
+  // comboLR3/Plume -40.7 = 2.9 m). Locomotion blends (walk/run) are 0 here —
+  // they use engine speed. Sampled at the act's 30 Hz with linear interp.
+  function decodeRootTrack(b, dv, act, dataTypes) {
+    if (act.rootTrack !== undefined) return act.rootTrack;
+    act.rootTrack = null;
+    const t5 = dataTypes.indexOf(5);
+    if (t5 < 0) return null;
+    const sdo = act.off + 0x64 + t5 * 0x14;
+    const cnt = dv.getUint16(sdo + 2, true);
+    const statesOff = act.off + dv.getUint32(sdo + 8, true);
+    for (let i = 0; i < cnt; i++) {
+      const so = statesOff + i * 0xc;
+      const base = dv.getUint16(so, true);
+      const flags = b[so + 2], skip = b[so + 3];
+      const mCount = dv.getUint16(so + 4, true);
+      const mOffData = dv.getUint16(so + 10, true);
+      if (mCount < 3 || (flags & 1)) continue;      // want the raw multi-frame state
+      const stateData = so + (skip << 16) + mOffData;
+      const bm = readBitmap(b, dv, stateData, flags);
+      const step = bm.paired * 4;
+      let iter = 0;
+      for (let w = 0; w < bm.words.length; w++) {
+        let mask = bm.words[w];
+        while (mask) {
+          const bit = 31 - Math.clz32(mask & -mask);
+          mask = mask ^ (mask & -mask);
+          const comp = base + w * 16 + bit;
+          if (comp === 422) {
+            const frames = new Float32Array(mCount);
+            for (let f = 0; f < mCount; f++) frames[f] = dv.getFloat32(stateData + bm.dataOff + step * f + iter * 4, true);
+            act.rootTrack = { frames, frameTime: dv.getFloat32(sdo + 0xc, true) || 1 / 30 };
+            return act.rootTrack;
+          }
+          iter++;
+        }
+      }
+    }
+    return act.rootTrack;
+  }
+
   function makeRig(objBuf, anmBuf) {
     const obj = parseObject(objBuf);
     const dv = new DataView(anmBuf.buffer, anmBuf.byteOffset, anmBuf.byteLength);
@@ -344,7 +389,22 @@ const GowAnim = (() => {
       return out;
     }
 
-    return { obj, anm, computePose, bladePos, jointCount: n };
+    // sample the REAL controller-displacement channel (comp 422) at time t.
+    // Returns null when the act has no track (airs/evades/locomotion blends —
+    // those use other engine systems). Value is the cumulative scalar; callers
+    // difference consecutive samples within one clip for per-tick movement.
+    function rootDisp(actName, t) {
+      const act = anm.acts.get(actName);
+      if (!act) return null;
+      const tr = decodeRootTrack(anmBuf, dv, act, anm.dataTypes);
+      if (!tr) return null;
+      const frame = Math.min(tr.frames.length - 1, Math.max(0, t / tr.frameTime));
+      const f0 = Math.floor(frame), f1 = Math.min(tr.frames.length - 1, f0 + 1);
+      const fr = frame - f0;
+      return tr.frames[f0] * (1 - fr) + tr.frames[f1] * fr;
+    }
+
+    return { obj, anm, computePose, bladePos, rootDisp, jointCount: n };
   }
 
   return { makeRig };
