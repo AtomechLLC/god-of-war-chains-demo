@@ -807,8 +807,8 @@
   // style. Texture: canvas-generated 8 m tile (POT 1024px, REPEAT), thin 1 m
   // lines, heavy 4 m lines, two-tone 4 m panels.
   const ARENA_M = Chain.METERS_TO_WORLD;   // mesh units per meter (bridge)
-  const ARENA_HALF = 6 * ARENA_M;          // ±6 m floor
-  const ARENA_WALL_H = 4 * ARENA_M;        // 4 m walls
+  const ARENA_HALF = 14 * ARENA_M;         // ±14 m floor — full-extension whips stay inside
+  const ARENA_WALL_H = 7 * ARENA_M;        // 7 m walls — jump/aerial arcs stay inside
   const ARENA_TILE = 8 * ARENA_M;          // texture tile = 8 m
   const arenaTex = (() => {
     const c = document.createElement("canvas"); c.width = c.height = 1024;
@@ -894,8 +894,9 @@
     gl.disableVertexAttribArray(arenaLocs.aUV);
   }
 
-  // start highly zoomed out (full figure + blade-path space); user wheel-zooms in
-  let yaw = 0.6, pitch = 0.15, dist = 9.0, userDist = 9.0, drag = null, autoSpin = true;
+  // start zoomed out (full figure + blade-path + arena); user wheel-zooms freely.
+  // Camera distance is USER-CONTROLLED ONLY — no auto-frame (see renderFrame).
+  let yaw = 0.6, pitch = 0.15, dist = 14.0, userDist = 14.0, drag = null, autoSpin = true;
   canvas.addEventListener("mousedown", (e) => { drag = [e.clientX, e.clientY]; autoSpin = false; });
   window.addEventListener("mouseup", () => (drag = null));
   window.addEventListener("mousemove", (e) => {
@@ -904,7 +905,7 @@
     pitch = Math.max(-1.4, Math.min(1.4, pitch + (e.clientY - drag[1]) * 0.006));
     drag = [e.clientX, e.clientY];
   });
-  canvas.addEventListener("wheel", (e) => { e.preventDefault(); userDist = Math.max(1.2, Math.min(16, userDist + e.deltaY * 0.002)); }, { passive: false });
+  canvas.addEventListener("wheel", (e) => { e.preventDefault(); userDist = Math.max(1.2, Math.min(26, userDist + e.deltaY * 0.002)); }, { passive: false });
 
   let heat = 0;
   const JID = {};
@@ -1452,27 +1453,15 @@
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     if (autoSpin) yaw += wallDt * 0.25;
     uploadSkinnedVerts();
-    // auto-frame: pull back so flying blades stay in view, ease back in after
-    let reach = 0;
-    for (const key of ["l", "r"]) {
-      const p = bladeSim[key].pos;
-      if (!p) continue;
-      const gx = (p[0] - mesh.ctr[0]) * mesh.scale, gy = (p[1] - mesh.ctr[1]) * mesh.scale, gz = (p[2] - mesh.ctr[2]) * mesh.scale;
-      reach = Math.max(reach, Math.hypot(gx, gy, gz));
-    }
-    // Cap the auto-frame zoom-out. The blade-sim can fling the blade absurdly far
-    // during fast combos (pre-existing Phase-4 chain-span bug, ~121u), which drove
-    // `dist` past the far plane (50) — shrinking/clipping Kratos out of frame (he
-    // "disappeared on attack") and making the trail read as tiny separated chunks.
-    // Clamp to the max manual wheel-zoom (16) so Kratos always stays framed; a
-    // far-flung blade tip simply leaves frame instead of shrinking everything.
-    const required = reach > 1.1 ? Math.min(reach * 1.5 + 1.4, 16) : 0;
-    const target = Math.max(userDist, required);
-    dist += (target - dist) * Math.min(1, wallDt * (target > dist ? 10 : 2.5));
+    // Camera distance is USER-CONTROLLED only: ease toward the wheel target for a
+    // smooth zoom feel. (The old blade-reach auto-frame eased in/out with every
+    // swing — an annoying wiggle; removed at user request. Start distance is
+    // zoomed out instead, so full swings stay framed by default.)
+    dist += (userDist - dist) * Math.min(1, wallDt * 8);
     // On-screen debug HUD (dev aid): surfaces why Kratos might not be visible so a
-    // screenshot alone is diagnostic — camera distance, blade reach, draw gating.
+    // screenshot alone is diagnostic — camera distance, draw gating.
     if (dbgHud) dbgHud.textContent =
-      `move ${machine.st.current}   dist ${dist.toFixed(1)}   reach ${reach.toFixed(1)}\n` +
+      `move ${machine.st.current}   dist ${dist.toFixed(1)}\n` +
       `hero ${window.__fxOnly ? "HIDDEN (FX-only)" : "drawn"}   native ${nativeRes ? "ON" : "off"}   pool ${fxPool.count}`;
     const rot = M.mul(M.rotX(pitch), M.rotY(yaw));
     // view = camera transform (world→view); its row-0/row-1 give the world-space
