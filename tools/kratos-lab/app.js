@@ -481,14 +481,12 @@
     varying vec3 vT;
     uniform sampler2D uTex;
     uniform vec3 uMaterialColor; uniform vec4 uLayerColor; uniform float uCutoff;
-    // TRL-01 runtime age->color ramp (INFERRED). 05-04 PROVED GFX_swordtrail
-    // carries NO painted length-wise ramp, so the white-hot->orange->ember tint
-    // MUST be computed at runtime here rather than sampled. Gated by uTrailRamp
-    // so it touches ONLY the swordtrail pass — the chain/glow passes upload
-    // uTrailRamp=0 (no bleed, T-06-03-01). uRampHot/uRampCool are the
-    // Particles.rampColor(0)/(1) endpoints (per-move-variant tinted in drawFx);
-    // vT.z is the per-row age proxy (0.85 fresh/young -> 0 old) that selects them.
-    uniform float uTrailRamp; uniform vec3 uRampHot; uniform vec3 uRampCool;
+    // TRL-01 trail branch, gated by uTrailRamp so it touches ONLY the swordtrail
+    // pass — the chain/glow passes upload uTrailRamp=0 (no bleed, T-06-03-01).
+    // The branch samples the REAL GFX_swordtrail texels directly (the texture IS
+    // the feathered amber gradient + ember speckle; black = transparent under the
+    // additive blend). vT.z is the per-row age fade (1 fresh -> 0 old).
+    uniform float uTrailRamp;
     // CHAIN-03 combat-gated glow brightness (D-05, A2). When uGlowGain > 0 this is
     // the alpha-over-1.0 chainglow premult branch (CLAUDE.md Part 1): output the
     // DECODED glow texel rgb premultiplied by (alpha128 * uGlowGain) with alpha 0,
@@ -513,18 +511,19 @@
         return;
       }
       if (uTrailRamp > 0.5) {
-        // SOLID-FILL swoosh (the decoded GFX_swordtrail texel is ~black + uniform alpha —
-        // it carries NO color, so the amber is a RUNTIME tint, as in-game). Color is now
-        // DATA-GROUNDED: uRampCool = the decoded warm blade-glow amber (blade light
-        // (1.0,0.622,0.288)); the thin live leading edge eases toward uRampHot (a hot
-        // warm-white). vT.z = freshness (1 at the live blade edge -> 0 at the tail).
-        // Additive (MAT_swordtrail): the GENTLE gain keeps the amber body from clamping to
-        // white where the sweep overlaps itself (the old 2.4 gain blew dense areas white
-        // and thin areas olive). Alpha = REAL Trail Tint A=0.8, eased to 0 at the tail for
-        // a soft trailing fade. Only the gain/curve are INFERRED; the amber traces to data.
-        vec3 col = mix(uRampCool, uRampHot, pow(vT.z, 2.5));
+        // REAL GFX_swordtrail sampling. The decoded 64x32 texture is a feathered STREAK:
+        // ~top 78% black (black IS transparent under the additive MAT_swordtrail blend —
+        // no alpha channel needed, classic GS) and a bright ember band at the bottom that
+        // ramps dark-amber -> gold (243,176,18) with per-texel speckle. Bright band lives
+        // at v in [~0.78, 1.0]; the sheet's v (0 = inner tapered edge, 1 = tip) is REMAPPED
+        // into that band so the REAL feather gradient + speckle span the sheet's width
+        // (UV remap is the only INFERRED part — every color is a real texel). u follows
+        // the sweep (anchored per-row, REPEAT-S), so embers stick to arc positions.
+        // Alpha = REAL Trail Tint A=0.8 x age fade; gentle gain (INFERRED) — the texture
+        // body is dark so overlap can't clamp dense areas to white.
+        vec3 tex = texture2D(uTex, vec2(vT.x, mix(0.78, 1.0, vT.y))).rgb;
         float a = 0.8 * pow(vT.z, 0.9);
-        gl_FragColor = vec4(col * (0.75 + 0.5 * vT.z), a);
+        gl_FragColor = vec4(tex * 1.7, a);
         return;
       }
       gl_FragColor = vec4(rgb, a);
@@ -540,8 +539,6 @@
     uLayerColor: gl.getUniformLocation(fxProg, "uLayerColor"),
     uCutoff: gl.getUniformLocation(fxProg, "uCutoff"),
     uTrailRamp: gl.getUniformLocation(fxProg, "uTrailRamp"),
-    uRampHot: gl.getUniformLocation(fxProg, "uRampHot"),
-    uRampCool: gl.getUniformLocation(fxProg, "uRampCool"),
     uGlowGain: gl.getUniformLocation(fxProg, "uGlowGain"),
   };
   const fxBuf = gl.createBuffer();
@@ -780,6 +777,7 @@
   const JID = {};
   if (rig) for (const j of rig.obj.joints) JID[j.name] = j.id;
   const trailHist = { l: [], r: [] };
+  const trailSeq = { l: 0, r: 0 }; // monotonically increasing push counter — anchors the streak texture's u to arc positions (REPEAT-S wraps)
   const TRAIL_AGE = 0.5;   // INFERRED: ~30-frame trail persistence (footage ~0.5s @60Hz) — long luminous sweep (Phase-7 tune)
 
   // ---- blade transforms from the game's authored type-10 tracks ------------
@@ -1077,7 +1075,10 @@
           return {
             a: [hx - dx * ext, hy - dy * ext, hz - dz * ext],
             b: [e.tip[0] + dx * ext, e.tip[1] + dy * ext, e.tip[2] + dz * ext],
-            u: fresh, alpha: Math.max(0, 1 - e.age / TRAIL_AGE),
+            // u anchored to the push counter (not the buffer position) so the streak
+            // texture's ember speckle sticks to arc positions instead of crawling as
+            // the history shifts; REPEAT-S wraps u past 1. ~44 rows = one texture length.
+            u: e.seq / 44, alpha: Math.max(0, 1 - e.age / TRAIL_AGE),
           };
         });
         pushRibbon(rows, trailV);
@@ -1188,19 +1189,13 @@
       // Endpoints come from the tested-pure Particles.rampColor stops; blend and
       // depth still come ONLY from MAT_swordtrail via Fx.applyMaterial (DEC-01).
       //
-      // Trail color is DATA-GROUNDED to the blades' own decoded warm glow: uRampCool =
-      // bladeLightL.color (REAL decoded (1.0,0.622,0.288), the same amber the blade lights
-      // and fire use), uRampHot = a hot warm-white leading edge (INFERRED). Both blades use
-      // this one amber so they read identically (the earlier white-vs-olive split was pure
-      // additive-density blowout, now tamed by the gentle gain in the fragment). The BFT/BGT
-      // variant tint still drives the impact/trail SPARKS in simStep; the sheet itself stays
-      // the decoded amber (footage L1 trail is amber/gold, not crimson or white).
-      const TRAIL_HOT = [1.0, 0.72, 0.40]; // INFERRED hot warm-gold for the live leading edge (kept warm, not white)
-      const trailAmber = (bladeLightL && bladeLightL.color) ? bladeLightL.color : [1.0, 0.622, 0.288];
+      // Trail color comes 100% from the REAL GFX_swordtrail texels (feathered amber
+      // gradient + ember speckle — see the uTrailRamp fragment branch). No runtime tint:
+      // the REAL decoded Trail Tint is (1,1,1,0.8) = white, i.e. texels pass through and
+      // only the 0.8 alpha applies (in the fragment). The BFT/BGT variant tint still
+      // drives the impact/trail SPARKS in simStep; the sheet itself is pure decoded texels.
       gl.uniform1f(fxLocs.uTrailRamp, 1.0);
       gl.uniform1f(fxLocs.uGlowGain, 0.0); // glow premult OFF for the trail (no bleed, T-06-07-01)
-      gl.uniform3fv(fxLocs.uRampHot, TRAIL_HOT);
-      gl.uniform3fv(fxLocs.uRampCool, trailAmber);
       gl.bindTexture(gl.TEXTURE_2D, trailTex);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(trailV), gl.DYNAMIC_DRAW);
       gl.drawArrays(gl.TRIANGLES, 0, trailV.length / 6);
@@ -1719,7 +1714,7 @@
           if (attacking) {
             const tip = xformM(bm, blade.tip);
             const prevTip = hst.length ? hst[hst.length - 1].tip : tip;
-            hst.push({ tip, hilt: xformM(bm, blade.hilt), age: 0 });
+            hst.push({ tip, hilt: xformM(bm, blade.hilt), age: 0, seq: trailSeq[key]++ });
             if (hst.length > 44) hst.shift();   // INFERRED: hold ~30-frame (TRAIL_AGE 0.5) sweep + margin (was 26)
             // TRL-01/02 trail-spark riders (D-04c — the user's #1 richness lever):
             // a few hot specks spawn on the tip arc each attacking tick, then
