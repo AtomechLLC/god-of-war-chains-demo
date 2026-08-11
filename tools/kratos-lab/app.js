@@ -540,20 +540,21 @@
         // Alpha = REAL Trail Tint A=0.8 x age fade (the fade matters after the swing
         // ends, when rows age out in place). Gain (INFERRED): only the small bright
         // rib corner exceeds 1.0 — a hot core, no field-wide blowout.
-        // Cross-width profile (INFERRED from footage): transparent OUTER fringe ->
-        // INTENSE band ON the tip arc -> blended feather down the blade/chain span.
-        // The peak sits at vT.y = 0.87 (the real tip line — the sheet's outer ~13%
-        // is the TRAIL_EXT overhang PAST the tip): the band's bright last row lands
-        // there, the pow curve feathers the dark rows inward, and smoothstep fades
-        // the overhang fringe to transparent (the texture has no rows past its
-        // peak, so the outer fade is shaded — the colors remain real texels).
-        float vy = min(vT.y / 0.87, 1.0);
-        vec3 tex = texture2D(uTex, vec2(vT.x, mix(0.78, 1.0, pow(vy, 2.2)))).rgb;
+        // ORIENTATION (user-identified): the decal's LONG axis (64, the ramp + the
+        // speckle) runs ALONG THE CHAIN — transparent near the hand, ramping to
+        // intense gold at the tip ("blended transparency down the blade"). Its
+        // band rows (32-axis) run ALONG THE SWEEP — the bright last row is the
+        // INTENSE section AT the live chain position, fading backward through the
+        // path ("and back along the path"). Swept, each chain-position's speckle
+        // paints the CONCENTRIC flow streaks seen in footage (not radial spokes).
+        // So: texture U = cross-section (vT.y, hand->tip; /0.87 puts the tip line
+        // on the ramp's peak, smoothstep fades the past-tip overhang fringe),
+        // texture V = sweep (vT.x, tail->live edge, stretched into the band so the
+        // veil persists across the whole sweep). All colors remain real texels.
+        vec3 tex = texture2D(uTex, vec2(min(vT.y / 0.87, 1.0), mix(0.75, 1.0, vT.x))).rgb;
         float edgeFade = 1.0 - smoothstep(0.87, 1.0, vT.y);
-        // Alpha holds the REAL 0.8 through the sweep — the texture's baked u-ramp is
-        // the along-arc fade (double-fading compressed the visible swoosh into a thin
-        // fresh sliver). The age term only DISSOLVES rows over their last 30% of life
-        // (matters after the swing ends, when rows expire in place).
+        // Alpha holds the REAL 0.8 through the sweep; the age term only DISSOLVES
+        // rows over their last 30% of life (the post-swing fade-out).
         float a = 0.8 * min(vT.z / 0.3, 1.0);
         gl_FragColor = vec4(tex * 2.2 * edgeFade, a);
         return;
