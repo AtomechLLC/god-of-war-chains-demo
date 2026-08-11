@@ -1569,7 +1569,13 @@
   // XZ base so the incoming clip's first frame lands exactly where the outgoing clip
   // left the root (game behavior: combos carry you across the arena). px/pz hold the
   // PREVIOUS clip's base so the blend window lerps two poses that meet at the seam.
-  const rootMotion = { on: true, x: 0, z: 0, px: 0, pz: 0, prevAuth: null, pendingRebase: false };
+  // DEFAULT OFF — VERIFIED (2026-08): the ANM data carries NO baked locomotion.
+  // The root joint ("main", id 0) never translates in ANY clip, and runF — the
+  // run cycle — is authored fully in place (every joint 0 XZ span). The pelvis
+  // swings in attack clips are pose choreography over a planted root; in-game
+  // displacement is ENGINE-driven velocity (no decoded data exists for it).
+  // ON = experimental pelvis-delta chaining for inspection only.
+  const rootMotion = { on: false, x: 0, z: 0, px: 0, pz: 0, prevAuth: null, pendingRebase: false };
   let lastState = { name: "idleCombat", t: 0 };
   const machine = Combat.makeMachine((n) => DUR[n], {
     onMove(name, prev, via) {
