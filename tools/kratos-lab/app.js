@@ -1982,36 +1982,29 @@
       // every transition shifted the base backward — the reported backward slide.
       // Combo clips are authored from a shared origin stance, so seams stay close
       // and the blend window absorbs the residual pose difference.
+      // ROOT MOTION model (INFERRED engine behavior; the authored data alone CANNOT
+      // drive placement: combos transition at the branch point ~70%, but the authored
+      // pelvis paths dive BACKWARD early and only return forward in the LAST 30% —
+      // playing raw exits accumulated the dive and skipped the return = the reported
+      // backward drift). Model: per clip, the character's world placement is
+      //   clipStart + ratchetedForwardProgress·d  (d = the clip's FULL net direction)
+      // — monotone along d (wind-ups hold, lunges advance), with lateral/backward
+      // pelvis excursions confined to a small radius (they remain in the POSE).
+      // At exit, ONLY the forward progress accumulates. No arena clamp, no resets.
       const rootJ = (JID.pelvis !== undefined ? JID.pelvis : 0) * 16;
+      const HOLD_R = 1.0; // allowed world sway radius (~7 cm) around the held point
       if (rootMotion.pendingRebase) {
-        if (rootMotion.on && rootMotion.lastAuth && rootMotion.clipStart) {
-          // accumulate the outgoing clip's RATCHETED displacement at exit:
-          // its along-direction max (never below 0) + the perpendicular part.
-          const dx = rootMotion.lastAuth[0] - rootMotion.clipStart[0];
-          const dz = rootMotion.lastAuth[1] - rootMotion.clipStart[1];
-          let addX = dx, addZ = dz;
-          if (rootMotion.dir) {
-            const s = dx * rootMotion.dir[0] + dz * rootMotion.dir[1];
-            const sEff = Math.max(rootMotion.sMax, s, 0);
-            addX = dx + (sEff - s) * rootMotion.dir[0];
-            addZ = dz + (sEff - s) * rootMotion.dir[1];
-          }
-          rootMotion.px = rootMotion.x + (addX - dx); rootMotion.pz = rootMotion.z + (addZ - dz); // prev clip's exit base (blend)
-          rootMotion.x += addX; rootMotion.z += addZ;
-          const lim = ARENA_HALF - ARENA_M;
-          rootMotion.x = Math.max(-lim, Math.min(lim, rootMotion.x));
-          rootMotion.z = Math.max(-lim, Math.min(lim, rootMotion.z));
-        } else { rootMotion.px = rootMotion.x; rootMotion.pz = rootMotion.z; }
+        // blend continuity: the prev pose keeps the old clip's LAST APPLIED offset
+        rootMotion.px = rootMotion.ox; rootMotion.pz = rootMotion.oz;
+        if (rootMotion.on && rootMotion.dir) {
+          rootMotion.x += Math.max(rootMotion.sMax, 0) * rootMotion.dir[0];
+          rootMotion.z += Math.max(rootMotion.sMax, 0) * rootMotion.dir[1];
+        }
         rootMotion.clipStart = [world[rootJ + 12], world[rootJ + 14]]; // the NEW clip's authored start
-        // Per-clip RATCHET direction (INFERRED engine behavior; footage: Kratos HOLDS
-        // ground through wind-ups and only advances — e.g. comboLR2's authored pelvis
-        // swings ~11 units BACKWARD in its opening eighth before traveling forward).
-        // d = the clip's net authored travel direction, from its last frame; world
-        // placement never retreats along d (the wind-up stays in the POSE only).
         rootMotion.dir = null; rootMotion.sMax = 0;
         const curName = machine.st.current, curDur = DUR[curName];
         if (rootMotion.on && curDur) {
-          const endPose = rig.computePose(curName, curDur);
+          const endPose = rig.computePose(curName, curDur); // full-clip end → net direction
           const ex = endPose[rootJ + 12] - rootMotion.clipStart[0];
           const ez = endPose[rootJ + 14] - rootMotion.clipStart[1];
           const el = Math.hypot(ex, ez);
@@ -2023,19 +2016,28 @@
       if (!rootMotion.clipStart) rootMotion.clipStart = [world[rootJ + 12], world[rootJ + 14]];
       rootMotion.lastAuth = [world[rootJ + 12], world[rootJ + 14]]; // authored pelvis, pre-offset
       if (rootMotion.on) {
-        // ratchet correction: hold the character at his furthest along-direction
-        // progress — authored backward excursions read as pose, not world motion
-        let corrX = 0, corrZ = 0;
+        // displayed displacement from the held point: forward ratchet along d,
+        // everything else soft-held within HOLD_R (stays in the pose)
+        const dx = rootMotion.lastAuth[0] - rootMotion.clipStart[0];
+        const dz = rootMotion.lastAuth[1] - rootMotion.clipStart[1];
+        let dispX, dispZ;
         if (rootMotion.dir) {
-          const s = (rootMotion.lastAuth[0] - rootMotion.clipStart[0]) * rootMotion.dir[0]
-                  + (rootMotion.lastAuth[1] - rootMotion.clipStart[1]) * rootMotion.dir[1];
+          const s = dx * rootMotion.dir[0] + dz * rootMotion.dir[1];
           rootMotion.sMax = Math.max(rootMotion.sMax, s, 0);
-          const c = rootMotion.sMax - s;
-          corrX = c * rootMotion.dir[0]; corrZ = c * rootMotion.dir[1];
+          let px2 = dx - s * rootMotion.dir[0], pz2 = dz - s * rootMotion.dir[1];
+          const pl = Math.hypot(px2, pz2);
+          if (pl > HOLD_R) { px2 *= HOLD_R / pl; pz2 *= HOLD_R / pl; }
+          dispX = rootMotion.sMax * rootMotion.dir[0] + px2;
+          dispZ = rootMotion.sMax * rootMotion.dir[1] + pz2;
+        } else {
+          const l = Math.hypot(dx, dz);
+          const k = l > HOLD_R ? HOLD_R / l : 1;
+          dispX = dx * k; dispZ = dz * k;
         }
-        const ox = rootMotion.x + corrX, oz = rootMotion.z + corrZ;
+        // total offset = base + (displayed − authored) displacement
+        const ox = rootMotion.x + (dispX - dx), oz = rootMotion.z + (dispZ - dz);
         if (ox || oz) for (let j = 0; j < world.length; j += 16) { world[j + 12] += ox; world[j + 14] += oz; }
-        rootMotion.ox = ox; rootMotion.oz = oz; // total offset this tick (blade tracks)
+        rootMotion.ox = ox; rootMotion.oz = oz; // total offset this tick (blade tracks + blend)
       } else { rootMotion.ox = 0; rootMotion.oz = 0; }
       // CR-01: computePose fills and returns ONE internal buffer reused across
       // calls (anim.js makeRig closure). Aliasing it here let the blend-window
