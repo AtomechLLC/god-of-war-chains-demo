@@ -806,14 +806,15 @@
   const GLOW_REST = 0.3;   // INFERRED — dim glow at rest (dark links)
   const GLOW_HOT = 1.8;    // INFERRED — bright hot streak on attack (>1.0, alpha-over-1.0)
   const bladeSim = {
-    l: { mat: new Float32Array(16), pos: null, chain: null },
-    r: { mat: new Float32Array(16), pos: null, chain: null },
+    l: { mat: new Float32Array(16), pos: null, chain: null, prevPos: null },
+    r: { mat: new Float32Array(16), pos: null, chain: null, prevPos: null },
   };
 
   function driveBlade(sim, world, hand, trackPos, dt) {
     const handM = world.subarray(hand * 16, hand * 16 + 16);
     const anchor = [handM[12], handM[13], handM[14]];
     const pos = trackPos ? [trackPos[0], trackPos[1], trackPos[2]] : anchor;
+    const prev = sim.prevPos || pos;
     sim.pos = pos;
     const distToHand = Math.hypot(pos[0] - anchor[0], pos[1] - anchor[1], pos[2] - anchor[2]);
     if (distToHand < 2.0) {
@@ -821,21 +822,28 @@
       sim.mat.set(handM);
       sim.mat[12] = pos[0]; sim.mat[13] = pos[1]; sim.mat[14] = pos[2];
     } else {
-      // flying: the blade points RADIALLY out from the hand (length axis = the hand→blade
-      // line), so its length lies ACROSS the tangential swing — it slashes edge-first and
-      // presents a WIDE trailing edge. (The old speed>12 branch aligned the length to the
-      // velocity = tip-leading/spear, which left only the hilt point at the back, so the
-      // trail read as emitting from the hilt. The swept-edge trail below needs the length ⟂
-      // to the motion to shed a sheet off the whole blade.)
-      const zx = -(pos[0] - anchor[0]) / distToHand;
-      const zy = -(pos[1] - anchor[1]) / distToHand;
-      const zz = -(pos[2] - anchor[2]) / distToHand;
-      let xx = -zz, xy = 0, xz = zx;
-      const xl = Math.hypot(xx, xy, xz) || 1;
-      xx /= xl; xz /= xl;
+      // flying: the blade LENGTH lies along the swing-plane NORMAL (radial × velocity),
+      // so the swept blade-edge stands PERPENDICULAR to the swing plane = a curtain that
+      // follows the arc. (Radial length put the edge IN the swing plane → a flat in-plane
+      // disc, which read as "the blade edge rotated 90 off". Velocity-aligned length put
+      // it along the path → a point-source trail at the hilt.) The trail below sweeps this
+      // edge, so this orientation IS what shapes the sheet.
+      const rx = (pos[0] - anchor[0]) / distToHand, ry = (pos[1] - anchor[1]) / distToHand, rz = (pos[2] - anchor[2]) / distToHand;
+      let vx = pos[0] - prev[0], vy = pos[1] - prev[1], vz = pos[2] - prev[2];
+      const vl = Math.hypot(vx, vy, vz); if (vl > 1e-5) { vx /= vl; vy /= vl; vz /= vl; }
+      // swing-plane normal n = r × v (the blade-length / swept-edge axis)
+      let nx = ry * vz - rz * vy, ny = rz * vx - rx * vz, nz = rx * vy - ry * vx;
+      const nl = Math.hypot(nx, ny, nz);
+      if (nl < 1e-4) { nx = 0; ny = 1; nz = 0; } else { nx /= nl; ny /= nl; nz /= nl; }
+      if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; } // keep the curtain consistently upright
+      const zx = nx, zy = ny, zz = nz;            // length axis = n
+      let xx = rx, xy = ry, xz = rz;              // radial for a stable roll, orthonormalized vs z
+      const d = xx * zx + xy * zy + xz * zz; xx -= zx * d; xy -= zy * d; xz -= zz * d;
+      const xl = Math.hypot(xx, xy, xz) || 1; xx /= xl; xy /= xl; xz /= xl;
       const yx = zy * xz - zz * xy, yy = zz * xx - zx * xz, yz = zx * xy - zy * xx;
       sim.mat.set([xx, xy, xz, 0, yx, yy, yz, 0, zx, zy, zz, 0, pos[0], pos[1], pos[2], 1]);
     }
+    sim.prevPos = pos.slice();
     return sim.mat;
   }
 
