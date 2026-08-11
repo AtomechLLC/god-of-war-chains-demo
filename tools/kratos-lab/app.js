@@ -120,7 +120,6 @@
   // Pool draw batching by particle family (D-02): fire (flame3+flame6) on the decoded
   // fire sprite/color; the 06-04 trail-spark riders keep their own sprite+tint.
   const FIRE_KINDS = new Set(["fire3", "fire6"]);
-  const TRAIL_SPARK_KINDS = new Set(["trailSpark"]);
   const SPARK_KINDS = new Set(["spark"]);   // FIRE-02 impact sparks — their own stretched batch
   // FIRE-02: the impact-spark emitter IS the SAME already-real FXC_BDEsparkemit family as
   // blade fire (A6 — continuous fire and on-hit sparks are one emitter family, differing
@@ -1272,7 +1271,7 @@
     // sub-rect so each billboard reads as an ember dot, not a stamped mini-swoosh
     // (which visually REPEATED the swoosh detail along the arc). Real texels.
     const EMBER_UV = [0.75, 0.8, 0.25, 0.2];
-    drawPool(mvp, view, trailTex, { name: "fxSpark", kinds: TRAIL_SPARK_KINDS, uvRect: EMBER_UV });
+    // (trail-spark rider batch removed with its spawner — the swoosh decal carries the arc detail)
     // PASS — blade fire (flame3 + flame6, FIRE-01): its OWN batch by texture (D-02).
     // Color = the REAL decoded fire color from db.meta.colorSource
     // (MAT_pticleMat.blendColor, [2,2,2,1] overbright) applied as the per-vertex rgb
@@ -1835,15 +1834,6 @@
         // per hit), NEVER per attacking frame (Pitfall 5 — a discrete event, not a rate).
         const hitEdge = machine.st.hits !== prevHits;
         const track = rig.bladePos(machine.st.current, machine.st.t);
-        // TRL-02: BFT (crimson fire) vs BGT (neutral swoosh) tint for THIS move —
-        // reuses the pure Particles.variantFor + rampColor(0) hot stop (06-03), so
-        // the sparks read the SAME family as the trail sheet. INFERRED runtime
-        // tint, never a fabricated real color (05-04: no painted ramp).
-        const variant = Particles.variantFor(machine.st.current);   // "BFT" | "BGT"
-        const hot = Particles.rampColor(0.0);
-        // IN-01: same shared per-variant tint as the trail-sheet hot stop in drawFx
-        // (BGT whiteK 0.15), so the sparks never desync from the trail on a Phase-7 tune.
-        const sparkTint = variantTint(variant, hot, 0.15);
         for (const [key, hand, trackOff] of [["l", JID.lWeapIH, 0], ["r", JID.rWeapIH, 3]]) {
           const hst = trailHist[key];
           for (const e of hst) e.age += STEP;
@@ -1887,7 +1877,6 @@
           }
           if (attacking) {
             const tip = xformM(bm, blade.tip);
-            const prevTip = hst.length ? hst[hst.length - 1].tip : tip;
             // hand = the grip/chain anchor at this sample — the trail sheet is swept by
             // the WHOLE chain+blade assembly (footage: at full extension the trail
             // extends down the chain), so rows span hand→tip, not hilt→tip.
@@ -1896,38 +1885,11 @@
             ts.last = simStepCount;
             hst.push({ tip, hilt: xformM(bm, blade.hilt), hand: [world[hand * 16 + 12], world[hand * 16 + 13], world[hand * 16 + 14]], age: 0, seg: ts.id });
             if (hst.length > 64) hst.shift();   // INFERRED: hold ~54-frame (TRAIL_AGE 0.9) sweep + margin
-            // TRL-01/02 trail-spark riders (D-04c — the user's #1 richness lever):
-            // a few hot specks spawn on the tip arc each attacking tick, then
-            // DECOUPLE (they advect on their own vel + gravity via fxPool.integrate,
-            // so a whipping blade outruns its sparks — the authentic lag, D-03).
-            // EVERY emission constant here is INFERRED — no decoded trail-spark
-            // rate/velocity/size/life record exists (Pitfall 1); all Phase-7
-            // footage-tunable. Determinism boundary (D-07): the jitter is runtime
-            // Math.random, kept OUT of the pure tested Particles paths.
-            const SPARKS_PER_TICK = 2;        // INFERRED: sparse sparkle ON TOP of the ribbon (the RIBBON is the streak, not dots) — Phase-7 tune
-            const SPARK_LIFE = 30 * STEP;     // INFERRED ~30-frame trail-gone anchor (0.5s @60Hz)
-            const SPARK_SIZE = 0.24;          // INFERRED billboard half-size (was 0.18) — Phase-7 tune
-            const SPARK_ALPHA = 1.6;          // INFERRED peak alpha128 (>1.0 overbright — premult path)
-            const POS_JIT = 0.25;             // INFERRED positional jitter radius
-            const VEL_JIT = 1.5;              // INFERRED per-axis velocity jitter
-            // swing velocity along the tip arc (tip - prevTip)/STEP; sparks inherit
-            // a SMALL fraction so they trail the blade rather than track it (lag),
-            // plus a slight INFERRED upward drift so embers rise before gravity.
-            const sw = [(tip[0] - prevTip[0]) / STEP, (tip[1] - prevTip[1]) / STEP, (tip[2] - prevTip[2]) / STEP];
-            for (let s = 0; s < SPARKS_PER_TICK; s++) {
-              fxPool.spawn({
-                pos: [tip[0] + (Math.random() - 0.5) * POS_JIT,
-                      tip[1] + (Math.random() - 0.5) * POS_JIT,
-                      tip[2] + (Math.random() - 0.5) * POS_JIT],
-                vel: [sw[0] * 0.10 + (Math.random() - 0.5) * VEL_JIT,
-                      sw[1] * 0.10 + (Math.random() - 0.5) * VEL_JIT + 1.2,   // +upward (INFERRED)
-                      sw[2] * 0.10 + (Math.random() - 0.5) * VEL_JIT],
-                size: SPARK_SIZE,
-                life: SPARK_LIFE,
-                color: [sparkTint[0], sparkTint[1], sparkTint[2], SPARK_ALPHA],
-                kind: "trailSpark",
-              });
-            }
+            // TRL-01/02 trail-spark riders: REMOVED (user). The per-tick tip specks
+            // were an INFERRED richness layer (no decoded trail-spark record exists);
+            // once the real swoosh decal carried the detail they read as a ring of
+            // dots along the arc. Impact-spark bursts (hit edge, FIRE-02 above) and
+            // the blade fire (below) remain — those are decoded-family effects.
             // FIRE-01 blade fire: both level-1 flame systems (flame3 + flame6) burn
             // on THIS blade every attacking tick. Each spawns at the decoded FXC
             // emitter matrix translation transformed to WORLD by the LIVE blade
@@ -1943,7 +1905,13 @@
             // semantics top-up decodes the emission fields (the upgrade path that
             // removes these INFERRED constants).
             const FIRE_PER_TICK = 3;      // INFERRED: modest flame on the blade (the bright blade point), not a scatter of dots — Phase-7 tune
-            const FIRE_LIFE = 22 * STEP;  // INFERRED ~22-frame lifetime (0.37s @60Hz)
+            const FIRE_LIFE = 22 * STEP;  // INFERRED ~22-frame lifetime (0.37s @60Hz) at REST
+            // Speed-scaled life (INFERRED): decoupled puffs off a fast blade string
+            // BREADCRUMB DOTS along the arc — so a whipping blade kills its fire young
+            // (a tight blob hugging the blade) while a slow blade burns fully.
+            const pvt = hst.length > 1 ? hst[hst.length - 2].tip : tip;
+            const tipSpeed = Math.hypot(tip[0] - pvt[0], tip[1] - pvt[1], tip[2] - pvt[2]) / STEP;
+            const fireLife = FIRE_LIFE / (1 + tipSpeed * 0.12);
             const FIRE_SIZE = 0.7;        // INFERRED billboard half-size (fuller flame; was 0.5) — Phase-7 tune
             const FIRE_ALPHA = 1.9;       // INFERRED peak alpha128 (>1.0 overbright — premult path, CLAUDE.md Part 1 alpha-over-1.0)
             const FIRE_POS_JIT = 0.35;    // INFERRED positional jitter radius
@@ -1962,7 +1930,7 @@
                         (Math.random() - 0.5) * FIRE_VEL_JIT + FIRE_RISE,   // +upward (INFERRED)
                         (Math.random() - 0.5) * FIRE_VEL_JIT],
                   size: FIRE_SIZE,
-                  life: FIRE_LIFE,
+                  life: fireLife,
                   // per-particle rgb = identity (1,1,1); the REAL fire color is applied
                   // at the fire DRAW from db.meta.colorSource (Task 3), mirroring the
                   // chainglow identity-passthrough. alpha128 = INFERRED overbright peak.
