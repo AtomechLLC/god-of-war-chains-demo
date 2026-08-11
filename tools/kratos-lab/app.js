@@ -1569,8 +1569,7 @@
   // XZ base so the incoming clip's first frame lands exactly where the outgoing clip
   // left the root (game behavior: combos carry you across the arena). px/pz hold the
   // PREVIOUS clip's base so the blend window lerps two poses that meet at the seam.
-  const rootMotion = { on: true, x: 0, z: 0, px: 0, pz: 0, ox: 0, oz: 0,
-    lastAuth: null, clipStart: null, dir: null, sMax: 0, pendingRebase: false };
+  const rootMotion = { on: true, x: 0, z: 0, px: 0, pz: 0, prevAuth: null, pendingRebase: false };
   let lastState = { name: "idleCombat", t: 0 };
   const machine = Combat.makeMachine((n) => DUR[n], {
     onMove(name, prev, via) {
@@ -1784,8 +1783,8 @@
   });
   $("btnRootMo").addEventListener("click", () => {
     rootMotion.on = !rootMotion.on;
-    rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = rootMotion.ox = rootMotion.oz = 0; // reset home
-    rootMotion.clipStart = null; rootMotion.lastAuth = null; rootMotion.dir = null; rootMotion.sMax = 0;
+    rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0; // return home on toggle
+    rootMotion.prevAuth = null;
     $("btnRootMo").classList.toggle("latched", rootMotion.on);
   });
   // Replay controls: pause / frame-step / slow-mo (dev/QA capture aid).
@@ -1982,63 +1981,26 @@
       // every transition shifted the base backward — the reported backward slide.
       // Combo clips are authored from a shared origin stance, so seams stay close
       // and the blend window absorbs the residual pose difference.
-      // ROOT MOTION model (INFERRED engine behavior; the authored data alone CANNOT
-      // drive placement: combos transition at the branch point ~70%, but the authored
-      // pelvis paths dive BACKWARD early and only return forward in the LAST 30% —
-      // playing raw exits accumulated the dive and skipped the return = the reported
-      // backward drift). Model: per clip, the character's world placement is
-      //   clipStart + ratchetedForwardProgress·d  (d = the clip's FULL net direction)
-      // — monotone along d (wind-ups hold, lunges advance), with lateral/backward
-      // pelvis excursions confined to a small radius (they remain in the POSE).
-      // At exit, ONLY the forward progress accumulates. No arena clamp, no resets.
+      // ROOT MOTION — minimal frame-by-frame model (user-specified restart): the
+      // authored pelvis motion plays VERBATIM frame by frame. A persistent XZ offset
+      // absorbs ONLY the cross-clip jump at each transition, so the new clip's first
+      // frame lands exactly where the old clip's last frame displayed — the
+      // transition/blend itself is never captured as root motion. No ratchets, no
+      // direction sampling, no hold radii, no clamps, no resets.
       const rootJ = (JID.pelvis !== undefined ? JID.pelvis : 0) * 16;
-      const HOLD_R = 1.0; // allowed world sway radius (~7 cm) around the held point
-      if (rootMotion.pendingRebase) {
-        // blend continuity: the prev pose keeps the old clip's LAST APPLIED offset
-        rootMotion.px = rootMotion.ox; rootMotion.pz = rootMotion.oz;
-        if (rootMotion.on && rootMotion.dir) {
-          rootMotion.x += Math.max(rootMotion.sMax, 0) * rootMotion.dir[0];
-          rootMotion.z += Math.max(rootMotion.sMax, 0) * rootMotion.dir[1];
-        }
-        rootMotion.clipStart = [world[rootJ + 12], world[rootJ + 14]]; // the NEW clip's authored start
-        rootMotion.dir = null; rootMotion.sMax = 0;
-        const curName = machine.st.current, curDur = DUR[curName];
-        if (rootMotion.on && curDur) {
-          const endPose = rig.computePose(curName, curDur); // full-clip end → net direction
-          const ex = endPose[rootJ + 12] - rootMotion.clipStart[0];
-          const ez = endPose[rootJ + 14] - rootMotion.clipStart[1];
-          const el = Math.hypot(ex, ez);
-          if (el > 0.5) rootMotion.dir = [ex / el, ez / el];
-          rig.computePose(machine.st.current, machine.st.t); // restore the shared pose buffer (CR-01)
-        }
-        rootMotion.pendingRebase = false;
-      }
-      if (!rootMotion.clipStart) rootMotion.clipStart = [world[rootJ + 12], world[rootJ + 14]];
-      rootMotion.lastAuth = [world[rootJ + 12], world[rootJ + 14]]; // authored pelvis, pre-offset
+      const ax = world[rootJ + 12], az = world[rootJ + 14]; // authored pelvis this tick
       if (rootMotion.on) {
-        // displayed displacement from the held point: forward ratchet along d,
-        // everything else soft-held within HOLD_R (stays in the pose)
-        const dx = rootMotion.lastAuth[0] - rootMotion.clipStart[0];
-        const dz = rootMotion.lastAuth[1] - rootMotion.clipStart[1];
-        let dispX, dispZ;
-        if (rootMotion.dir) {
-          const s = dx * rootMotion.dir[0] + dz * rootMotion.dir[1];
-          rootMotion.sMax = Math.max(rootMotion.sMax, s, 0);
-          let px2 = dx - s * rootMotion.dir[0], pz2 = dz - s * rootMotion.dir[1];
-          const pl = Math.hypot(px2, pz2);
-          if (pl > HOLD_R) { px2 *= HOLD_R / pl; pz2 *= HOLD_R / pl; }
-          dispX = rootMotion.sMax * rootMotion.dir[0] + px2;
-          dispZ = rootMotion.sMax * rootMotion.dir[1] + pz2;
-        } else {
-          const l = Math.hypot(dx, dz);
-          const k = l > HOLD_R ? HOLD_R / l : 1;
-          dispX = dx * k; dispZ = dz * k;
+        if (rootMotion.pendingRebase && rootMotion.prevAuth) {
+          rootMotion.px = rootMotion.x; rootMotion.pz = rootMotion.z; // old clip's offset (blend window)
+          rootMotion.x += rootMotion.prevAuth[0] - ax; // absorb the cross-clip jump
+          rootMotion.z += rootMotion.prevAuth[1] - az;
         }
-        // total offset = base + (displayed − authored) displacement
-        const ox = rootMotion.x + (dispX - dx), oz = rootMotion.z + (dispZ - dz);
-        if (ox || oz) for (let j = 0; j < world.length; j += 16) { world[j + 12] += ox; world[j + 14] += oz; }
-        rootMotion.ox = ox; rootMotion.oz = oz; // total offset this tick (blade tracks + blend)
-      } else { rootMotion.ox = 0; rootMotion.oz = 0; }
+        if (rootMotion.x || rootMotion.z) {
+          for (let j = 0; j < world.length; j += 16) { world[j + 12] += rootMotion.x; world[j + 14] += rootMotion.z; }
+        }
+      }
+      rootMotion.pendingRebase = false;
+      rootMotion.prevAuth = [ax, az];
       // CR-01: computePose fills and returns ONE internal buffer reused across
       // calls (anim.js makeRig closure). Aliasing it here let the blend-window
       // prev-pose call in uploadSkinnedVerts clobber it — freezing the rendered
@@ -2061,9 +2023,9 @@
         // copy before offsetting — bladePos may return a shared internal buffer
         const track0 = rig.bladePos(machine.st.current, machine.st.t);
         const track = track0 ? Array.from(track0) : null;
-        if (track && rootMotion.on && (rootMotion.ox || rootMotion.oz)) {
-          track[0] += rootMotion.ox; track[2] += rootMotion.oz;   // left blade xz (base + ratchet)
-          track[3] += rootMotion.ox; track[5] += rootMotion.oz;   // right blade xz
+        if (track && rootMotion.on && (rootMotion.x || rootMotion.z)) {
+          track[0] += rootMotion.x; track[2] += rootMotion.z;   // left blade xz
+          track[3] += rootMotion.x; track[5] += rootMotion.z;   // right blade xz
         }
         for (const [key, hand, trackOff] of [["l", JID.lWeapIH, 0], ["r", JID.rWeapIH, 3]]) {
           const hst = trailHist[key];
