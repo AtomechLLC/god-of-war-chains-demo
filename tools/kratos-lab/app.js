@@ -752,8 +752,15 @@
     },
     rotY(a) { const c = Math.cos(a), s = Math.sin(a); return new Float32Array([c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1]); },
     rotX(a) { const c = Math.cos(a), s = Math.sin(a); return new Float32Array([1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, 0, 0, 1]); },
+    rotZ(a) { const c = Math.cos(a), s = Math.sin(a); return new Float32Array([c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); },
     trans(x, y, z) { return new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]); },
   };
+  // Cosmetic 90° roll of the blade MESH about its own length axis (local Z = the blade's
+  // long axis, per the loader). Applied on the RIGHT of the blade model matrix so it rolls
+  // the mesh in local space BEFORE driveBlade orients it — turning the blade edge-forward
+  // (was flat-forward). It never touches the length axis, so the swept-edge trail (built
+  // from hilt/tip on that axis) is unchanged. Flip the sign if the edge faces the wrong way.
+  const BLADE_ROLL = M.rotZ(Math.PI / 2);
 
   // start highly zoomed out (full figure + blade-path space); user wheel-zooms in
   let yaw = 0.6, pitch = 0.15, dist = 9.0, userDist = 9.0, drag = null, autoSpin = true;
@@ -806,15 +813,14 @@
   const GLOW_REST = 0.3;   // INFERRED — dim glow at rest (dark links)
   const GLOW_HOT = 1.8;    // INFERRED — bright hot streak on attack (>1.0, alpha-over-1.0)
   const bladeSim = {
-    l: { mat: new Float32Array(16), pos: null, chain: null, prevPos: null },
-    r: { mat: new Float32Array(16), pos: null, chain: null, prevPos: null },
+    l: { mat: new Float32Array(16), pos: null, chain: null },
+    r: { mat: new Float32Array(16), pos: null, chain: null },
   };
 
   function driveBlade(sim, world, hand, trackPos, dt) {
     const handM = world.subarray(hand * 16, hand * 16 + 16);
     const anchor = [handM[12], handM[13], handM[14]];
     const pos = trackPos ? [trackPos[0], trackPos[1], trackPos[2]] : anchor;
-    const prev = sim.prevPos || pos;
     sim.pos = pos;
     const distToHand = Math.hypot(pos[0] - anchor[0], pos[1] - anchor[1], pos[2] - anchor[2]);
     if (distToHand < 2.0) {
@@ -822,28 +828,20 @@
       sim.mat.set(handM);
       sim.mat[12] = pos[0]; sim.mat[13] = pos[1]; sim.mat[14] = pos[2];
     } else {
-      // flying: the blade LENGTH lies along the swing-plane NORMAL (radial × velocity),
-      // so the swept blade-edge stands PERPENDICULAR to the swing plane = a curtain that
-      // follows the arc. (Radial length put the edge IN the swing plane → a flat in-plane
-      // disc, which read as "the blade edge rotated 90 off". Velocity-aligned length put
-      // it along the path → a point-source trail at the hilt.) The trail below sweeps this
-      // edge, so this orientation IS what shapes the sheet.
-      const rx = (pos[0] - anchor[0]) / distToHand, ry = (pos[1] - anchor[1]) / distToHand, rz = (pos[2] - anchor[2]) / distToHand;
-      let vx = pos[0] - prev[0], vy = pos[1] - prev[1], vz = pos[2] - prev[2];
-      const vl = Math.hypot(vx, vy, vz); if (vl > 1e-5) { vx /= vl; vy /= vl; vz /= vl; }
-      // swing-plane normal n = r × v (the blade-length / swept-edge axis)
-      let nx = ry * vz - rz * vy, ny = rz * vx - rx * vz, nz = rx * vy - ry * vx;
-      const nl = Math.hypot(nx, ny, nz);
-      if (nl < 1e-4) { nx = 0; ny = 1; nz = 0; } else { nx /= nl; ny /= nl; nz /= nl; }
-      if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; } // keep the curtain consistently upright
-      const zx = nx, zy = ny, zz = nz;            // length axis = n
-      let xx = rx, xy = ry, xz = rz;              // radial for a stable roll, orthonormalized vs z
-      const d = xx * zx + xy * zy + xz * zz; xx -= zx * d; xy -= zy * d; xz -= zz * d;
-      const xl = Math.hypot(xx, xy, xz) || 1; xx /= xl; xy /= xl; xz /= xl;
+      // flying: the blade length axis = the hand→blade line, so the swept blade-edge
+      // (the trail below) lies across the tangential swing and sheds a sheet off the
+      // whole blade. The visible MESH is rolled 90° about this length axis at render
+      // (BLADE_ROLL) so its edge — not its flat — faces the cut; that roll never moves
+      // the length axis, so the trail is unaffected.
+      const zx = -(pos[0] - anchor[0]) / distToHand;
+      const zy = -(pos[1] - anchor[1]) / distToHand;
+      const zz = -(pos[2] - anchor[2]) / distToHand;
+      let xx = -zz, xy = 0, xz = zx;
+      const xl = Math.hypot(xx, xy, xz) || 1;
+      xx /= xl; xz /= xl;
       const yx = zy * xz - zz * xy, yy = zz * xx - zx * xz, yz = zx * xy - zy * xx;
       sim.mat.set([xx, xy, xz, 0, yx, yy, yz, 0, zx, zy, zz, 0, pos[0], pos[1], pos[2], 1]);
     }
-    sim.prevPos = pos.slice();
     return sim.mat;
   }
 
@@ -1322,7 +1320,9 @@
       bindMeshSet(bladeSet);
       if (!window.__fxOnly) for (const key of ["l", "r"]) {
         if (!bladeSim[key].pos) continue;
-        gl.uniformMatrix4fv(uModel, false, M.mul(modelMat, bladeSim[key].mat));
+        // roll the mesh 90° about its length axis so the edge faces the cut (BLADE_ROLL);
+        // trail/fire/lights use bladeSim.mat directly and are unaffected by this cosmetic roll.
+        gl.uniformMatrix4fv(uModel, false, M.mul(M.mul(modelMat, bladeSim[key].mat), BLADE_ROLL));
         gl.drawElements(gl.TRIANGLES, bladeSet.count, gl.UNSIGNED_SHORT, 0);
       }
       if (!window.__noFx) drawFx(mvp, view); // __noFx (debug): skip ALL FX to isolate whether the FX passes hide the hero
