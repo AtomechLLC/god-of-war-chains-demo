@@ -846,7 +846,6 @@
   // the edge lies across the motion, so the swept surface is a wide smooth sheet that
   // sheds off the whole back edge of the blade — not a point-source fan at the hilt.
   const TRAIL_EXT = 0.15; // INFERRED overhang past hilt/tip (fraction of blade length) for a fuller sheet
-  const TRAIL_TAPER = 0.45; // INFERRED tail width fraction (swoosh): 1.0 = constant slab, lower = narrower tail
   const SWOOSH_ROWS = 28; // INFERRED: the decal spans a FIXED ~0.47s window behind the blade (footage crescent length) — long swings shed rows off its dark end instead of stretching the graphic
   // CHAIN-03 chain-glow combat gains (D-05, A2 — INFERRED, footage-calibrated in
   // Phase 7). No decoded state-gate field exists (verified Phase 5), so the dark<->hot
@@ -1123,20 +1122,17 @@
             // black end (invisible), so a long swing sheds its tail instead of
             // STRETCHING one swoosh across the whole arc. Short jabs compress it.
             const fresh = Math.max(0, 1 - (n - 1 - i) / SWOOSH_ROWS);
-            // Row cross-section spans the WHOLE chain+blade assembly: hand (grip/
-            // chain anchor) → blade tip. Footage shows the trail extending DOWN THE
-            // CHAIN at full extension — the texture's near-black inner band keeps
-            // the chain-span translucent; the intense band rides the leading edge.
+            // Row cross-section = the FROZEN world span the assembly swept at this
+            // sample: hand (grip/chain anchor) → blade tip (+ small blade-axis
+            // overhang). Endpoints never morph after creation — the old geometric
+            // taper slid each row's inner edge as it aged, which read as UVs CYCLING
+            // up the chain. The crescent's narrowing comes from the decal itself
+            // (dark inner band + dark tail — the bright corner falls off both ways).
             const hand = e.hand || e.hilt;
-            const sx = e.tip[0] - hand[0], sy = e.tip[1] - hand[1], sz = e.tip[2] - hand[2];
             const dx = e.tip[0] - e.hilt[0], dy = e.tip[1] - e.hilt[1], dz = e.tip[2] - e.hilt[2];
-            // SWOOSH taper (INFERRED): full span at the leading edge, narrowing
-            // toward the segment tail (converging on the tip arc).
-            const w = TRAIL_TAPER + (1 - TRAIL_TAPER) * fresh; // span fraction at this age
-            const ext = TRAIL_EXT * w; // slight overhang past the tip, along the BLADE axis
             return {
-              a: [e.tip[0] - sx * w, e.tip[1] - sy * w, e.tip[2] - sz * w],
-              b: [e.tip[0] + dx * ext, e.tip[1] + dy * ext, e.tip[2] + dz * ext],
+              a: hand,
+              b: [e.tip[0] + dx * TRAIL_EXT, e.tip[1] + dy * TRAIL_EXT, e.tip[2] + dz * TRAIL_EXT],
               // u = ONE decal per SEGMENT (0 tail -> 1 leading edge): the complete
               // swoosh graphic rides each swing like a stamp, never tiled and never
               // shared across swings. The fragment maps it 90°-rotated (long axis
