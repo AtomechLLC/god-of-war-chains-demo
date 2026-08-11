@@ -550,7 +550,11 @@
         float vy = min(vT.y / 0.87, 1.0);
         vec3 tex = texture2D(uTex, vec2(vT.x, mix(0.78, 1.0, pow(vy, 2.2)))).rgb;
         float edgeFade = 1.0 - smoothstep(0.87, 1.0, vT.y);
-        float a = 0.8 * pow(vT.z, 0.9);
+        // Alpha holds the REAL 0.8 through the sweep — the texture's baked u-ramp is
+        // the along-arc fade (double-fading compressed the visible swoosh into a thin
+        // fresh sliver). The age term only DISSOLVES rows over their last 30% of life
+        // (matters after the swing ends, when rows expire in place).
+        float a = 0.8 * min(vT.z / 0.3, 1.0);
         gl_FragColor = vec4(tex * 2.2 * edgeFade, a);
         return;
       }
@@ -607,6 +611,7 @@
     attribute vec3 aVel;      // per-particle world velocity (FIRE-02 spark stretch axis)
     uniform mat4 uMVP; uniform vec3 uCamRight; uniform vec3 uCamUp;
     uniform float uStretch;   // 0 = plain billboard; >0 = velocity-aligned stretch factor (spark batch)
+    uniform vec4 uUVRect;     // sprite UV sub-rect [u0, v0, uSpan, vSpan] — see below
     varying vec2 vUV; varying vec4 vColor;
     void main() {
       vec3 world;
@@ -628,7 +633,11 @@
         world = aCenter + uCamRight * aCorner.x + uCamUp * aCorner.y;
       }
       gl_Position = uMVP * vec4(world, 1.0);
-      vUV = aUV; vColor = aColor;
+      // uUVRect = [u0, v0, uSpan, vSpan]: per-batch sprite sub-rect. The swordtrail
+      // texture is a complete swoosh DECAL — a billboard sampling ALL of it stamps a
+      // mini-swoosh per particle ("repeating" detail along the arc). Spark batches
+      // riding trailTex pass the bright ember corner instead; default (0,0,1,1).
+      vUV = uUVRect.xy + aUV * uUVRect.zw; vColor = aColor;
     }`));
   gl.attachShader(poolProg, shader(gl.FRAGMENT_SHADER, `
     precision mediump float;
@@ -653,6 +662,7 @@
     uCamRight: gl.getUniformLocation(poolProg, "uCamRight"),
     uCamUp: gl.getUniformLocation(poolProg, "uCamUp"),
     uStretch: gl.getUniformLocation(poolProg, "uStretch"),
+    uUVRect: gl.getUniformLocation(poolProg, "uUVRect"),
     uTex: gl.getUniformLocation(poolProg, "uTex"),
   };
   // ONE interleaved ARRAY_BUFFER (DYNAMIC_DRAW), allocated once at cap size and
@@ -805,7 +815,7 @@
   const JID = {};
   if (rig) for (const j of rig.obj.joints) JID[j.name] = j.id;
   const trailHist = { l: [], r: [] };
-  const TRAIL_AGE = 0.5;   // INFERRED: ~30-frame trail persistence (footage ~0.5s @60Hz) — long luminous sweep (Phase-7 tune)
+  const TRAIL_AGE = 0.9;   // INFERRED: footage sweeps persist near a full revolution (~0.9s) — the texture's u-ramp shapes the tail, age only expires it
 
   // ---- blade transforms from the game's authored type-10 tracks ------------
   // Each act stores per-frame world-space positions for both blades
@@ -1002,6 +1012,8 @@
     gl.uniform3f(poolLocs.uCamRight, rx, ry, rz);
     gl.uniform3f(poolLocs.uCamUp, ux, uy, uz);
     gl.uniform1f(poolLocs.uStretch, stretch);   // FIRE-02: 0 = billboard, >0 = velocity stretch
+    const uvr = (opts && opts.uvRect) || [0, 0, 1, 1]; // sprite sub-rect (swoosh-decal batches pass the ember corner)
+    gl.uniform4f(poolLocs.uUVRect, uvr[0], uvr[1], uvr[2], uvr[3]);
     gl.uniform1i(poolLocs.uTex, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, poolVertBuf);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, V.subarray(0, drawn * 4 * POOL_FLOATS_PER_VERT));
@@ -1241,7 +1253,11 @@
     // swordtrail texel (real bytes, INFERRED assignment). Per-particle rgb (the
     // BFT/BGT variant tint) is kept as-is (no tint override). Empty pool → drawPool
     // no-ops; fxState() stays clean.
-    drawPool(mvp, view, trailTex, { name: "fxSpark", kinds: TRAIL_SPARK_KINDS });
+    // EMBER_UV: the bright gold corner of the swoosh decal — sparks sample ONLY this
+    // sub-rect so each billboard reads as an ember dot, not a stamped mini-swoosh
+    // (which visually REPEATED the swoosh detail along the arc). Real texels.
+    const EMBER_UV = [0.75, 0.8, 0.25, 0.2];
+    drawPool(mvp, view, trailTex, { name: "fxSpark", kinds: TRAIL_SPARK_KINDS, uvRect: EMBER_UV });
     // PASS — blade fire (flame3 + flame6, FIRE-01): its OWN batch by texture (D-02).
     // Color = the REAL decoded fire color from db.meta.colorSource
     // (MAT_pticleMat.blendColor, [2,2,2,1] overbright) applied as the per-vertex rgb
@@ -1251,7 +1267,8 @@
     // fireTex (resolved MAT_pticleMat texture, or the documented trailTex fallback —
     // MAT_pticleMat has no texName). NO fabricated crimson: the color is decoded
     // (Pitfall 4); only the runtime age fade (life-left in drawPool) is INFERRED.
-    drawPool(mvp, view, fireTex, { name: "fxFire", kinds: FIRE_KINDS, tint: db.meta.colorSource.value });
+    drawPool(mvp, view, fireTex, { name: "fxFire", kinds: FIRE_KINDS, tint: db.meta.colorSource.value,
+      uvRect: fireTex === trailTex ? EMBER_UV : undefined }); // fallback sprite is the swoosh decal — crop it too
     // PASS — impact sparks (FIRE-02): velocity-aligned STRETCHED billboards. The pool VS
     // (uStretch = SPARK_STRETCH > 0) builds each quad's long axis from the per-particle
     // aVel (the PS2 "stretched spark" look, CLAUDE.md Part 3) — every spark in the on-hit
@@ -1261,7 +1278,7 @@
     // runtime age fade are INFERRED. Sprite = the in-WAD GFX_swordtrail streak (trailTex,
     // real bytes, INFERRED assignment — no decoded spark sprite record). Additive-premult,
     // depth OFF via Fx.applyMaterial, BEFORE restoreFxState (Pitfall 3 leak guard).
-    drawPool(mvp, view, trailTex, { name: "fxImpactSpark", kinds: SPARK_KINDS, tint: db.meta.colorSource.value, stretch: SPARK_STRETCH });
+    drawPool(mvp, view, trailTex, { name: "fxImpactSpark", kinds: SPARK_KINDS, tint: db.meta.colorSource.value, stretch: SPARK_STRETCH, uvRect: EMBER_UV });
     Fx.restoreFxState(gl);
     gl.useProgram(prog);
   }
@@ -1860,7 +1877,7 @@
             // the WHOLE chain+blade assembly (footage: at full extension the trail
             // extends down the chain), so rows span hand→tip, not hilt→tip.
             hst.push({ tip, hilt: xformM(bm, blade.hilt), hand: [world[hand * 16 + 12], world[hand * 16 + 13], world[hand * 16 + 14]], age: 0 });
-            if (hst.length > 44) hst.shift();   // INFERRED: hold ~30-frame (TRAIL_AGE 0.5) sweep + margin (was 26)
+            if (hst.length > 64) hst.shift();   // INFERRED: hold ~54-frame (TRAIL_AGE 0.9) sweep + margin
             // TRL-01/02 trail-spark riders (D-04c — the user's #1 richness lever):
             // a few hot specks spawn on the tip arc each attacking tick, then
             // DECOUPLE (they advect on their own vel + gravity via fxPool.integrate,
