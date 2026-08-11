@@ -513,16 +513,16 @@
         return;
       }
       if (uTrailRamp > 0.5) {
-        // REAL Trail Tint, decoded from part1.pak (/Player/ tweak, Weapon Level 1,
-        // GoW1 node hash h*127+c): RGBA = (1,1,1,0.8) — WHITE tint at 0.8 opacity. So the
-        // trail is the amber GFX_swordtrail texel (uMaterialColor is MAT_swordtrail's
-        // decoded 1,1,1) at 0.8 alpha, additive — NOT a crimson/ramp tint. Alpha uses a
-        // 0.35 floor so the texture's cross-strip falloff can't band the sheet into gaps.
-        // The white-hot leading flash + additive gain are the only INFERRED bits.
-        vec3 col = c.rgb * uMaterialColor;                    // amber texel x white Trail Tint (real)
-        col = mix(col, vec3(1.0), pow(vT.z, 3.0) * 0.5);      // white-hot leading edge (INFERRED)
-        float a = 0.8 * clamp(vT.z, 0.35, 1.0);               // REAL Trail Tint A=0.8 x age-fade (floored)
-        gl_FragColor = vec4(col * 2.2, a);                    // additive strength (INFERRED gain)
+        // SOLID-FILL ribbon (one continuous sheet). Sampling the raw GFX_swordtrail texel
+        // reads near-gray in the lab AND its cross-strip structure bands the swept sheet
+        // into disconnected segments — so fill SOLID instead. Alpha uses the REAL decoded
+        // Trail Tint A = 0.8 (part1.pak /Player/ Weapon Level 1). Color: footage reads
+        // amber/gold with a white-hot leading edge (INFERRED — the real Trail Tint RGB is
+        // 1,1,1 white, so the gold is the texture/fire the lab can't cleanly sample yet).
+        vec3 amber = vec3(1.0, 0.62, 0.22);                   // INFERRED gold body (footage)
+        vec3 col = mix(amber, vec3(1.0), pow(vT.z, 3.0) * 0.6); // white-hot fresh leading edge
+        float a = 0.8 * clamp(vT.z, 0.30, 1.0);               // REAL Trail Tint A=0.8 x age-fade (floored, no gaps)
+        gl_FragColor = vec4(col * 2.4, a);                    // additive gain (INFERRED)
         return;
       }
       gl_FragColor = vec4(rgb, a);
@@ -779,14 +779,24 @@
   // positions). Gripped when the track sits at the hand; flying otherwise,
   // tip (-Z) leading along the track velocity.
   const CHAIN_LEN = 14; // ribbon slack reference only
-  // TRAIL_INNER_T: fraction from hilt→tip that the trail sheet's inner edge is
-  // biased toward (Pattern 7). INFERRED (A9) from footage analysis in
-  // trail-fidelity-from-footage.md — NOT a decoded value. 0.6 makes the trail
-  // hug the tip arc (the outer sweep) instead of the full hilt→tip sheet.
-  // Ribbon hugs the TIP ARC (outer band), not a fan from the hand — a low inner-T made
-  // the ribbon a triangular fan (hand is ~stationary while the tip sweeps a big arc).
-  const TRAIL_INNER_T = 0.62; // inner edge ~62% toward the tip → a smooth band trailing the tip
-  const TRAIL_WEAPON_LEN = 1.0; // outer edge = tip (no past-tip overhang, which made triangular fins)
+  // REAL decoded Blades FX tweak values — reversed from part1.pak's /Player/ tweak tree
+  // (GoW1 node hash h*127+c, mogaika utils/hash.go; "Weapon Level 1" subdir). These are
+  // the game's own designer values (not inferred). See memory: elf-fx-tweak-schema.
+  const TWK_FX = {
+    trailTint:   [1.0, 1.0, 1.0, 0.8], // Trail Tint R/G/B/A — white tint, 0.8 opacity
+    glowDiameter: 0.18,                // Glow Diameter
+    bladeDamping: 0.4,                 // Blade Damping (drives the DEFERRED Phase-4 chain solver)
+    bladeScale:   1.0,                 // Blade Scale In-Hand / On-Back / Out
+    nominalParticles: 36,              // Nominal Particles (steady-state fire budget)
+    emitTime: 3.0,                     // Emit Time
+  };
+  // Trail geometry: a CONSTANT-WIDTH ribbon whose spine is the TIP ARC, cross-section
+  // PERPENDICULAR to the tip's travel (in the swing plane). The old lerp(hilt→tip) inner
+  // edge made a triangular FAN/slivers because driveBlade orients the flying blade
+  // tip-leading (along velocity), so the hilt→tip axis is ~parallel to the sweep — the
+  // cross-section collapsed onto the sweep axis. Offsetting a CONSTANT width off the tip
+  // path (not lerping to the moving/collapsed hilt) yields parallel edges = a smooth sheet.
+  const TRAIL_WIDTH = 1.6; // INFERRED sheet width in blade-lengths (thick amber sweep; Phase-7 footage-tunable)
   // CHAIN-03 chain-glow combat gains (D-05, A2 — INFERRED, footage-calibrated in
   // Phase 7). No decoded state-gate field exists (verified Phase 5), so the dark<->hot
   // RULE is INFERRED; the brightness it drives is data-grounded (alpha-over-1.0,
@@ -1043,17 +1053,45 @@
       }
       const hst = trailHist[key];
       if (hst.length >= 2) {
-        const rows = hst.map((e, i) => ({
-          // inner edge biased toward the tip arc (Pattern 7, fair-game overlap);
-          // u/v orientation is unchanged — the decoded swordtrail texture
-          // confirms bright ember edge at v=1 (tip) and age ramp toward u=1.
-          // Ribbon cross-section: from the hilt to PAST the tip. The game's trail is a
-          // thick swept SHEET (ELF tweak "Weapon Length" controls its extent) — the raw
-          // hilt→tip span reads thin, so extend the outer edge beyond the tip by an
-          // INFERRED "Weapon Length" factor for a fuller sheet (Phase-7 footage-tunable).
-          a: lerp3(e.hilt, e.tip, TRAIL_INNER_T), b: lerp3(e.hilt, e.tip, TRAIL_WEAPON_LEN), u: i / (hst.length - 1),
-          alpha: Math.max(0, 1 - e.age / TRAIL_AGE) * 1.0,   // INFERRED brightness — additive streak (Phase-7 tune)
-        }));
+        // CONSTANT-WIDTH ribbon on the TIP ARC (see TRAIL_WIDTH). Spine = tip path;
+        // the cross-section is offset a constant width along the in-swing-plane normal
+        // (perpendicular to the tip's travel) — NOT lerped to the collapsed hilt — so
+        // the two long edges stay parallel and the sheet reads smooth, never a fan.
+        const n = hst.length;
+        const tips = hst.map((e) => e.tip);
+        // swing-plane normal = area-weighted average of the tip arc about its centroid
+        let cx = 0, cy = 0, cz = 0;
+        for (const t of tips) { cx += t[0]; cy += t[1]; cz += t[2]; }
+        cx /= n; cy /= n; cz /= n;
+        let px = 0, py = 0, pz = 0;
+        for (let i = 0; i < n - 1; i++) {
+          const ax = tips[i][0] - cx, ay = tips[i][1] - cy, az = tips[i][2] - cz;
+          const bx = tips[i + 1][0] - cx, by = tips[i + 1][1] - cy, bz = tips[i + 1][2] - cz;
+          px += ay * bz - az * by; py += az * bx - ax * bz; pz += ax * by - ay * bx;
+        }
+        let pl = Math.hypot(px, py, pz) || 1; px /= pl; py /= pl; pz /= pl;
+        // constant width = median blade length (hilt→tip) × TRAIL_WIDTH
+        const lens = hst
+          .map((e) => Math.hypot(e.tip[0] - e.hilt[0], e.tip[1] - e.hilt[1], e.tip[2] - e.hilt[2]))
+          .sort((a, b) => a - b);
+        const Wc = (lens[lens.length >> 1] || 1) * TRAIL_WIDTH;
+        const rows = hst.map((e, i) => {
+          const tip = e.tip;
+          const a = tips[Math.max(0, i - 1)], b = tips[Math.min(n - 1, i + 1)];
+          let tx = b[0] - a[0], ty = b[1] - a[1], tz = b[2] - a[2];
+          const tl = Math.hypot(tx, ty, tz) || 1; tx /= tl; ty /= tl; tz /= tl;
+          // N ⟂ tangent, lying in the swing plane
+          let nx = py * tz - pz * ty, ny = pz * tx - px * tz, nz = px * ty - py * tx;
+          const nl = Math.hypot(nx, ny, nz) || 1; nx /= nl; ny /= nl; nz /= nl;
+          // orient N toward the arc centre so the sheet trails INSIDE the tip arc
+          if ((cx - tip[0]) * nx + (cy - tip[1]) * ny + (cz - tip[2]) * nz < 0) { nx = -nx; ny = -ny; nz = -nz; }
+          // v=0 at inner edge, v=1 at the TIP (bright leading ember — matches decoded swordtrail);
+          // u = age along the sweep. Alpha fades with age (additive streak).
+          return {
+            a: [tip[0] + nx * Wc, tip[1] + ny * Wc, tip[2] + nz * Wc], b: tip,
+            u: i / (n - 1), alpha: Math.max(0, 1 - e.age / TRAIL_AGE),
+          };
+        });
         pushRibbon(rows, trailV);
       }
     }
