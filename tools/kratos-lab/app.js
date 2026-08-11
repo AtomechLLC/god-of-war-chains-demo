@@ -513,18 +513,16 @@
         return;
       }
       if (uTrailRamp > 0.5) {
-        // age fraction: young/hot (t=0) -> old/ember (t=1).
-        float t = clamp(1.0 - vT.z / 0.85, 0.0, 1.0);
-        // SOLID Trail-Tint ribbon (ELF): the game's trail is one tinted RGBA sheet, not
-        // the raw GFX_swordtrail texel. Sampling that texture across the swept ribbon
-        // banded it into disconnected blade-shaped segments (its alpha/detail is cross-
-        // strip, not length-wise). Drive the ribbon from the SOLID age-ramp tint × the
-        // texture's LUMINANCE only (keeps the amber body glow, drops the banding), with
-        // additive strength from the ribbon's own vertex age-alpha so it fills as one
-        // continuous luminous sheet. Ramp/tint/solidity are runtime INFERRED (Phase-7).
-        float lum = clamp(max(max(c.r, c.g), c.b) * uLayerColor.a, 0.35, 1.0); // amber body, no gaps
-        vec3 tint = mix(uRampHot, uRampCool, t) * lum;
-        gl_FragColor = vec4(tint * 3.0, vT.z);
+        // REAL Trail Tint, decoded from part1.pak (/Player/ tweak, Weapon Level 1,
+        // GoW1 node hash h*127+c): RGBA = (1,1,1,0.8) — WHITE tint at 0.8 opacity. So the
+        // trail is the amber GFX_swordtrail texel (uMaterialColor is MAT_swordtrail's
+        // decoded 1,1,1) at 0.8 alpha, additive — NOT a crimson/ramp tint. Alpha uses a
+        // 0.35 floor so the texture's cross-strip falloff can't band the sheet into gaps.
+        // The white-hot leading flash + additive gain are the only INFERRED bits.
+        vec3 col = c.rgb * uMaterialColor;                    // amber texel x white Trail Tint (real)
+        col = mix(col, vec3(1.0), pow(vT.z, 3.0) * 0.5);      // white-hot leading edge (INFERRED)
+        float a = 0.8 * clamp(vT.z, 0.35, 1.0);               // REAL Trail Tint A=0.8 x age-fade (floored)
+        gl_FragColor = vec4(col * 2.2, a);                    // additive strength (INFERRED gain)
         return;
       }
       gl_FragColor = vec4(rgb, a);
@@ -785,8 +783,10 @@
   // biased toward (Pattern 7). INFERRED (A9) from footage analysis in
   // trail-fidelity-from-footage.md — NOT a decoded value. 0.6 makes the trail
   // hug the tip arc (the outer sweep) instead of the full hilt→tip sheet.
-  const TRAIL_INNER_T = 0.05; // INFERRED: near-full hilt→tip inner edge for a thick sheet (was 0.6) — Phase-7 tune
-  const TRAIL_WEAPON_LEN = 1.35; // INFERRED "Weapon Length" (ELF tweak): outer ribbon edge extends past the tip for a fuller swept sheet — Phase-7 tune
+  // Ribbon hugs the TIP ARC (outer band), not a fan from the hand — a low inner-T made
+  // the ribbon a triangular fan (hand is ~stationary while the tip sweeps a big arc).
+  const TRAIL_INNER_T = 0.62; // inner edge ~62% toward the tip → a smooth band trailing the tip
+  const TRAIL_WEAPON_LEN = 1.0; // outer edge = tip (no past-tip overhang, which made triangular fins)
   // CHAIN-03 chain-glow combat gains (D-05, A2 — INFERRED, footage-calibrated in
   // Phase 7). No decoded state-gate field exists (verified Phase 5), so the dark<->hot
   // RULE is INFERRED; the brightness it drives is data-grounded (alpha-over-1.0,
