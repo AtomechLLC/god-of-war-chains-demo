@@ -1097,7 +1097,7 @@
     fxLog.length = 0;
     if (!blade || !skin || !skin.lastWorld) return;
     const world = skin.lastWorld;
-    const chainV = [], trailV = [];
+    const chainV = [], glowV = [], trailV = [];
     for (const [key, handN, chainN] of [["l", "lWeapIH", "lChain"], ["r", "rWeapIH", "rChain"]]) {
       const hand = JID[handN], chainJ = JID[chainN];
       if (hand !== undefined && chainJ !== undefined && bladeSim[key].pos) {
@@ -1123,6 +1123,12 @@
         const chain = Chain.buildRibbon(curvePts, Chain.LINK_PITCH);
         bladeSim[key].chain = chain; // stash per side for KratosLab.chainInfo()
         for (let i = 0; i < chain.verts.length; i++) chainV.push(chain.verts[i]);
+        // glow halo ribbon: same walk, wider by the REAL decoded Glow/Link
+        // diameter ratio (0.18/0.13 — /Player/ Glow Diameter & Link Diameter;
+        // unit-free ratio, so no physics↔mesh unit bridge needed). Gives the
+        // chainglow its own geometry instead of reusing the link bytes.
+        const glowChain = Chain.buildRibbon(curvePts, Chain.LINK_PITCH, { widthScale: Chain.GLOW_OVER_LINK });
+        for (let i = 0; i < glowChain.verts.length; i++) glowV.push(glowChain.verts[i]);
       }
       const hst = trailHist[key];
       if (hst.length >= 2) {
@@ -1201,9 +1207,6 @@
     // Every FX pass takes its FULL blend/depth state from its decoded MAT via
     // Fx.applyMaterial — no hardcoded blendFunc/depthMask here (DEC-01).
     if (chainV.length) {
-      // Convert the chain verts to a Float32Array ONCE so PASS 1 (links) and
-      // PASS 2 (glow) draw bit-identical bytes -> bit-identical depth. That is
-      // what makes the coplanar LEQUAL glow overlay exact (Pattern 5 / Pitfall 1).
       const chainVerts = new Float32Array(chainV);
       const chainVertCount = chainV.length / 6;
 
@@ -1227,9 +1230,12 @@
       gl.bufferData(gl.ARRAY_BUFFER, chainVerts, gl.DYNAMIC_DRAW);
       gl.drawArrays(gl.TRIANGLES, 0, chainVertCount);
 
-      // PASS 2 — chainglow: additive-PREMULT + depth-write OFF, drawing the SAME
-      // vertex bytes (NO re-upload -> bit-identical depth). CHAIN-03 (D-05, A2): the
-      // glow is now combat-GATED (dark at rest -> hot streak on attack) and BRIGHTENED
+      // PASS 2 — chainglow: additive-PREMULT + depth-write OFF, on its OWN ribbon
+      // widened by the REAL decoded Glow/Link diameter ratio (0.18/0.13 from
+      // /Player/ — the halo extends past the link edges, as the data says; depth
+      // is only READ here, so the wider silhouette depth-tests correctly against
+      // the scene). CHAIN-03 (D-05, A2): the
+      // glow is combat-GATED (dark at rest -> hot streak on attack) and BRIGHTENED
       // through the alpha-over-1.0 path (CLAUDE.md Part 1) — the fragment premultiplies
       // the DECODED glow texel by (alpha128 * uGlowGain) and blends ONE,ONE, so a gain
       // > 1.0 pushes the glow ABOVE the 1.0 clamp (closing the 03-02 "glow too subtle"
@@ -1264,7 +1270,8 @@
       gl.uniform1f(fxLocs.uCutoff, 0.0); // additive: alpha ≡ texel, no cutout
       gl.uniform1f(fxLocs.uGlowGain, glowGainNow); // >0 activates the premult branch; combat-gated
       gl.bindTexture(gl.TEXTURE_2D, chainglowTex);
-      gl.drawArrays(gl.TRIANGLES, 0, chainVertCount); // SAME bytes — no bufferData
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(glowV), gl.DYNAMIC_DRAW); // REAL-ratio halo ribbon
+      gl.drawArrays(gl.TRIANGLES, 0, glowV.length / 6);
       // Restore the glow flag OFF so the trail pass (same fxProg) is unaffected by the
       // premult branch (T-06-07-01 — no bleed; the trail sets it again defensively).
       gl.uniform1f(fxLocs.uGlowGain, 0.0);

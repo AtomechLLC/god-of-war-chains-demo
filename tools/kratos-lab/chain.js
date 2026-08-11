@@ -28,6 +28,18 @@
 const Chain = (() => {
   const LINKS_PER_TILE = 16;     // 512px tile / 32px link — VERIFIED in texture
   const LINK_PITCH = 0.9;        // world units per 32px link cell — INFERRED (A4)
+  // REAL decoded chain geometry (part1.pak /Player/ uid 273; key names cracked
+  // against SCUS_973.99 strings — see design/twk/decoded/Player.twk):
+  //   Segment Length = 0.25, Link Diameter = 0.13, Glow Diameter = 0.18,
+  //   Shadow Diameter = 0.13.
+  // These are in the game's PHYSICS units; the physics↔mesh unit bridge is NOT
+  // decoded, so the absolute values can't scale LINK_PITCH directly — but their
+  // RATIOS are unit-free and REAL. GLOW_OVER_LINK drives the glow pass's wider
+  // halo ribbon (0.18/0.13 ≈ 1.385× the link width).
+  const SEGMENT_LENGTH = 0.25;   // REAL (physics units)
+  const LINK_DIAMETER = 0.13;    // REAL (physics units)
+  const GLOW_DIAMETER = 0.18;    // REAL (physics units)
+  const GLOW_OVER_LINK = GLOW_DIAMETER / LINK_DIAMETER; // REAL unit-free ratio
   const SUBROWS = 2;             // sub-quads per link so sag doesn't facet —
                                  // a smoothness parameter, NOT a decoded value
   const UP = [0, 1, 0];
@@ -71,7 +83,10 @@ const Chain = (() => {
   // aP(xyz)+aT(u,v,alpha) interleave; NO bridge quad between links (Pitfall 4).
   function buildRibbon(curvePts, linkPitch, opts) {
     linkPitch = linkPitch || LINK_PITCH;
-    const hw = linkPitch / 2;                 // half-width; square-texel: 2·hw === linkPitch
+    // widthScale (opts): cross-width multiplier. 1 = square-texel link ribbon;
+    // the glow pass passes GLOW_OVER_LINK (REAL 0.18/0.13) for its wider halo.
+    const widthScale = (opts && opts.widthScale) || 1;
+    const hw = (linkPitch / 2) * widthScale;  // half-width; square-texel at scale 1: 2·hw === linkPitch
 
     // 1) cumulative arc length over the sampled curve
     const s = [0];
@@ -144,7 +159,7 @@ const Chain = (() => {
     return { verts, nLinks, arcLen, linkPitch, ribbonWidth: linkPitch };
   }
 
-  return { buildRibbon, LINK_PITCH, LINKS_PER_TILE };
+  return { buildRibbon, LINK_PITCH, LINKS_PER_TILE, SEGMENT_LENGTH, LINK_DIAMETER, GLOW_DIAMETER, GLOW_OVER_LINK };
 })();
 
 // dual-environment guard: browser <script> global + Node require (no build step)
