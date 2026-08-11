@@ -820,7 +820,7 @@
   // gaps stretched quads between disjoint arcs (hard radial cuts) and spread one
   // decal over multiple swings (only the last swing got the bright leading section).
   const trailSeg = { l: { last: -9, id: 0 }, r: { last: -9, id: 0 } };
-  const TRAIL_AGE = 0.9;   // INFERRED: footage sweeps persist near a full revolution (~0.9s) — the texture's u-ramp shapes the tail, age only expires it
+  const TRAIL_AGE = 0.6;   // INFERRED: row lifetime = the 0.35s window + post-swing dissolve margin (rows beyond the window sample the decal's black end anyway)
 
   // ---- blade transforms from the game's authored type-10 tracks ------------
   // Each act stores per-frame world-space positions for both blades
@@ -845,7 +845,13 @@
   // the edge lies across the motion, so the swept surface is a wide smooth sheet that
   // sheds off the whole back edge of the blade — not a point-source fan at the hilt.
   const TRAIL_EXT = 0.15; // INFERRED overhang past hilt/tip (fraction of blade length) for a fuller sheet
-  const SWOOSH_ROWS = 28; // INFERRED: the decal spans a FIXED ~0.47s window behind the blade (footage crescent length) — long swings shed rows off its dark end instead of stretching the graphic
+  // Trail window: REAL candidate value — the weapon templates in part1.pak carry a
+  // per-template "Weapon Length" (0.3/0.35/0.6/0.7/0.7/0.9) whose God Mode variant
+  // (uniformly 0.7) pairs with God Mode Trail Tint, marking it a TRAIL parameter.
+  // 0.35 (a short-family value, fits the L1 starting weapon + footage fade) read as
+  // SECONDS of swoosh window. INFERRED: which template = L1 Blades, and the unit.
+  const TRAIL_WINDOW_S = 0.35;
+  const SWOOSH_ROWS = Math.round(TRAIL_WINDOW_S * 60); // decal spans this fixed window behind the blade; long swings shed rows off its dark end
   // CHAIN-03 chain-glow combat gains (D-05, A2 — INFERRED, footage-calibrated in
   // Phase 7). No decoded state-gate field exists (verified Phase 5), so the dark<->hot
   // RULE is INFERRED; the brightness it drives is data-grounded (alpha-over-1.0,
@@ -932,6 +938,25 @@
     }
     gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, outPos);
+  }
+
+  // chaikinRows: one corner-cutting pass over a row polyline (both edges + u/alpha
+  // interpolated). The 60Hz-sampled tip path (30fps authored tracks, lerped) shows
+  // jagged corners between rows on fast sweeps; two passes quadruple the rows into
+  // a smooth arc. First/last rows are kept EXACT so the live edge stays on the blade.
+  function chaikinRows(rows) {
+    if (rows.length < 3) return rows;
+    const lerpRow = (p, q, t) => ({
+      a: [p.a[0] + (q.a[0] - p.a[0]) * t, p.a[1] + (q.a[1] - p.a[1]) * t, p.a[2] + (q.a[2] - p.a[2]) * t],
+      b: [p.b[0] + (q.b[0] - p.b[0]) * t, p.b[1] + (q.b[1] - p.b[1]) * t, p.b[2] + (q.b[2] - p.b[2]) * t],
+      u: p.u + (q.u - p.u) * t, alpha: p.alpha + (q.alpha - p.alpha) * t,
+    });
+    const out = [rows[0]];
+    for (let i = 0; i < rows.length - 1; i++) {
+      out.push(lerpRow(rows[i], rows[i + 1], 0.25), lerpRow(rows[i], rows[i + 1], 0.75));
+    }
+    out.push(rows[rows.length - 1]);
+    return out;
   }
 
   function pushRibbon(rows, out) {
@@ -1139,7 +1164,18 @@
               u: fresh, alpha: Math.max(0, 1 - e.age / TRAIL_AGE),
             };
           });
-          pushRibbon(rows, trailV);
+          // sample-level de-jitter first: the 30fps-authored tracks lerped at 60Hz
+          // can zigzag on alternate samples, which corner-cutting alone only halves.
+          // Neighbor-average each interior row (first/last kept exact — the live
+          // edge stays on the blade), THEN two corner-cutting passes → smooth arc.
+          for (let i = 1; i < rows.length - 1; i++) {
+            const p = rows[i - 1], c = rows[i], q = rows[i + 1];
+            for (let k = 0; k < 3; k++) {
+              c.a[k] = (p.a[k] + 2 * c.a[k] + q.a[k]) * 0.25;
+              c.b[k] = (p.b[k] + 2 * c.b[k] + q.b[k]) * 0.25;
+            }
+          }
+          pushRibbon(chaikinRows(chaikinRows(rows)), trailV);
         }
       }
     }
