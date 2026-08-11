@@ -790,13 +790,12 @@
     nominalParticles: 36,              // Nominal Particles (steady-state fire budget)
     emitTime: 3.0,                     // Emit Time
   };
-  // Trail geometry: a CONSTANT-WIDTH ribbon whose spine is the TIP ARC, cross-section
-  // PERPENDICULAR to the tip's travel (in the swing plane). The old lerp(hilt→tip) inner
-  // edge made a triangular FAN/slivers because driveBlade orients the flying blade
-  // tip-leading (along velocity), so the hilt→tip axis is ~parallel to the sweep — the
-  // cross-section collapsed onto the sweep axis. Offsetting a CONSTANT width off the tip
-  // path (not lerping to the moving/collapsed hilt) yields parallel edges = a smooth sheet.
-  const TRAIL_WIDTH = 1.6; // INFERRED sheet width in blade-lengths (thick amber sweep; Phase-7 footage-tunable)
+  // Trail geometry: a SWEPT BLADE-EDGE ribbon. Each history row is the blade's world
+  // LENGTH (hilt→tip); consecutive rows are connected into the surface the blade edge
+  // swept. Because driveBlade now orients the flying blade radially (length ⟂ the swing),
+  // the edge lies across the motion, so the swept surface is a wide smooth sheet that
+  // sheds off the whole back edge of the blade — not a point-source fan at the hilt.
+  const TRAIL_EXT = 0.15; // INFERRED overhang past hilt/tip (fraction of blade length) for a fuller sheet
   // CHAIN-03 chain-glow combat gains (D-05, A2 — INFERRED, footage-calibrated in
   // Phase 7). No decoded state-gate field exists (verified Phase 5), so the dark<->hot
   // RULE is INFERRED; the brightness it drives is data-grounded (alpha-over-1.0,
@@ -807,33 +806,30 @@
   const GLOW_REST = 0.3;   // INFERRED — dim glow at rest (dark links)
   const GLOW_HOT = 1.8;    // INFERRED — bright hot streak on attack (>1.0, alpha-over-1.0)
   const bladeSim = {
-    l: { prevPos: null, mat: new Float32Array(16), pos: null, chain: null },
-    r: { prevPos: null, mat: new Float32Array(16), pos: null, chain: null },
+    l: { mat: new Float32Array(16), pos: null, chain: null },
+    r: { mat: new Float32Array(16), pos: null, chain: null },
   };
 
   function driveBlade(sim, world, hand, trackPos, dt) {
     const handM = world.subarray(hand * 16, hand * 16 + 16);
     const anchor = [handM[12], handM[13], handM[14]];
     const pos = trackPos ? [trackPos[0], trackPos[1], trackPos[2]] : anchor;
-    if (!sim.prevPos) sim.prevPos = pos.slice();
-    const vel = [(pos[0] - sim.prevPos[0]) / dt, (pos[1] - sim.prevPos[1]) / dt, (pos[2] - sim.prevPos[2]) / dt];
-    sim.prevPos = pos.slice();
     sim.pos = pos;
     const distToHand = Math.hypot(pos[0] - anchor[0], pos[1] - anchor[1], pos[2] - anchor[2]);
-    const speed = Math.hypot(...vel);
     if (distToHand < 2.0) {
       // gripped: follow the hand frame at the authored position
       sim.mat.set(handM);
       sim.mat[12] = pos[0]; sim.mat[13] = pos[1]; sim.mat[14] = pos[2];
     } else {
-      // flying: tip leads the motion; radial from the hand when slow
-      let zx, zy, zz;
-      if (speed > 12) { zx = -vel[0] / speed; zy = -vel[1] / speed; zz = -vel[2] / speed; }
-      else {
-        zx = -(pos[0] - anchor[0]) / distToHand;
-        zy = -(pos[1] - anchor[1]) / distToHand;
-        zz = -(pos[2] - anchor[2]) / distToHand;
-      }
+      // flying: the blade points RADIALLY out from the hand (length axis = the hand→blade
+      // line), so its length lies ACROSS the tangential swing — it slashes edge-first and
+      // presents a WIDE trailing edge. (The old speed>12 branch aligned the length to the
+      // velocity = tip-leading/spear, which left only the hilt point at the back, so the
+      // trail read as emitting from the hilt. The swept-edge trail below needs the length ⟂
+      // to the motion to shed a sheet off the whole blade.)
+      const zx = -(pos[0] - anchor[0]) / distToHand;
+      const zy = -(pos[1] - anchor[1]) / distToHand;
+      const zz = -(pos[2] - anchor[2]) / distToHand;
       let xx = -zz, xy = 0, xz = zx;
       const xl = Math.hypot(xx, xy, xz) || 1;
       xx /= xl; xz /= xl;
@@ -1053,42 +1049,17 @@
       }
       const hst = trailHist[key];
       if (hst.length >= 2) {
-        // CONSTANT-WIDTH ribbon on the TIP ARC (see TRAIL_WIDTH). Spine = tip path;
-        // the cross-section is offset a constant width along the in-swing-plane normal
-        // (perpendicular to the tip's travel) — NOT lerped to the collapsed hilt — so
-        // the two long edges stay parallel and the sheet reads smooth, never a fan.
+        // SWEPT BLADE-EDGE ribbon: each row is the blade's world length (hilt→tip),
+        // extended a touch past both ends (TRAIL_EXT) for a fuller sheet. pushRibbon
+        // connects consecutive rows → the surface the blade edge swept. v=0 at the
+        // back (hilt) end, v=1 at the tip (bright leading ember of the decoded
+        // swordtrail); u = age along the sweep, alpha fades with age (additive streak).
         const n = hst.length;
-        const tips = hst.map((e) => e.tip);
-        // swing-plane normal = area-weighted average of the tip arc about its centroid
-        let cx = 0, cy = 0, cz = 0;
-        for (const t of tips) { cx += t[0]; cy += t[1]; cz += t[2]; }
-        cx /= n; cy /= n; cz /= n;
-        let px = 0, py = 0, pz = 0;
-        for (let i = 0; i < n - 1; i++) {
-          const ax = tips[i][0] - cx, ay = tips[i][1] - cy, az = tips[i][2] - cz;
-          const bx = tips[i + 1][0] - cx, by = tips[i + 1][1] - cy, bz = tips[i + 1][2] - cz;
-          px += ay * bz - az * by; py += az * bx - ax * bz; pz += ax * by - ay * bx;
-        }
-        let pl = Math.hypot(px, py, pz) || 1; px /= pl; py /= pl; pz /= pl;
-        // constant width = median blade length (hilt→tip) × TRAIL_WIDTH
-        const lens = hst
-          .map((e) => Math.hypot(e.tip[0] - e.hilt[0], e.tip[1] - e.hilt[1], e.tip[2] - e.hilt[2]))
-          .sort((a, b) => a - b);
-        const Wc = (lens[lens.length >> 1] || 1) * TRAIL_WIDTH;
         const rows = hst.map((e, i) => {
-          const tip = e.tip;
-          const a = tips[Math.max(0, i - 1)], b = tips[Math.min(n - 1, i + 1)];
-          let tx = b[0] - a[0], ty = b[1] - a[1], tz = b[2] - a[2];
-          const tl = Math.hypot(tx, ty, tz) || 1; tx /= tl; ty /= tl; tz /= tl;
-          // N ⟂ tangent, lying in the swing plane
-          let nx = py * tz - pz * ty, ny = pz * tx - px * tz, nz = px * ty - py * tx;
-          const nl = Math.hypot(nx, ny, nz) || 1; nx /= nl; ny /= nl; nz /= nl;
-          // orient N toward the arc centre so the sheet trails INSIDE the tip arc
-          if ((cx - tip[0]) * nx + (cy - tip[1]) * ny + (cz - tip[2]) * nz < 0) { nx = -nx; ny = -ny; nz = -nz; }
-          // v=0 at inner edge, v=1 at the TIP (bright leading ember — matches decoded swordtrail);
-          // u = age along the sweep. Alpha fades with age (additive streak).
+          const dx = e.tip[0] - e.hilt[0], dy = e.tip[1] - e.hilt[1], dz = e.tip[2] - e.hilt[2];
           return {
-            a: [tip[0] + nx * Wc, tip[1] + ny * Wc, tip[2] + nz * Wc], b: tip,
+            a: [e.hilt[0] - dx * TRAIL_EXT, e.hilt[1] - dy * TRAIL_EXT, e.hilt[2] - dz * TRAIL_EXT],
+            b: [e.tip[0] + dx * TRAIL_EXT, e.tip[1] + dy * TRAIL_EXT, e.tip[2] + dz * TRAIL_EXT],
             u: i / (n - 1), alpha: Math.max(0, 1 - e.age / TRAIL_AGE),
           };
         });
