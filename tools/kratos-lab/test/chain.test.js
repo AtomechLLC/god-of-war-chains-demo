@@ -132,8 +132,9 @@ const r = Chain.buildRibbon(straight, P);
 
 // --- u ∈ [0,1] with mod-16 tiling + fractional-tail truncation (Pitfall 6) --
 {
-  // long straight curve crosses the 16-link tile boundary (17.5/0.9 = 19.4 → 20)
-  const longC = [[0, 0, 0], [17.5, 0, 0]];
+  // long straight curve crosses the 16-link tile boundary: 19.4 pitches → 20
+  // links (> LINKS_PER_TILE) regardless of the pitch constant's current value
+  const longC = [[0, 0, 0], [P * 19.4, 0, 0]];
   const rl = Chain.buildRibbon(longC, P);
   assert.ok(rl.nLinks > Chain.LINKS_PER_TILE, "u tiling: long curve must exceed one 16-link tile to exercise wrap");
 

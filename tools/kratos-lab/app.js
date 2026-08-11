@@ -799,6 +799,101 @@
   // from hilt/tip on that axis) is unchanged. Flip the sign if the edge faces the wrong way.
   const BLADE_ROLL = M.rotZ(Math.PI / 2);
 
+  // ---- arena: meter-grid training room (user request) ----------------------
+  // A gridded floor + walls so Kratos/chain/trail extents read in METERS: 1 cell
+  // = 1 m via the measured bridge (Chain.METERS_TO_WORLD = 14 mesh units/m,
+  // Kratos ≈ 2.0 m). Drawn in MESH space (× modelMat like the hero), inward-faced
+  // walls + backface cull so orbiting always sees the far walls, Smash-training
+  // style. Texture: canvas-generated 8 m tile (POT 1024px, REPEAT), thin 1 m
+  // lines, heavy 4 m lines, two-tone 4 m panels.
+  const ARENA_M = Chain.METERS_TO_WORLD;   // mesh units per meter (bridge)
+  const ARENA_HALF = 6 * ARENA_M;          // ±6 m floor
+  const ARENA_WALL_H = 4 * ARENA_M;        // 4 m walls
+  const ARENA_TILE = 8 * ARENA_M;          // texture tile = 8 m
+  const arenaTex = (() => {
+    const c = document.createElement("canvas"); c.width = c.height = 1024;
+    const g = c.getContext("2d");
+    g.fillStyle = "#b9b2a4"; g.fillRect(0, 0, 1024, 1024);
+    g.fillStyle = "#c4bdae"; g.fillRect(0, 0, 512, 512); g.fillRect(512, 512, 512, 512);
+    g.strokeStyle = "#8f887a"; g.lineWidth = 2;      // 1 m lines (128px/m)
+    for (let i = 0; i <= 8; i++) {
+      const p = i * 128;
+      g.beginPath(); g.moveTo(p, 0); g.lineTo(p, 1024); g.stroke();
+      g.beginPath(); g.moveTo(0, p); g.lineTo(1024, p); g.stroke();
+    }
+    g.strokeStyle = "#6e6759"; g.lineWidth = 5;      // 4 m major lines
+    for (const p of [0, 512, 1024]) {
+      g.beginPath(); g.moveTo(p, 0); g.lineTo(p, 1024); g.stroke();
+      g.beginPath(); g.moveTo(0, p); g.lineTo(1024, p); g.stroke();
+    }
+    const t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    return t;
+  })();
+  const arenaProg = gl.createProgram();
+  gl.attachShader(arenaProg, shader(gl.VERTEX_SHADER, `
+    attribute vec3 aPos; attribute vec2 aUV;
+    uniform mat4 uMVP; varying vec2 vUV; varying vec3 vP;
+    void main() { gl_Position = uMVP * vec4(aPos, 1.0); vUV = aUV; vP = aPos; }`));
+  gl.attachShader(arenaProg, shader(gl.FRAGMENT_SHADER, `
+    precision mediump float; varying vec2 vUV; varying vec3 vP;
+    uniform sampler2D uTex; uniform vec3 uTint;
+    void main() {
+      vec3 c = texture2D(uTex, vUV).rgb * uTint;
+      float fade = clamp(1.0 - length(vP.xz) / (${(ARENA_HALF * 2.2).toFixed(1)}), 0.45, 1.0);
+      gl_FragColor = vec4(c * fade, 1.0);
+    }`));
+  gl.linkProgram(arenaProg);
+  const arenaLocs = {
+    aPos: gl.getAttribLocation(arenaProg, "aPos"),
+    aUV: gl.getAttribLocation(arenaProg, "aUV"),
+    uMVP: gl.getUniformLocation(arenaProg, "uMVP"),
+    uTex: gl.getUniformLocation(arenaProg, "uTex"),
+    uTint: gl.getUniformLocation(arenaProg, "uTint"),
+  };
+  const arenaBuf = gl.createBuffer();
+  {
+    const E = ARENA_HALF, H = ARENA_WALL_H, T = ARENA_TILE;
+    const v = [];
+    const quad = (a, b, c2, d) => { v.push(...a, ...b, ...c2, ...a, ...c2, ...d); };
+    const P = (x, y, z, u, w2) => [x, y, z, u / T, w2 / T];
+    // floor (drawn cull-off)
+    quad(P(-E, 0, -E, -E, -E), P(E, 0, -E, E, -E), P(E, 0, E, E, E), P(-E, 0, E, -E, E));
+    // walls, wound CCW as seen from INSIDE (backface cull hides near walls)
+    quad(P(-E, 0, -E, -E, 0), P(E, 0, -E, E, 0), P(E, H, -E, E, H), P(-E, H, -E, -E, H));    // z=-E, normal +z
+    quad(P(E, 0, E, -E, 0), P(-E, 0, E, E, 0), P(-E, H, E, E, H), P(E, H, E, -E, H));        // z=+E, normal -z
+    quad(P(-E, 0, E, -E, 0), P(-E, 0, -E, E, 0), P(-E, H, -E, E, H), P(-E, H, E, -E, H));    // x=-E, normal +x
+    quad(P(E, 0, -E, -E, 0), P(E, 0, E, E, 0), P(E, H, E, E, H), P(E, H, -E, -E, H));        // x=+E, normal -x
+    gl.bindBuffer(gl.ARRAY_BUFFER, arenaBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v), gl.STATIC_DRAW);
+  }
+  let arenaOn = true;
+  function drawArena(mvpModel) {
+    gl.useProgram(arenaProg);
+    gl.uniformMatrix4fv(arenaLocs.uMVP, false, mvpModel);
+    gl.uniform1i(arenaLocs.uTex, 0);
+    gl.bindTexture(gl.TEXTURE_2D, arenaTex);
+    gl.bindBuffer(gl.ARRAY_BUFFER, arenaBuf);
+    gl.enableVertexAttribArray(arenaLocs.aPos);
+    gl.enableVertexAttribArray(arenaLocs.aUV);
+    gl.vertexAttribPointer(arenaLocs.aPos, 3, gl.FLOAT, false, 20, 0);
+    gl.vertexAttribPointer(arenaLocs.aUV, 2, gl.FLOAT, false, 20, 12);
+    gl.disable(gl.CULL_FACE);
+    gl.uniform3f(arenaLocs.uTint, 0.82, 0.81, 0.78);       // floor: slightly darker
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
+    gl.uniform3f(arenaLocs.uTint, 1.0, 0.99, 0.96);        // walls: lighter panels
+    gl.drawArrays(gl.TRIANGLES, 6, 24);
+    gl.disable(gl.CULL_FACE);
+    gl.disableVertexAttribArray(arenaLocs.aPos);
+    gl.disableVertexAttribArray(arenaLocs.aUV);
+  }
+
   // start highly zoomed out (full figure + blade-path space); user wheel-zooms in
   let yaw = 0.6, pitch = 0.15, dist = 9.0, userDist = 9.0, drag = null, autoSpin = true;
   canvas.addEventListener("mousedown", (e) => { drag = [e.clientX, e.clientY]; autoSpin = false; });
@@ -1387,6 +1482,9 @@
     // native pass projects at the 4:3 DISPLAY aspect (non-square GS pixels) —
     // NOT the 512/448 storage aspect (02-RESEARCH A2)
     const mvp = M.mul(M.persp(0.9, nativeRes ? NATIVE.displayAspect : w / h, 0.05, 50), view);
+    // arena first: opaque, depth-write ON, so the hero/FX depth-test over it.
+    // Skipped in FX-only (black isolation stays black).
+    if (arenaOn && !window.__fxOnly) drawArena(M.mul(mvp, modelMat));
     gl.useProgram(prog);
     bindMeshSet(heroSet);
     gl.uniformMatrix4fv(uMVP, false, mvp);
@@ -1674,6 +1772,10 @@
   $("btnFxOnly").addEventListener("click", () => {
     window.__fxOnly = !window.__fxOnly;
     $("btnFxOnly").classList.toggle("latched", !!window.__fxOnly);
+  });
+  $("btnArena").addEventListener("click", () => {
+    arenaOn = !arenaOn;
+    $("btnArena").classList.toggle("latched", arenaOn);
   });
   // Replay controls: pause / frame-step / slow-mo (dev/QA capture aid).
   $("btnPause").addEventListener("click", () => {

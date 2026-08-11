@@ -31,19 +31,24 @@ const Chain = (() => {
   // against SCUS_973.99 strings — see design/twk/decoded/Player.twk):
   //   Segment Length = 0.25, Link Diameter = 0.13, Glow Diameter = 0.18,
   //   Shadow Diameter = 0.13.
-  // UNITS: assumed 1:1 with the lab's world/mesh units (user decision 2026-08 —
-  // "assume the units are 1:1 meters"). Under that assumption LINK_PITCH is the
-  // REAL Segment Length (replacing the old 0.9 INFERRED A4 guess): ~56 links over
-  // a full 14-unit extension — matching the small dense links in footage. The
-  // square-texel rule still sets ribbon width = pitch, so the painted link art
-  // renders undistorted; the art's transparent margins put the visible link at
-  // ~0.156 wide vs the decoded 0.13 diameter (close; the texture handles it).
+  // UNITS (user decision 2026-08: the tweak values are METERS) + the meters→mesh
+  // bridge, measured in-lab: Kratos' standing head-top ≈ 28 mesh units (head
+  // joint 25.2 in the combat crouch + skull/decrouched) at an assumed 2.0 m tall
+  // → METERS_TO_WORLD ≈ 14. Cross-validated TWO independent ways:
+  //   1. Footage link-count (chain-vs-Kratos screenshot): visible pitch ≈ 0.061 ×
+  //      Kratos height → 0.061 × 28 ≈ 1.71 mesh units. Interleaved chain links
+  //      advance HALF a link per link (SEGMENT_LENGTH/2 = 0.125 m) → 0.125 × 14 =
+  //      1.75 ✓ (2% agreement).
+  //   2. Link Diameter 0.13 m × 14 = 1.82 ≈ the 1.75 pitch → the REAL diameter
+  //      independently confirms the square-texel rule (width = pitch) within 4%.
   // GLOW_OVER_LINK (0.18/0.13, unit-free) widens the glow pass's halo ribbon.
-  const SEGMENT_LENGTH = 0.25;   // REAL (1:1-unit assumption)
-  const LINK_DIAMETER = 0.13;    // REAL (1:1-unit assumption)
-  const GLOW_DIAMETER = 0.18;    // REAL (1:1-unit assumption)
+  const METERS_TO_WORLD = 14;    // bridge (Kratos 2.0 m tall — INFERRED height, footage-validated)
+  const SEGMENT_LENGTH = 0.25;   // REAL, meters
+  const LINK_DIAMETER = 0.13;    // REAL, meters
+  const GLOW_DIAMETER = 0.18;    // REAL, meters
   const GLOW_OVER_LINK = GLOW_DIAMETER / LINK_DIAMETER; // REAL unit-free ratio
-  const LINK_PITCH = SEGMENT_LENGTH; // REAL Segment Length under the 1:1-unit assumption
+  // visual pitch = half a segment (interleaved links) in mesh units
+  const LINK_PITCH = (SEGMENT_LENGTH / 2) * METERS_TO_WORLD; // 1.75 — REAL value × REAL interleave ÷ measured bridge
   const SUBROWS = 2;             // sub-quads per link so sag doesn't facet —
                                  // a smoothness parameter, NOT a decoded value
   const UP = [0, 1, 0];
@@ -163,7 +168,7 @@ const Chain = (() => {
     return { verts, nLinks, arcLen, linkPitch, ribbonWidth: linkPitch };
   }
 
-  return { buildRibbon, LINK_PITCH, LINKS_PER_TILE, SEGMENT_LENGTH, LINK_DIAMETER, GLOW_DIAMETER, GLOW_OVER_LINK };
+  return { buildRibbon, LINK_PITCH, LINKS_PER_TILE, SEGMENT_LENGTH, LINK_DIAMETER, GLOW_DIAMETER, GLOW_OVER_LINK, METERS_TO_WORLD };
 })();
 
 // dual-environment guard: browser <script> global + Node require (no build step)
