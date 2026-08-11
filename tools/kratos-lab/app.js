@@ -1784,6 +1784,7 @@
   $("btnRootMo").addEventListener("click", () => {
     rootMotion.on = !rootMotion.on;
     rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0; // reset home on toggle
+    rootMotion.clipStart = null; rootMotion.lastAuth = null;
     $("btnRootMo").classList.toggle("latched", rootMotion.on);
   });
   // Replay controls: pause / frame-step / slow-mo (dev/QA capture aid).
@@ -1973,20 +1974,27 @@
       // new clip's first authored root lands where the old clip left it — authored
       // lunges then ACCUMULATE across the combo (see rootMotion decl). The base is
       // clamped to the arena so looping combos can't walk Kratos through the walls.
-      // The clips' root translation is authored on the PELVIS (joint 0 stays ~fixed),
-      // so continuity must track the pelvis: its authored path is what snaps at seams.
+      // The clips' root translation is authored on the PELVIS (joint 0 stays ~fixed).
+      // Accumulate ONLY each outgoing clip's NET authored travel (its exit − its OWN
+      // start). Matching pelvis poses across the seam instead (first attempt) mixed
+      // POSE SWAY into the base: attack clips open with a backward wind-up pose, so
+      // every transition shifted the base backward — the reported backward slide.
+      // Combo clips are authored from a shared origin stance, so seams stay close
+      // and the blend window absorbs the residual pose difference.
       const rootJ = (JID.pelvis !== undefined ? JID.pelvis : 0) * 16;
       if (rootMotion.pendingRebase) {
         rootMotion.px = rootMotion.x; rootMotion.pz = rootMotion.z; // prev clip's base (blend window)
-        if (rootMotion.on && rootMotion.lastAuth) {
-          rootMotion.x += rootMotion.lastAuth[0] - world[rootJ + 12];
-          rootMotion.z += rootMotion.lastAuth[1] - world[rootJ + 14];
+        if (rootMotion.on && rootMotion.lastAuth && rootMotion.clipStart) {
+          rootMotion.x += rootMotion.lastAuth[0] - rootMotion.clipStart[0];
+          rootMotion.z += rootMotion.lastAuth[1] - rootMotion.clipStart[1];
           const lim = ARENA_HALF - ARENA_M;
           rootMotion.x = Math.max(-lim, Math.min(lim, rootMotion.x));
           rootMotion.z = Math.max(-lim, Math.min(lim, rootMotion.z));
         }
+        rootMotion.clipStart = [world[rootJ + 12], world[rootJ + 14]]; // the NEW clip's authored start
         rootMotion.pendingRebase = false;
       }
+      if (!rootMotion.clipStart) rootMotion.clipStart = [world[rootJ + 12], world[rootJ + 14]];
       rootMotion.lastAuth = [world[rootJ + 12], world[rootJ + 14]]; // authored pelvis, pre-offset
       if (rootMotion.on && (rootMotion.x || rootMotion.z)) {
         for (let j = 0; j < world.length; j += 16) { world[j + 12] += rootMotion.x; world[j + 14] += rootMotion.z; }
