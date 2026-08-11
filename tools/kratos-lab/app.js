@@ -170,6 +170,23 @@
       $("texGrid").append(fig);
     } catch (e) { console.warn("texture", g, e); }
   }
+  // weapon trail texture (the decoded swoosh DECAL) alongside the skins — mostly
+  // black texels (transparent under the additive blend), so upscale pixelated
+  // with a border so the amber band + rib structure read at 64×32.
+  if (blade && blade.trailImg) {
+    const img = blade.trailImg;
+    const fig = document.createElement("figure");
+    const cv = document.createElement("canvas");
+    cv.width = img.width; cv.height = img.height;
+    cv.getContext("2d").putImageData(img, 0, 0);
+    cv.style.imageRendering = "pixelated";
+    cv.style.width = "128px";
+    cv.style.border = "1px solid #3a3a40";
+    const cap = document.createElement("figcaption");
+    cap.textContent = `GFX_swordtrail ${img.width}×${img.height} — trail swoosh decal`;
+    fig.append(cv, cap);
+    $("texGrid").prepend(fig);
+  }
 
   $("stats").innerHTML =
     `<b>${mesh.verts.toLocaleString()}</b> vertices, <b>${mesh.tris.toLocaleString()}</b> triangles in <b>${mesh.chunks}</b> strips<br>` +
@@ -523,13 +540,18 @@
         // Alpha = REAL Trail Tint A=0.8 x age fade (the fade matters after the swing
         // ends, when rows age out in place). Gain (INFERRED): only the small bright
         // rib corner exceeds 1.0 — a hot core, no field-wide blowout.
-        // v-curve (INFERRED from footage): pow > 1 keeps most of the width in the
-        // dark/pale part of the band and compresses the bright gold rows into the
-        // outer ~15% — the crisp thin YELLOW RIM on the tip arc over a translucent
-        // body, as in reference footage of the swing disc.
-        vec3 tex = texture2D(uTex, vec2(vT.x, mix(0.78, 1.0, pow(vT.y, 2.2)))).rgb;
+        // Cross-width profile (INFERRED from footage): transparent OUTER fringe ->
+        // INTENSE band ON the tip arc -> blended feather down the blade/chain span.
+        // The peak sits at vT.y = 0.87 (the real tip line — the sheet's outer ~13%
+        // is the TRAIL_EXT overhang PAST the tip): the band's bright last row lands
+        // there, the pow curve feathers the dark rows inward, and smoothstep fades
+        // the overhang fringe to transparent (the texture has no rows past its
+        // peak, so the outer fade is shaded — the colors remain real texels).
+        float vy = min(vT.y / 0.87, 1.0);
+        vec3 tex = texture2D(uTex, vec2(vT.x, mix(0.78, 1.0, pow(vy, 2.2)))).rgb;
+        float edgeFade = 1.0 - smoothstep(0.87, 1.0, vT.y);
         float a = 0.8 * pow(vT.z, 0.9);
-        gl_FragColor = vec4(tex * 2.2, a);
+        gl_FragColor = vec4(tex * 2.2 * edgeFade, a);
         return;
       }
       gl_FragColor = vec4(rgb, a);
@@ -1069,16 +1091,20 @@
         const n = hst.length;
         const rows = hst.map((e, i) => {
           const fresh = i / (n - 1); // 0 = oldest tail, 1 = live blade edge
+          // Row cross-section spans the WHOLE chain+blade assembly: hand (grip/chain
+          // anchor) → blade tip. Footage shows the trail extending DOWN THE CHAIN at
+          // full extension, not just off the blade — the texture's near-black inner
+          // band keeps the chain-span translucent (no hub artifact), while the bright
+          // rim rides the tip arc. Gripped blades degrade to ~hilt→tip automatically.
+          const hand = e.hand || e.hilt;
+          const sx = e.tip[0] - hand[0], sy = e.tip[1] - hand[1], sz = e.tip[2] - hand[2];
           const dx = e.tip[0] - e.hilt[0], dy = e.tip[1] - e.hilt[1], dz = e.tip[2] - e.hilt[2];
-          // SWOOSH taper (INFERRED): the sheet is full blade-width at the live edge and
-          // narrows toward the tail (converging on the tip arc), so the trail reads as a
-          // tapered crescent instead of a constant slab. The inner (hilt) end is pulled
-          // toward the tip for older rows; the tip edge stays anchored to the real arc.
-          const w = TRAIL_TAPER + (1 - TRAIL_TAPER) * fresh; // width fraction at this age
-          const hx = e.tip[0] - dx * w, hy = e.tip[1] - dy * w, hz = e.tip[2] - dz * w;
-          const ext = TRAIL_EXT * w;
+          // SWOOSH taper (INFERRED): full span at the live edge, narrowing toward the
+          // tail (converging on the tip arc) — a tapered crescent, not a constant slab.
+          const w = TRAIL_TAPER + (1 - TRAIL_TAPER) * fresh; // span fraction at this age
+          const ext = TRAIL_EXT * w; // slight overhang past the tip, along the BLADE axis
           return {
-            a: [hx - dx * ext, hy - dy * ext, hz - dz * ext],
+            a: [e.tip[0] - sx * w, e.tip[1] - sy * w, e.tip[2] - sz * w],
             b: [e.tip[0] + dx * ext, e.tip[1] + dy * ext, e.tip[2] + dz * ext],
             // u = ONE texture per swoosh (0 tail -> 1 live blade edge). The decoded
             // texture is a complete swoosh DECAL: luminance ramps along u toward the
@@ -1830,7 +1856,10 @@
           if (attacking) {
             const tip = xformM(bm, blade.tip);
             const prevTip = hst.length ? hst[hst.length - 1].tip : tip;
-            hst.push({ tip, hilt: xformM(bm, blade.hilt), age: 0 });
+            // hand = the grip/chain anchor at this sample — the trail sheet is swept by
+            // the WHOLE chain+blade assembly (footage: at full extension the trail
+            // extends down the chain), so rows span hand→tip, not hilt→tip.
+            hst.push({ tip, hilt: xformM(bm, blade.hilt), hand: [world[hand * 16 + 12], world[hand * 16 + 13], world[hand * 16 + 14]], age: 0 });
             if (hst.length > 44) hst.shift();   // INFERRED: hold ~30-frame (TRAIL_AGE 0.5) sweep + margin (was 26)
             // TRL-01/02 trail-spark riders (D-04c — the user's #1 richness lever):
             // a few hot specks spawn on the tip arc each attacking tick, then
