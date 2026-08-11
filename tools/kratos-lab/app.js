@@ -1558,6 +1558,7 @@
   // Autoplay / FX-only inspection controls (dev/QA capture aids)
   $("btnAutoplay").addEventListener("click", () => {
     const on = !autoplay;
+    if (on) setComboPlay(false); // mutual exclusion: autoplay takes over from combo play
     setAutoplay(on ? "mix" : null);
     $("btnAutoplay").classList.toggle("latched", on);
     $("btnAutoplay").innerHTML = on ? "&#10073;&#10073; Autoplay" : "&#9654; Autoplay";
@@ -1619,6 +1620,113 @@
   bindSlider("sBranch", "vBranch", "branch");
   bindSlider("sCancel", "vCancel", "cancel");
 
+  // ---------- combo sequence tester -----------------------------------------
+  // User-authored face-button sequence replayed through the SAME input() path
+  // the pad buttons use — the machine can't tell playback from a human press.
+  // Timing rides the fixed-timestep sim (comboTick runs once per sim tick):
+  // presses land just after the queue window opens, so the machine chains at
+  // its branch point exactly like a well-timed player input. Mutually exclusive
+  // with the scripted autoplay above (each turns the other off).
+  const COMBO_DEFAULT = ["S", "S", "T"]; // □ □ △ — Plume of Prometheus
+  const COMBO_MAX = 16;                  // keeps the glyph row readable
+  const combo = {
+    seq: COMBO_DEFAULT.slice(),
+    playing: false,
+    idx: 0,                 // next sequence entry to send
+    wait: 0,                // idle dwell (sim ticks) before pressing from stance
+    pressed: false,         // already pressed during the current move instance
+    lastMove: "", lastT: 0, // move-instance change detection (name or t reset)
+  };
+
+  function renderComboSeq() {
+    const box = $("csGlyphs");
+    box.innerHTML = "";
+    if (!combo.seq.length) {
+      const s = document.createElement("span");
+      s.className = "cs-empty";
+      s.textContent = "empty — add face buttons";
+      box.append(s);
+    } else combo.seq.forEach((key, i) => {
+      const g = Combat.GLYPH[key];
+      const s = document.createElement("span");
+      s.className = "cs-glyph" + (combo.playing && i === combo.idx % combo.seq.length ? " next" : "");
+      s.style.color = g.color;
+      s.textContent = g.txt;
+      box.append(s);
+    });
+    $("csPlay").disabled = !combo.seq.length;
+  }
+
+  function setComboPlay(on) {
+    if (on === combo.playing || (on && !combo.seq.length)) return;
+    if (on && autoplay) { // mutual exclusion: combo play takes over from autoplay
+      setAutoplay(null);
+      $("btnAutoplay").classList.remove("latched");
+      $("btnAutoplay").innerHTML = "&#9654; Autoplay";
+    }
+    combo.playing = on;
+    combo.idx = 0; combo.wait = 0; combo.pressed = false;
+    $("csPlay").classList.toggle("latched", on);
+    log(on ? `▶ combo play: ${combo.seq.map((k) => Combat.GLYPH[k].txt).join(" ")}` : "⏹ combo play stopped");
+    renderComboSeq();
+  }
+
+  function comboTick() {
+    if (!combo.playing || !combo.seq.length) return;
+    const st = machine.st;
+    // new move instance (name change or t reset) → allow one press during it
+    if (st.current !== combo.lastMove || st.t < combo.lastT) combo.pressed = false;
+    combo.lastMove = st.current; combo.lastT = st.t;
+    if (combo.idx >= combo.seq.length) {
+      // full sequence sent — loop once the machine settles back to a stance,
+      // with a short beat so the restart reads as a new run
+      if (!machine.isIdle()) return;
+      combo.idx = 0;
+      combo.wait = 30;
+      renderComboSeq();
+    }
+    const key = combo.seq[combo.idx];
+    if (machine.isIdle()) {
+      if (combo.wait > 0) { combo.wait--; return; }
+      const before = st.current;
+      input(key);
+      // no branch from this stance (e.g. ○ in rage idle): skip the entry so
+      // playback can never deadlock on an impossible input
+      if (st.current === before) log(`◦ combo skip: ${Combat.GLYPH[key].txt} (no branch from ${before})`);
+      combo.idx++;
+      combo.pressed = false;
+      renderComboSeq();
+      return;
+    }
+    // mid-move: press once, just after the queue window opens; if the machine
+    // queued it the entry is consumed, else retry from stance after recovery
+    if (combo.pressed) return;
+    if (st.t / st.dur < Math.min(machine.windows.queue + 0.05, 0.95)) return;
+    combo.pressed = true;
+    const qBefore = st.queued;
+    input(key);
+    if (st.queued && st.queued !== qBefore) { combo.idx++; renderComboSeq(); }
+  }
+
+  const addComboKey = (key) => {
+    if (combo.seq.length >= COMBO_MAX) return;
+    combo.seq.push(key);
+    renderComboSeq();
+  };
+  $("csAddS").addEventListener("click", () => addComboKey("S"));
+  $("csAddT").addEventListener("click", () => addComboKey("T"));
+  $("csAddC").addEventListener("click", () => addComboKey("C"));
+  $("csAddX").addEventListener("click", () => addComboKey("X"));
+  $("csClear").addEventListener("click", () => { setComboPlay(false); combo.seq.length = 0; renderComboSeq(); });
+  $("csUndo").addEventListener("click", () => {
+    combo.seq.pop();
+    if (!combo.seq.length) setComboPlay(false);
+    renderComboSeq();
+  });
+  $("csReset").addEventListener("click", () => { setComboPlay(false); combo.seq = COMBO_DEFAULT.slice(); renderComboSeq(); });
+  $("csPlay").addEventListener("click", () => setComboPlay(!combo.playing));
+  renderComboSeq();
+
   // ---------- main loop -----------------------------------------------------
   updateMoveCard();
   pushBranchBlock("idleCombat");
@@ -1636,6 +1744,7 @@
   function simStep() {
     const STEP = Loop.STEP;
     tickAutoplay(); // dev/QA capture aid — fires the next scripted input when active
+    comboTick();    // user-authored combo playback — same input() path, queue-window timed
     lastState = { name: machine.st.current, t: machine.st.t };
     machine.tick(STEP);
     heat = Math.max(machine.st.rage ? 0.45 : 0, heat - STEP * 0.8);
@@ -1934,6 +2043,8 @@
       };
     },
     input,
+    // combo sequence tester: state (seq/playing/idx) + programmatic toggle
+    combo, setComboPlay,
   };
 })().catch((e) => {
   const s = document.getElementById("status");
