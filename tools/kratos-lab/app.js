@@ -121,6 +121,7 @@
   // fire sprite/color; the 06-04 trail-spark riders keep their own sprite+tint.
   const FIRE_KINDS = new Set(["fire3", "fire6"]);
   const SPARK_KINDS = new Set(["spark"]);   // FIRE-02 impact sparks — their own stretched batch
+  const HITFLASH_KINDS = new Set(["hitFlash"]); // GFX_flasher03 on-hit radial burst
   // FIRE-02: the impact-spark emitter IS the SAME already-real FXC_BDEsparkemit family as
   // blade fire (A6 — continuous fire and on-hit sparks are one emitter family, differing
   // ONLY by trigger; NO new emitter decode, D-09a). Its decoded blade-local placement
@@ -462,6 +463,19 @@
     ? fxTexFromMat(matDb.byName.MAT_godchainglow, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE }) : null;
   const godTrailTex = matDb.byName.MAT_godswordtrail
     ? fxTexFromMat(matDb.byName.MAT_godswordtrail, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE }) : null;
+  // GFX_flasher03 (WAD, no MAT record): a 64×64 radial impact-flash burst —
+  // white-hot core, soft circular falloff, neutral grayscale. Decoded directly
+  // from the WAD GFX/PAL pair; used as the on-hit flash sprite (REAL texels;
+  // the spawn placement/params are INFERRED — no decoded flash-emitter record).
+  const flasherTex = (() => {
+    const g = wadRecords.find((r) => r.name === "GFX_flasher03");
+    const p = wadRecords.find((r) => r.name === "PAL_flasher03");
+    if (!g || !p) return null;
+    const img = Parsers.decodeTexture(
+      wadBuf.subarray(g.dataOff, g.dataOff + g.size),
+      wadBuf.subarray(p.dataOff, p.dataOff + p.size));
+    return makeTex(img, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE, filter: true });
+  })();
 
   // FIRE-01 fire billboard sprite (WARNING-4 resolution): attempt the decoded
   // MAT_pticleMat texture FIRST. MAT_pticleMat has layerCount 1 but exposes NO layer
@@ -991,8 +1005,8 @@
     glowDiameter: 0.18,                // Glow Diameter
     bladeDamping: 0.4,                 // Blade Damping (drives the DEFERRED Phase-4 chain solver)
     bladeScale:   1.0,                 // Blade Scale In-Hand / On-Back / Out
-    nominalParticles: 36,              // Nominal Particles (steady-state fire budget)
-    emitTime: 3.0,                     // Emit Time
+    nominalParticles: 36,              // Nominal Particles — CONFIRMED the BLOOD/gore emitter's (GlobGame "goBloodSpot"), NOT blade fire
+    emitTime: 3.0,                     // Emit Time — same blood emitter (blade-fire params live in the undecoded FXC binaries)
   };
   // Trail geometry: a SWEPT BLADE-EDGE ribbon. Each history row is the blade's world
   // LENGTH (hilt→tip); consecutive rows are connected into the surface the blade edge
@@ -1627,6 +1641,8 @@
     // real bytes, INFERRED assignment — no decoded spark sprite record). Additive-premult,
     // depth OFF via Fx.applyMaterial, BEFORE restoreFxState (Pitfall 3 leak guard).
     drawPool(mvp, view, trailTex, { name: "fxImpactSpark", kinds: SPARK_KINDS, tint: db.meta.colorSource.value, stretch: SPARK_STRETCH, uvRect: EMBER_UV });
+    // PASS — on-hit flash: the REAL GFX_flasher03 radial burst as its own batch
+    if (flasherTex) drawPool(mvp, view, flasherTex, { name: "fxHitFlash", kinds: HITFLASH_KINDS });
     Fx.restoreFxState(gl);
     gl.useProgram(prog);
   }
@@ -2329,6 +2345,19 @@
               color: [1, 1, 1, SPARK_BURST_ALPHA],
               kind: "spark",
             }, () => (Math.random() - 0.5) * SPARK_BURST_SPREAD);
+          }
+          // on-hit FLASH: one GFX_flasher03 radial burst at THIS blade's tip on the
+          // hit frame (REAL sprite; size/life/alpha INFERRED — no flash-emitter data)
+          if (hitEdge && flasherTex) {
+            const ftip = xformM(bm, blade.tip);
+            fxPool.spawn({
+              pos: [ftip[0], ftip[1], ftip[2]],
+              vel: [0, 0, 0],
+              size: 7.0,               // INFERRED half-size (~0.5 m burst)
+              life: 8 * STEP,          // INFERRED ~0.13 s pop
+              color: [1, 1, 1, 2.6],   // white-hot, alpha128 overbright (premult path)
+              kind: "hitFlash",
+            });
           }
           if (attacking) {
             const tip = xformM(bm, blade.tip);
