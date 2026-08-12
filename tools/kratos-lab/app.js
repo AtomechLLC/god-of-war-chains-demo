@@ -1902,7 +1902,15 @@
   // ANM type-5 comp 422, a cumulative per-attack movement scalar the pose decoder
   // never read (the skeleton itself is authored in place — root joint static,
   // pelvis swings are pose). See decodeRootTrack in anim.js.
-  const rootMotion = { on: true, x: 0, z: 0, px: 0, pz: 0, prevTrack: null, pendingRebase: false };
+  // VERTICAL (decoded 2026-08-12): comp 421 is the controller's authored
+  // vertical channel — jumpUp rises 0→9.37 units (0.67 m), jumpDoubleAir adds
+  // a second boost to 10.95 (0.78 m); airV1 opens at 9.66 = the single-jump
+  // apex, corroborating the read. Ground moves/landings carry no 421: the
+  // engine drops the controller under the decoded /GlobGame/ Gravity (50,
+  // meters — REAL) and air attacks hover (engine float, INFERRED from
+  // gameplay). y/vy implement exactly that model here.
+  const rootMotion = { on: true, x: 0, z: 0, y: 0, vy: 0, px: 0, pz: 0, prevTrack: null, prevTrackY: null, pendingRebase: false };
+  const GRAV_UNITS = 50 * Chain.METERS_TO_WORLD; // REAL /GlobGame/ Gravity 50 m/s² × units bridge
   let lastState = { name: "idleCombat", t: 0 };
   const machine = Combat.makeMachine((n) => DUR[n], {
     onMove(name, prev, via) {
@@ -1953,6 +1961,19 @@
       const d0 = rig.rootDisp(name, 0), d1 = rig.rootDisp(name, c.dur);
       if (d0 !== null && d1 !== null && Math.abs(d1 - d0) > 0.5) {
         extra += `movement <b>${(Math.abs(d1 - d0) / Chain.METERS_TO_WORLD).toFixed(2)} m</b> (type-5 comp-422 track)<br>`;
+      }
+      // REAL vertical rise from the comp-421 controller channel (jumps/boosts)
+      {
+        let y0 = null, yMax = -Infinity;
+        for (let k = 0; k <= Math.round(c.dur * 30); k++) {
+          const v = rig.rootDispY(name, k / 30);
+          if (v === null) { y0 = null; break; }
+          if (y0 === null) y0 = v;
+          yMax = Math.max(yMax, v);
+        }
+        if (y0 !== null && yMax - y0 > 0.5) {
+          extra += `jump rise <b>${((yMax - y0) / Chain.METERS_TO_WORLD).toFixed(2)} m</b> (comp-421 vertical channel)<br>`;
+        }
       }
       const cd = CONCUSSION[name];
       if (cd) {
@@ -2152,20 +2173,25 @@
     if (!(rig && skin)) return;
     const world = rig.computePose(st.current, st.t);
     if (rootMotion.on) {
-      // resume-safe: track the channel at the scrub position WITHOUT accumulating,
+      // resume-safe: track the channels at the scrub position WITHOUT accumulating,
       // so unpausing continues the differencing from exactly here (no teleport)
       rootMotion.prevTrack = rig.rootDisp(st.current, st.t);
-      if (rootMotion.x || rootMotion.z)
-        for (let j = 0; j < world.length; j += 16) { world[j + 12] += rootMotion.x; world[j + 14] += rootMotion.z; }
+      rootMotion.prevTrackY = rig.rootDispY(st.current, st.t);
+      if (rootMotion.x || rootMotion.z || rootMotion.y)
+        for (let j = 0; j < world.length; j += 16) {
+          world[j + 12] += rootMotion.x;
+          world[j + 13] += rootMotion.y;
+          world[j + 14] += rootMotion.z;
+        }
     }
     if (!skin.lastWorld) skin.lastWorld = new Float32Array(world.length);
     skin.lastWorld.set(world);
     if (blade) {
       const track0 = rig.bladePos(st.current, st.t);
       const track = track0 ? Array.from(track0) : null;
-      if (track && rootMotion.on && (rootMotion.x || rootMotion.z)) {
-        track[0] += rootMotion.x; track[2] += rootMotion.z;
-        track[3] += rootMotion.x; track[5] += rootMotion.z;
+      if (track && rootMotion.on && (rootMotion.x || rootMotion.z || rootMotion.y)) {
+        track[0] += rootMotion.x; track[1] += rootMotion.y; track[2] += rootMotion.z;
+        track[3] += rootMotion.x; track[4] += rootMotion.y; track[5] += rootMotion.z;
       }
       for (const [key, hand, trackOff] of [["l", JID.lWeapIH, 0], ["r", JID.rWeapIH, 3]]) {
         if (hand === undefined) continue;
@@ -2301,7 +2327,8 @@
   $("btnRootMo").addEventListener("click", () => {
     rootMotion.on = !rootMotion.on;
     rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0; // return home on toggle
-    rootMotion.prevTrack = null;
+    rootMotion.y = rootMotion.vy = 0;
+    rootMotion.prevTrack = rootMotion.prevTrackY = null;
     $("btnRootMo").classList.toggle("latched", rootMotion.on);
   });
   // Replay controls: pause / frame-step / slow-mo (dev/QA capture aid).
@@ -2484,6 +2511,7 @@
       combo.wait = 30;
       // teleport home between runs so every sequence starts from center (user)
       rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0;
+      rootMotion.y = rootMotion.vy = 0;
       renderComboSeq();
     }
     const key = combo.seq[combo.idx];
@@ -2626,7 +2654,10 @@
     if (window.__hitbox) $("btnHitbox").click();
     if (!followCam) $("btnFollow").click();
     if (!rootMotion.on) $("btnRootMo").click();
-    else { rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0; rootMotion.prevTrack = null; }
+    else {
+      rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = rootMotion.y = rootMotion.vy = 0;
+      rootMotion.prevTrack = rootMotion.prevTrackY = null;
+    }
     if (weaponLevel !== 1) $("btnWpnLv").click();
     if (costumeIdx !== 0) {
       costumeIdx = 0;
@@ -2701,6 +2732,33 @@
           rootMotion.z += (rv - rootMotion.prevTrack); // advance along -Z (user-corrected axis; channel decreases forward)
         }
         rootMotion.prevTrack = rv;
+        // VERTICAL — three-way model matching the engine (see rootMotion decl):
+        //  1. clip has a comp-421 channel → drive the REAL authored rise
+        //     (differenced within the clip like 422; blends never captured)
+        //  2. no channel + air state → HOVER (engine float — INFERRED; the GoW
+        //     air-combo stall) — height holds through airH1-3 etc.
+        //  3. no channel + ground state → fall under the REAL decoded
+        //     /GlobGame/ Gravity (50 m/s²) until the floor, e.g. during `land`
+        const rvY = rig.rootDispY(machine.st.current, machine.st.t);
+        if (rvY !== null) {
+          if (!rootMotion.pendingRebase && rootMotion.prevTrackY !== null) {
+            rootMotion.y += (rvY - rootMotion.prevTrackY);
+          }
+          rootMotion.prevTrackY = rvY;
+          rootMotion.vy = 0;
+          if (rootMotion.y < 0) rootMotion.y = 0; // channel never digs below the floor
+        } else {
+          rootMotion.prevTrackY = null;
+          const gn = Combat.GRAPH[machine.st.current];
+          const airState = !!(gn && (gn.air || (gn.category && gn.category.includes("air"))));
+          if (rootMotion.y > 0 && !airState) {
+            rootMotion.vy -= GRAV_UNITS * STEP;
+            rootMotion.y = Math.max(0, rootMotion.y + rootMotion.vy * STEP);
+            if (rootMotion.y === 0) rootMotion.vy = 0;
+          } else if (!airState) {
+            rootMotion.y = 0; rootMotion.vy = 0;
+          } // air state without channel: hover — keep y as-is
+        }
         // Teleport home once Kratos strays past 2 BIG grid squares (2 x 4 m = 8 m)
         // from center — instant, no easing (keeps looping combos on the arena).
         const RESET_R = 2 * 4 * ARENA_M;
@@ -2708,8 +2766,12 @@
           rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0;
         }
         rootMotion.px = rootMotion.x; rootMotion.pz = rootMotion.z;
-        if (rootMotion.x || rootMotion.z) {
-          for (let j = 0; j < world.length; j += 16) { world[j + 12] += rootMotion.x; world[j + 14] += rootMotion.z; }
+        if (rootMotion.x || rootMotion.z || rootMotion.y) {
+          for (let j = 0; j < world.length; j += 16) {
+            world[j + 12] += rootMotion.x;
+            world[j + 13] += rootMotion.y;
+            world[j + 14] += rootMotion.z;
+          }
         }
       }
       rootMotion.pendingRebase = false;
@@ -2756,9 +2818,9 @@
         // copy before offsetting — bladePos may return a shared internal buffer
         const track0 = rig.bladePos(machine.st.current, machine.st.t);
         const track = track0 ? Array.from(track0) : null;
-        if (track && rootMotion.on && (rootMotion.x || rootMotion.z)) {
-          track[0] += rootMotion.x; track[2] += rootMotion.z;   // left blade xz
-          track[3] += rootMotion.x; track[5] += rootMotion.z;   // right blade xz
+        if (track && rootMotion.on && (rootMotion.x || rootMotion.z || rootMotion.y)) {
+          track[0] += rootMotion.x; track[1] += rootMotion.y; track[2] += rootMotion.z;   // left blade xyz
+          track[3] += rootMotion.x; track[4] += rootMotion.y; track[5] += rootMotion.z;   // right blade xyz
         }
         for (const [key, hand, trackOff] of [["l", JID.lWeapIH, 0], ["r", JID.rWeapIH, 3]]) {
           const hst = trailHist[key];

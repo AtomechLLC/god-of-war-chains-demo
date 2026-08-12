@@ -57,9 +57,17 @@ identified, individually unrecoverable</span></li>
 and even the run cycle has zero locomotion in any joint.
 <span class="dead">no joint-based root motion</span> But each attack's ANM act
 carries an unread <b>type-5 datatype</b> whose state holds per-frame floats for
-the pelvis <i>plus component 422</i>: a cumulative 1-D displacement scalar,
-baked at 30&nbsp;Hz. <span class="real">the engine's character-controller
-track</span></p>
+the pelvis <i>plus a controller translation trio</i> — component 420 (lateral),
+<b>421 (vertical)</b> and <b>422 (forward)</b>, baked at 30&nbsp;Hz.
+<span class="real">the engine's character-controller track</span></p>
+<p>The vertical channel is the jump data: <b>jumpUp rises 0&nbsp;→&nbsp;9.37
+units (0.67&nbsp;m)</b>, jumpDoubleAir adds a second linear boost of
+0.77&nbsp;m, and airV1 (the air slam) <i>opens</i> at 9.66 — the single-jump
+apex, corroborating the read. Landings and ground moves carry no 421 at all:
+the descent belongs to engine physics under the decoded
+<code>/GlobGame/&nbsp;Gravity&nbsp;=&nbsp;50</code>, and air combos hover by
+engine float. <span class="real">rise + gravity</span> <span class="inf">hover
+model</span></p>
 <table>
 <tr><th>Move</th><th>Movement</th><th>Move</th><th>Movement</th></tr>
 <tr><td>combo3A</td><td>1.74 m</td><td>combo4C</td><td>4.43 m</td></tr>

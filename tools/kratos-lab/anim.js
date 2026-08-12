@@ -275,12 +275,17 @@ const GowAnim = (() => {
   }
 
   // Type-5 descriptor: the engine's CHARACTER-CONTROLLER channels (decoded
-  // 2026-08). State0 carries per-frame floats for comps 4/5/6 (pelvis xyz,
-  // mirroring the pose) AND comp 422 — a cumulative 1-D DISPLACEMENT scalar
-  // (decreases as the character advances) that drives the controller: the REAL
-  // per-attack movement (combo3A -24.3 units = 1.74 m ... combo3F -73.7 = 5.26 m,
-  // comboLR3/Plume -40.7 = 2.9 m). Locomotion blends (walk/run) are 0 here —
-  // they use engine speed. Sampled at the act's 30 Hz with linear interp.
+  // 2026-08). States carry per-frame floats for comps 4/5/6 (pelvis xyz,
+  // mirroring the pose) AND the controller TRANSLATION TRIO 420/421/422
+  // (decoded 2026-08-12): 420 = lateral, 421 = VERTICAL (jumpUp rises 0→9.37
+  // units ≈ 0.67 m, jumpDoubleAir adds a linear boost to 10.95; land/ground
+  // moves carry no 421 — the descent is engine physics under the decoded
+  // /GlobGame/ Gravity), 422 = forward (decreases as the character advances):
+  // the REAL per-attack movement (combo3A -24.3 units = 1.74 m ... combo3F
+  // -73.7 = 5.26 m, comboLR3/Plume -40.7 = 2.9 m). Locomotion blends
+  // (walk/run) are 0 here — they use engine speed. Sampled at the act's
+  // 30 Hz with linear interp. Only raw multi-frame f32 states are decoded
+  // (a few acts pack their curves int16-additive — those return null).
   function decodeRootTrack(b, dv, act, dataTypes) {
     if (act.rootTrack !== undefined) return act.rootTrack;
     act.rootTrack = null;
@@ -289,6 +294,8 @@ const GowAnim = (() => {
     const sdo = act.off + 0x64 + t5 * 0x14;
     const cnt = dv.getUint16(sdo + 2, true);
     const statesOff = act.off + dv.getUint32(sdo + 8, true);
+    const frameTime = dv.getFloat32(sdo + 0xc, true) || 1 / 30;
+    let fZ = null, fY = null, fX = null;
     for (let i = 0; i < cnt; i++) {
       const so = statesOff + i * 0xc;
       const base = dv.getUint16(so, true);
@@ -306,17 +313,28 @@ const GowAnim = (() => {
           const bit = 31 - Math.clz32(mask & -mask);
           mask = mask ^ (mask & -mask);
           const comp = base + w * 16 + bit;
-          if (comp === 422) {
+          if (comp === 420 || comp === 421 || comp === 422) {
             const frames = new Float32Array(mCount);
             for (let f = 0; f < mCount; f++) frames[f] = dv.getFloat32(stateData + bm.dataOff + step * f + iter * 4, true);
-            act.rootTrack = { frames, frameTime: dv.getFloat32(sdo + 0xc, true) || 1 / 30 };
-            return act.rootTrack;
+            if (comp === 422 && !fZ) fZ = frames;
+            if (comp === 421 && !fY) fY = frames;
+            if (comp === 420 && !fX) fX = frames;
           }
           iter++;
         }
       }
     }
+    if (fZ || fY || fX) act.rootTrack = { frames: fZ, framesY: fY, framesX: fX, frameTime };
     return act.rootTrack;
+  }
+
+  // shared sampler for one controller-channel frame array
+  function sampleTrack(frames, frameTime, t) {
+    if (!frames || !frames.length) return null;
+    const frame = Math.min(frames.length - 1, Math.max(0, t / frameTime));
+    const f0 = Math.floor(frame), f1 = Math.min(frames.length - 1, f0 + 1);
+    const fr = frame - f0;
+    return frames[f0] * (1 - fr) + frames[f1] * fr;
   }
 
   function makeRig(objBuf, anmBuf) {
@@ -398,13 +416,21 @@ const GowAnim = (() => {
       if (!act) return null;
       const tr = decodeRootTrack(anmBuf, dv, act, anm.dataTypes);
       if (!tr) return null;
-      const frame = Math.min(tr.frames.length - 1, Math.max(0, t / tr.frameTime));
-      const f0 = Math.floor(frame), f1 = Math.min(tr.frames.length - 1, f0 + 1);
-      const fr = frame - f0;
-      return tr.frames[f0] * (1 - fr) + tr.frames[f1] * fr;
+      return sampleTrack(tr.frames, tr.frameTime, t);
     }
 
-    return { obj, anm, computePose, bladePos, rootDisp, jointCount: n };
+    // sample the REAL vertical controller channel (comp 421) at time t —
+    // the authored jump rise. null when the act has no vertical channel
+    // (ground moves, air attacks, landings: the engine handles those).
+    function rootDispY(actName, t) {
+      const act = anm.acts.get(actName);
+      if (!act) return null;
+      const tr = decodeRootTrack(anmBuf, dv, act, anm.dataTypes);
+      if (!tr) return null;
+      return sampleTrack(tr.framesY, tr.frameTime, t);
+    }
+
+    return { obj, anm, computePose, bladePos, rootDisp, rootDispY, jointCount: n };
   }
 
   return { makeRig };
