@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kratos Lab — GoW (2005) previewer &amp; combo tester</title>
 <link rel="stylesheet" href="style.css">
 </head>
@@ -16,7 +17,12 @@
   <div class="stage-col">
     <div class="stage">
       <canvas id="gl"></canvas>
-      <div id="dbgHud" style="position:absolute;left:8px;bottom:8px;font:11px/1.4 monospace;color:#7fe0a0;background:rgba(0,0,0,.45);padding:4px 7px;border-radius:4px;white-space:pre;pointer-events:none;z-index:20"></div>
+      <div id="dbgHud" style="display:none;position:absolute;left:8px;bottom:8px;font:11px/1.4 monospace;color:#7fe0a0;background:rgba(0,0,0,.45);padding:4px 7px;border-radius:4px;white-space:pre;pointer-events:none;z-index:20"></div>
+      <div class="hb-legend" id="hbLegend">
+        <span><span class="sw" style="background:rgba(230,48,60,.85)"></span>red sector = melee sweep (real blade track)</span>
+        <span><span class="sw" style="background:rgba(230,48,60,.35)"></span>cylinder = concussion AoE (authored)</span>
+        <span><span class="sw" style="background:var(--gold)"></span>gold ring = shockwave flash</span>
+      </div>
       <div class="move-card">
         <div class="mc-fancy" id="mcFancy"></div>
         <div class="mc-name" id="mcName">idleCombat</div>
@@ -68,6 +74,7 @@
         <button class="btn mod-btn" id="btnPause" title="Freeze the sim (render keeps running). Click again to resume.">&#10073;&#10073; Pause</button>
         <button class="btn mod-btn" id="btnStep" title="Advance exactly one 1/60s sim frame">&#8677; Frame</button>
         <button class="btn mod-btn" id="btnSlow" title="Slow-motion (5&#215;). Click again for realtime.">&#189;&#215; Slo-mo</button>
+        <button class="btn mod-btn" id="btnResetLab" title="Restore every toggle to its default and return Kratos home">&#8635; Reset lab</button>
       </div>
       <div class="diamond">
         <div class="slot"></div>
@@ -82,7 +89,8 @@
       </div>
       <div class="keys">
         <kbd>J</kbd> square &nbsp;<kbd>K</kbd> triangle &nbsp;<kbd>L</kbd> circle &nbsp;<kbd>space</kbd> X<br>
-        <kbd>shift</kbd> hold L1 &nbsp;&nbsp;<kbd>R</kbd> rage toggle
+        <kbd>shift</kbd> hold L1 &nbsp;<kbd>R</kbd> rage &nbsp;<kbd>P</kbd> pause &nbsp;<kbd>.</kbd> step<br>
+        <kbd>H</kbd> hitboxes &nbsp;<kbd>F</kbd> follow &nbsp;<kbd>D</kbd> debug HUD
       </div>
     </div>
 
@@ -151,14 +159,14 @@
   <span>press <kbd>N</kbd> &mdash; native-res 512&times;448 toggle</span>
 </footer>
 
-<script src="parsers.js?v=99"></script>
-<script src="fxparse.js?v=99"></script>
-<script src="fx.js?v=99"></script>
-<script src="loop.js?v=99"></script>
-<script src="chain.js?v=99"></script>
-<script src="particles.js?v=99"></script>
-<script src="anim.js?v=99"></script>
-<script src="combat.js?v=99"></script>
-<script src="app.js?v=99"></script>
+<script src="parsers.js?v=100"></script>
+<script src="fxparse.js?v=100"></script>
+<script src="fx.js?v=100"></script>
+<script src="loop.js?v=100"></script>
+<script src="chain.js?v=100"></script>
+<script src="particles.js?v=100"></script>
+<script src="anim.js?v=100"></script>
+<script src="combat.js?v=100"></script>
+<script src="app.js?v=100"></script>
 </body>
 </html>

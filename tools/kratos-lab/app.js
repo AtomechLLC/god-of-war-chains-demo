@@ -2109,6 +2109,8 @@
   $("btnHitbox").addEventListener("click", () => {
     window.__hitbox = !window.__hitbox;
     $("btnHitbox").classList.toggle("latched", !!window.__hitbox);
+    const leg = $("hbLegend");
+    if (leg) leg.style.display = window.__hitbox ? "flex" : "none";
   });
   $("btnWpnLv").addEventListener("click", () => {
     weaponLevel = weaponLevel >= 5 ? 1 : 5;
@@ -2163,6 +2165,12 @@
     if (k === "shift") { machine.st.l1 = true; $("btnL1").classList.add("latched"); machine.press("L1"); }
     if (k === "r") $("btnRage").click();
     if (k === "n") { nativeRes = !nativeRes; status(nativeRes ? "native res ON — 512×448 → 4:3 (bilinear)" : "native res OFF — full canvas res"); }
+    // lab-toggle shortcuts (usability): mirror the grouped buttons
+    if (k === "p") $("btnPause").click();
+    if (k === ".") $("btnStep").click();
+    if (k === "h") $("btnHitbox").click();
+    if (k === "f") $("btnFollow").click();
+    if (k === "d" && dbgHud) dbgHud.style.display = dbgHud.style.display === "none" ? "block" : "none";
   });
   window.addEventListener("keyup", (e) => {
     const k = e.key.toLowerCase();
@@ -2257,6 +2265,19 @@
       });
       nextBox.append(chip);
     }
+    writeComboHash();
+  }
+
+  // shareable combos (usability): the entered sequence lives in the URL hash
+  // (#combo=SST). replaceState (no history spam / no scroll); deduped because
+  // renderComboSeq also fires on playback index changes.
+  let comboHashLast = null;
+  function writeComboHash() {
+    const enc = combo.seq.join("");
+    if (enc === comboHashLast) return;
+    comboHashLast = enc;
+    const h = enc ? "#combo=" + enc : "";
+    history.replaceState(null, "", location.pathname + location.search + h);
   }
 
   function setComboPlay(on) {
@@ -2330,17 +2351,56 @@
   });
   $("csReset").addEventListener("click", () => { setComboPlay(false); combo.seq = COMBO_DEFAULT.slice(); renderComboSeq(); });
   $("csPlay").addEventListener("click", () => setComboPlay(!combo.playing));
+  // shareable combo link: capture the incoming hash BEFORE the first render
+  // (renderComboSeq writes the hash back — it must not clobber a shared link)
+  const hashSeq = (location.hash.match(/^#combo=([STCXstcx]{1,16})/) || [])[1];
+  if (hashSeq) combo.seq = hashSeq.toUpperCase().split("").slice(0, COMBO_MAX);
+  comboHashLast = combo.seq.join(""); // suppress writing until the user edits
   renderComboSeq();
+
+  // Reset lab (usability): one click back to the default state — routed through
+  // the existing handlers so every latch/label/legend stays in sync.
+  $("btnResetLab").addEventListener("click", () => {
+    stopDemo();
+    setComboPlay(false);
+    if (autoplay) $("btnAutoplay").click();
+    if (machine.st.rage) $("btnRage").click();
+    if (machine.st.l1) $("btnL1").click();
+    if (window.__fxOnly) $("btnFxOnly").click();
+    if (!arenaOn) $("btnArena").click();
+    if (window.__hitbox) $("btnHitbox").click();
+    if (!followCam) $("btnFollow").click();
+    if (!rootMotion.on) $("btnRootMo").click();
+    else { rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0; rootMotion.prevTrack = null; }
+    if (weaponLevel !== 1) $("btnWpnLv").click();
+    if (costumeIdx !== 0) {
+      costumeIdx = 0;
+      $("btnCostume").textContent = "Costume 0";
+      $("btnCostume").classList.remove("latched");
+    }
+    if (paused) $("btnPause").click();
+    if (timescale !== 1) $("btnSlow").click();
+    if (dbgHud) dbgHud.style.display = "none";
+    combo.seq = COMBO_DEFAULT.slice();
+    renderComboSeq();
+    log("↺ lab reset to defaults");
+  });
 
   // ---------- main loop -----------------------------------------------------
   updateMoveCard();
   pushBranchBlock("idleCombat");
-  // first-run demo (usability): show the chains/trail/shockwave immediately on
-  // load; the first REAL input (pad/keyboard/combo play) takes control
-  autoDemo = true;
-  setAutoplay("mix");
-  $("btnAutoplay").classList.add("latched");
-  $("btnAutoplay").innerHTML = "&#10073;&#10073; Autoplay";
+  // shareable combo link: a #combo=SSTX arrival plays its sequence on load
+  // (replaces the first-run demo — the link IS the demo)
+  if (hashSeq) {
+    setComboPlay(true);
+  } else {
+    // first-run demo (usability): show the chains/trail/shockwave immediately on
+    // load; the first REAL input (pad/keyboard/combo play) takes control
+    autoDemo = true;
+    setAutoplay("mix");
+    $("btnAutoplay").classList.add("latched");
+    $("btnAutoplay").innerHTML = "&#10073;&#10073; Autoplay";
+  }
   status(`ready — ${mesh.verts.toLocaleString()} verts, ${clipsJson.clips.length} clips`);
   // Fixed-timestep sim (REND-03): everything time-authored — combat machine,
   // heat, pose, blade tracks, trail history, blend window — advances in exact
