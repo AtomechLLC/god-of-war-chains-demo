@@ -1907,6 +1907,8 @@
       if (!machine.isIdle()) return;
       combo.idx = 0;
       combo.wait = 30;
+      // teleport home between runs so every sequence starts from center (user)
+      rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0;
       renderComboSeq();
     }
     const key = combo.seq[combo.idx];
