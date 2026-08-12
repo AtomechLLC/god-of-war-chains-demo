@@ -1053,6 +1053,9 @@
   // 7 m. GoW1's Rage of the Gods is hand-to-hand: blade FX (trail/fire/tip
   // flash) are suppressed on these moves and the hits are the FISTS.
   const FIST_MOVES = /^ber(Combo|Air)/;
+  // fall clips (ANIFall="fallv" in the Navigation action bank): airborne but
+  // DESCENDING — they take the gravity path, never the air-attack hover
+  const FALL_MOVES = /^(fallV|berFallN)$/;
   const ringHist = []; // live concussion DEBUG rings {cx,cz, s,e,durTicks, age} (Hitboxes overlay)
   const fxRings = [];  // live SHOCKWAVE visuals {cx,cz, s,e,durTicks, age} — REAL "F"-template radii/timing, always shown
   // Concussion TRIGGER TIME (derived from REAL data): the slam is where the move's
@@ -2840,6 +2843,12 @@
     comboTick();    // user-authored combo playback — same input() path, queue-window timed
     lastState = { name: machine.st.current, t: machine.st.t };
     machine.tick(STEP);
+    // touchdown: a fall clip ends the instant the controller reaches the floor
+    // (y from last tick's integration; rootMotion OFF falls back to the
+    // one-loop settle in combat.js so the fall clip still plays out)
+    if (rootMotion.on && rootMotion.y <= 0 && FALL_MOVES.test(machine.st.current)) {
+      machine.force(Combat.GRAPH[machine.st.current].landTo || (machine.st.brawl ? "berLand" : "land"));
+    }
     heat = Math.max(machine.st.rage ? 0.45 : 0, heat - STEP * 0.8);
     if (rig && skin) {
       const world = rig.computePose(machine.st.current, machine.st.t);
@@ -2892,13 +2901,14 @@
           if (rootMotion.y < 0) rootMotion.y = 0; // channel never digs below the floor
         } else {
           rootMotion.prevTrackY = null;
-          if (rootMotion.y > 0 && !airState) {
+          const falling = FALL_MOVES.test(machine.st.current);
+          if (rootMotion.y > 0 && (!airState || falling)) {
             rootMotion.vy -= GRAV_UNITS * STEP;
             rootMotion.y = Math.max(0, rootMotion.y + rootMotion.vy * STEP);
             if (rootMotion.y === 0) rootMotion.vy = 0;
           } else if (!airState) {
             rootMotion.y = 0; rootMotion.vy = 0;
-          } // air state without channel: hover — keep y as-is
+          } // air ATTACK without channel: hover — keep y as-is; falls descend
         }
         // Teleport home once Kratos strays past 4 BIG grid squares (4 x 4 m = 16 m,
         // user-doubled) from center — instant, no easing (keeps loops on the arena).

@@ -77,9 +77,14 @@ const Combat = (() => {
     blockSlam: { ender: true, branches: [] },
     grab: { ender: true, branches: [] },
     // ---- air ----------------------------------------------------------------
+    // jump chain — REAL clip assignments from the /Animation/goHero/Navigation/
+    // action bank (decoded TWK): ANIVJump="jumpUp" → ANIJump="jumpAir" →
+    // ANIFall="fallv" → ANILand="land". The transition *timing* is the engine's
+    // controller (rise channel → gravity), mirrored in app.js; landTo here
+    // routes each air stance into its authored fall clip.
     jumpUp: { next: "jumpAir", branches: [] },
     jumpAir: {
-      loop: true, category: "air idle",
+      loop: true, category: "air idle", landTo: "fallV",
       branches: [
         { input: "S", to: "airH1", fancy: "air light chain", tag: "real" },
         { input: "T", to: "airV1", fancy: "air slam", tag: "real" },
@@ -88,13 +93,15 @@ const Combat = (() => {
       ],
     },
     jumpDoubleAir: {
-      loop: true, category: "air idle",
+      loop: true, category: "air idle", landTo: "fallV",
       branches: [
         { input: "S", to: "airH1", fancy: "air light chain", tag: "real" },
         { input: "T", to: "airV1", fancy: "air slam", tag: "real" },
         { input: "C", to: "airImpale", fancy: "air impale", tag: "inferred" },
       ],
     },
+    // ANIFall="fallv": the descending loop between the jump float and touchdown
+    fallV: { loop: true, category: "air fall", landTo: "land", branches: [] },
     airH1: { air: true, branches: [ { input: "S", to: "airH2", fancy: "air chain 2", tag: "real" },
                                     { input: "T", to: "airV1", fancy: "air slam", tag: "real" } ] },
     airH2: { air: true, branches: [ { input: "S", to: "airH3", fancy: "air chain ender", tag: "real" },
@@ -133,9 +140,11 @@ const Combat = (() => {
     berComboV3: { branches: [ { input: "T", to: "berComboV4", fancy: "fists V ender", tag: "real" } ] },
     berComboV4: { ender: true, branches: [] },
     berComboStab: { ender: true, branches: [] },
-    berJumpAir: { loop: true, category: "brawl air",
+    berJumpAir: { loop: true, category: "brawl air", landTo: "berFallN",
       branches: [ { input: "S", to: "berAirH1", fancy: "fists air chain", tag: "real" },
                   { input: "T", to: "berAirV2", fancy: "fists air slam", tag: "real" } ] },
+    // brawl fall clip (berFallN) — mirrors fallV for the bare-handed set
+    berFallN: { loop: true, category: "air fall", landTo: "berLand", branches: [] },
     berAirH1: { air: true, branches: [ { input: "S", to: "berAirH2", fancy: "fists air 2", tag: "real" } ] },
     berAirH2: { air: true, ender: true, landTo: "berLand", branches: [] },
     berAirV2: { air: true, next: "berAirV2Land", branches: [] },
@@ -226,10 +235,13 @@ const Combat = (() => {
       const n = node();
       if (n.loop) {
         st.t += dt;
-        // air stances settle back to the ground after one full loop
+        // air stances settle after one full loop — into their authored fall
+        // clip (landTo, from the Navigation action bank) when they have one,
+        // else straight to the moveset's land. (st.brawl, not st.rage —
+        // rage is a buff and keeps the normal set.)
         if (st.t >= st.dur) {
           if (n.category && n.category.includes("air")) {
-            start(st.rage ? "berLand" : "land", null);
+            start(n.landTo || (st.brawl ? "berLand" : "land"), null);
             return;
           }
           st.t %= st.dur;
