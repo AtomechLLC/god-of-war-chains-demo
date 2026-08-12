@@ -958,21 +958,59 @@
 
   // start zoomed out (full figure + blade-path + arena); user wheel-zooms freely.
   // Camera distance is USER-CONTROLLED ONLY — no auto-frame (see renderFrame).
-  let yaw = 0.6, pitch = 0.15, dist = 14.0, userDist = 14.0, drag = null, autoSpin = true;
+  let yaw = 0.6, pitch = 0.15, dist = 14.0, userDist = 14.0, autoSpin = true;
   // FOLLOW camera (btnFollow, default ON): the orbit center tracks Kratos in
   // display space, so real root-motion travel stays framed. OFF = the classic
   // fixed-origin orbit. Smoothed toward the pelvis each rendered frame.
   let followCam = true;
   const camTgt = [0, 0, 0], camTgtGoal = [0, 0, 0];
-  canvas.addEventListener("mousedown", (e) => { drag = [e.clientX, e.clientY]; autoSpin = false; });
-  window.addEventListener("mouseup", () => (drag = null));
-  window.addEventListener("mousemove", (e) => {
-    if (!drag) return;
-    yaw += (e.clientX - drag[0]) * 0.008;
-    pitch = Math.max(-1.4, Math.min(1.4, pitch + (e.clientY - drag[1]) * 0.006));
-    drag = [e.clientX, e.clientY];
+  // pointer events (usability): ONE path for mouse + touch orbit, plus 2-finger
+  // pinch zoom on touch. setPointerCapture keeps a drag that leaves the canvas.
+  const ptrs = new Map();
+  let pinchD0 = 0, pinchZ0 = 14;
+  canvas.style.touchAction = "none"; // the canvas owns its gestures (no page scroll/zoom)
+  canvas.addEventListener("pointerdown", (e) => {
+    try { canvas.setPointerCapture(e.pointerId); } catch {} // stale/synthetic ids throw
+    ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    autoSpin = false;
+    if (ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()];
+      pinchD0 = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      pinchZ0 = userDist;
+    }
   });
+  canvas.addEventListener("pointermove", (e) => {
+    const p = ptrs.get(e.pointerId);
+    if (!p) return;
+    if (ptrs.size === 1) {
+      yaw += (e.clientX - p[0]) * 0.008;
+      pitch = Math.max(-1.4, Math.min(1.5, pitch + (e.clientY - p[1]) * 0.006));
+    }
+    ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    if (ptrs.size === 2 && pinchD0 > 0) {
+      const [a, b] = [...ptrs.values()];
+      const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      userDist = Math.max(1.2, Math.min(26, pinchZ0 * (pinchD0 / Math.max(20, d))));
+    }
+  });
+  const ptrEnd = (e) => ptrs.delete(e.pointerId);
+  canvas.addEventListener("pointerup", ptrEnd);
+  canvas.addEventListener("pointercancel", ptrEnd);
   canvas.addEventListener("wheel", (e) => { e.preventDefault(); userDist = Math.max(1.2, Math.min(26, userDist + e.deltaY * 0.002)); }, { passive: false });
+  // camera presets (usability): canonical study angles. Kratos' combos advance
+  // along -Z, so "front" looks from -Z back at his face; "top" reads the hitbox
+  // sectors best (pitch near straight down).
+  const CAM_PRESETS = {
+    front: { yaw: Math.PI, pitch: 0.12 },
+    side: { yaw: Math.PI / 2, pitch: 0.12 },
+    top: { yaw: Math.PI, pitch: 1.5 },
+  };
+  function camPreset(name) {
+    const p = CAM_PRESETS[name];
+    if (!p) return;
+    autoSpin = false;
+    yaw = p.yaw; pitch = p.pitch;
+  }
 
   let heat = 0;
   const JID = {};
@@ -1927,7 +1965,12 @@
         `blend-in <b>${c.blend}s</b>${c.blend === 0 ? " (hard cut)" : ""}<br>` +
         extra +
         `keyframes sampled at <b>${c.kfHz} Hz</b><br>` +
-        `header @ 0x${c.off.toString(16).toUpperCase()} in ANM_hero.bin`;
+        `header @ 0x${c.off.toString(16).toUpperCase()} in ANM_hero.bin<br>` +
+        // provenance cross-links (usability): jump from the live move to its
+        // decoded sheet and the how-it-was-dug-up story
+        `→ <a href="../../design/twk/index.html#${c.name}.twk" target="_blank">${c.name}.twk sheet</a>` +
+        (CONCUSSION[name] ? ` · <a href="../../design/twk/index.html#decoded/Concussions_AttackHitVolumes.twk" target="_blank">hit volumes</a>` : "") +
+        ` · <a href="../../design/data-archaeology.html" target="_blank">how it was decoded</a>`;
     } else {
       $("moveData").innerHTML = `<b>${name}</b> — synthetic stance (no ANM clip)`;
     }
@@ -2018,9 +2061,71 @@
     $("tlBlend").style.width = pct(blendFrac);
     $("tlBranch").style.left = pct(w.branch);
     $("tlHead").style.left = pct(t / dur);
+    // concussion-trigger marker: the tick where the move's comp-422 displacement
+    // completes and the authored AoE fires (concussionTime) — only on mapped moves
+    const hitEl = $("tlHit");
+    const cdM = CONCUSSION[machine.st.current];
+    if (cdM && dur) {
+      hitEl.style.display = "block";
+      hitEl.style.left = pct(concussionTime(machine.st.current) / dur);
+    } else hitEl.style.display = "none";
     const fr = Math.floor((t / dur) * dur * 30), tot = Math.round(dur * 30);
     $("tlFrames").textContent = `frame ${Math.min(fr, tot)} / ${tot} @30fps`;
     $("hitNum").textContent = machine.st.hits;
+  }
+
+  // ---------- timeline scrubbing (usability) --------------------------------
+  // Drag the track to any frame of the current move. Auto-pauses (resume with
+  // P / the Pause button). The POSE, blades, and chain re-sample at the scrub
+  // time (REAL clip + comp-422 data); trail rows, particles, and hitbox history
+  // are accumulated sim state and stay frozen while scrubbing.
+  function scrubTo(frac) {
+    const st = machine.st;
+    st.t = Math.max(0, Math.min(0.999, frac)) * st.dur;
+    if (!(rig && skin)) return;
+    const world = rig.computePose(st.current, st.t);
+    if (rootMotion.on) {
+      // resume-safe: track the channel at the scrub position WITHOUT accumulating,
+      // so unpausing continues the differencing from exactly here (no teleport)
+      rootMotion.prevTrack = rig.rootDisp(st.current, st.t);
+      if (rootMotion.x || rootMotion.z)
+        for (let j = 0; j < world.length; j += 16) { world[j + 12] += rootMotion.x; world[j + 14] += rootMotion.z; }
+    }
+    if (!skin.lastWorld) skin.lastWorld = new Float32Array(world.length);
+    skin.lastWorld.set(world);
+    if (blade) {
+      const track0 = rig.bladePos(st.current, st.t);
+      const track = track0 ? Array.from(track0) : null;
+      if (track && rootMotion.on && (rootMotion.x || rootMotion.z)) {
+        track[0] += rootMotion.x; track[2] += rootMotion.z;
+        track[3] += rootMotion.x; track[5] += rootMotion.z;
+      }
+      for (const [key, hand, trackOff] of [["l", JID.lWeapIH, 0], ["r", JID.rWeapIH, 3]]) {
+        if (hand === undefined) continue;
+        const tp = track ? [track[trackOff], track[trackOff + 1], track[trackOff + 2]] : null;
+        driveBlade(bladeSim[key], world, hand, tp, Loop.STEP); // chain relaxes toward the scrubbed pose
+      }
+    }
+  }
+  {
+    const tlEl = $("tlTrack");
+    let tlScrub = false;
+    tlEl.style.cursor = "ew-resize";
+    tlEl.title = "drag to scrub the current move (auto-pauses)";
+    tlEl.addEventListener("pointerdown", (e) => {
+      try { tlEl.setPointerCapture(e.pointerId); } catch {} // stale/synthetic ids throw
+      tlScrub = true;
+      if (!paused) $("btnPause").click(); // scrubbing implies pause
+      const r = tlEl.getBoundingClientRect();
+      scrubTo((e.clientX - r.left) / r.width);
+    });
+    tlEl.addEventListener("pointermove", (e) => {
+      if (!tlScrub) return;
+      const r = tlEl.getBoundingClientRect();
+      scrubTo((e.clientX - r.left) / r.width);
+    });
+    tlEl.addEventListener("pointerup", () => (tlScrub = false));
+    tlEl.addEventListener("pointercancel", () => (tlScrub = false));
   }
 
   // ---------- inputs --------------------------------------------------------
@@ -2111,6 +2216,7 @@
     $("btnHitbox").classList.toggle("latched", !!window.__hitbox);
     const leg = $("hbLegend");
     if (leg) leg.style.display = window.__hitbox ? "flex" : "none";
+    if (window.__hitbox) status("tip: the Top camera preset reads the sectors best");
   });
   $("btnWpnLv").addEventListener("click", () => {
     weaponLevel = weaponLevel >= 5 ? 1 : 5;
@@ -2237,6 +2343,7 @@
       box.append(s);
     });
     $("csPlay").disabled = !combo.seq.length;
+    $("csShare").disabled = !combo.seq.length;
     // branch preview: where the sequence ends + the branches available from there,
     // as clickable chips that append that input (decide the next step by sight)
     const nextBox = $("csNext");
@@ -2357,6 +2464,86 @@
   if (hashSeq) combo.seq = hashSeq.toUpperCase().split("").slice(0, COMBO_MAX);
   comboHashLast = combo.seq.join(""); // suppress writing until the user edits
   renderComboSeq();
+
+  // signature combos (usability): the famous strings as one-click chips — load
+  // the sequence and play it. End states verified against the branch graph.
+  const COMBO_PRESETS = [
+    { label: "Plume of Prometheus", seq: ["S", "S", "T"] },
+    { label: "Spirit of Hercules", seq: ["T", "T", "T", "T"] },
+    { label: "Light chain ender", seq: ["S", "S", "S", "S", "S", "S"] },
+    { label: "Air rave", seq: ["X", "S", "S", "S"] },
+    { label: "Air slam", seq: ["X", "T"] },
+  ];
+  for (const p of COMBO_PRESETS) {
+    const chip = document.createElement("button");
+    chip.className = "cs-next-chip";
+    chip.innerHTML = `${p.label}&nbsp;&nbsp;${p.seq.map((k) => `<span style="color:${Combat.GLYPH[k].color}">${Combat.GLYPH[k].txt}</span>`).join("")}`;
+    chip.title = `load & play ${p.seq.map((k) => Combat.GLYPH[k].txt).join(" ")}`;
+    chip.addEventListener("click", () => {
+      setComboPlay(false);
+      combo.seq = p.seq.slice();
+      renderComboSeq();
+      setComboPlay(true);
+    });
+    $("csPresets").append(chip);
+  }
+
+  // copy-share-link (usability): nobody thinks to copy the address bar.
+  // Build the URL explicitly — writeComboHash's dedupe skips the initial
+  // default sequence, so the address bar may not carry the hash yet.
+  $("csShare").addEventListener("click", async () => {
+    const enc = combo.seq.join("");
+    const url = location.origin + location.pathname + location.search + (enc ? "#combo=" + enc : "");
+    history.replaceState(null, "", url);
+    comboHashLast = enc;
+    try {
+      await navigator.clipboard.writeText(url);
+      status("combo link copied to clipboard");
+      log("⧉ copied " + (enc ? "#combo=" + enc : url));
+    } catch {
+      log("⧉ share link: " + url); // clipboard blocked → surface it
+      status("clipboard blocked — link is in the input log");
+    }
+  });
+
+  // ---------- move palette (usability): every graph state, one click --------
+  // Names are the REAL clip states; fancy labels harvested from the branch rows
+  // (msgs_en.txt move names) + the FANCY table. force() routes through the same
+  // start() path as input, so the card/branch stack/blend all behave normally.
+  const BRANCH_FANCY = {};
+  for (const gk of Object.keys(Combat.GRAPH))
+    for (const b of Combat.GRAPH[gk].branches || [])
+      if (b.fancy && !BRANCH_FANCY[b.to]) BRANCH_FANCY[b.to] = b.fancy;
+  function buildPalette() {
+    const list = $("paletteList");
+    const q = $("paletteFilter").value.trim().toLowerCase();
+    list.innerHTML = "";
+    for (const name of Object.keys(Combat.GRAPH).sort()) {
+      const node = Combat.GRAPH[name];
+      const fancy = FANCY[name] || BRANCH_FANCY[name] || (node.loop ? "stance" : "");
+      if (q && !(name.toLowerCase().includes(q) || fancy.toLowerCase().includes(q))) continue;
+      const row = document.createElement("button");
+      row.className = "pal-row";
+      row.innerHTML =
+        `<span class="pal-name">${name}</span>` +
+        (fancy ? `<span class="pal-fancy">${fancy}</span>` : "") +
+        (DUR[name] ? `<span class="pal-dur">${DUR[name].toFixed(2)}s</span>` : "");
+      row.addEventListener("click", () => {
+        stopDemo();
+        setComboPlay(false);
+        machine.force(name);
+      });
+      list.append(row);
+    }
+    if (!list.children.length) list.innerHTML = `<span class="log-line">no move matches "${q}"</span>`;
+  }
+  $("paletteFilter").addEventListener("input", buildPalette);
+  buildPalette();
+
+  // camera preset buttons (view group)
+  $("btnCamFront").addEventListener("click", () => camPreset("front"));
+  $("btnCamSide").addEventListener("click", () => camPreset("side"));
+  $("btnCamTop").addEventListener("click", () => camPreset("top"));
 
   // Reset lab (usability): one click back to the default state — routed through
   // the existing handlers so every latch/label/legend stays in sync.

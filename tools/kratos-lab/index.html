@@ -38,6 +38,7 @@
         <div class="tl-zone cancel" id="tlCancel"></div>
         <div class="tl-zone blend" id="tlBlend"></div>
         <div class="tl-branchpt" id="tlBranch"></div>
+        <div class="tl-hitmark" id="tlHit"></div>
         <div class="tl-head" id="tlHead"></div>
       </div>
       <div class="tl-legend">
@@ -45,8 +46,9 @@
         <span><span class="sw" style="background:rgba(79,127,174,.5)"></span>queue window (input buffered)</span>
         <span><span class="sw" style="background:rgba(201,162,75,.5)"></span>block-cancel window</span>
         <span><span class="sw" style="background:var(--gold)"></span>branch point</span>
+        <span><span class="sw" style="background:repeating-linear-gradient(180deg,#e6303c 0 2px,transparent 2px 4px)"></span>concussion trigger</span>
         <span><span class="sw" style="background:var(--red-hot)"></span>playhead</span>
-        <span id="tlFrames" style="margin-left:auto"></span>
+        <span id="tlFrames" style="margin-left:auto">drag the track to scrub</span>
       </div>
     </div>
 
@@ -61,6 +63,11 @@
         <button class="btn mod-btn latched" id="btnArena" title="Meter-grid arena: 1 m cells, heavy line every 4 m (Kratos &#8776; 2.0 m)">Arena</button>
         <button class="btn mod-btn" id="btnHitbox" title="Swept hit-volume display: red = melee reach sectors (real blade track), cylinders = authored concussion AoEs">Hitboxes</button>
         <button class="btn mod-btn latched" id="btnFollow" title="Camera orbit center follows Kratos (root-motion travel stays framed). Off = fixed-origin orbit.">Follow</button>
+        <span class="cam-group">
+          <button class="btn mod-btn cam-btn" id="btnCamFront" title="Camera: face-on">Front</button>
+          <button class="btn mod-btn cam-btn" id="btnCamSide" title="Camera: profile">Side</button>
+          <button class="btn mod-btn cam-btn" id="btnCamTop" title="Camera: top-down — best view of the hitbox sectors">Top</button>
+        </span>
       </div>
       <div class="shoulders" style="margin-top:6px">
         <span class="grp-label">sim</span>
@@ -97,6 +104,10 @@
     <div class="combo-seq">
       <h2>Combo sequence tester</h2>
       <div class="cs-row">
+        <span class="cs-label">signature</span>
+        <div class="cs-next" id="csPresets"></div>
+      </div>
+      <div class="cs-row">
         <span class="cs-label">add</span>
         <button class="btn cs-add" id="csAddS" title="append Square"><span class="shape" style="color:#d77bb6">&#9633;</span></button>
         <button class="btn cs-add" id="csAddT" title="append Triangle"><span class="shape" style="color:#3fa66c">&#9651;</span></button>
@@ -109,6 +120,7 @@
         <button class="btn mod-btn" id="csClear">Clear</button>
         <button class="btn mod-btn" id="csUndo">Undo</button>
         <button class="btn mod-btn" id="csReset">Reset</button>
+        <button class="btn mod-btn" id="csShare" title="Copy a link that loads &amp; plays this combo">&#x29C9; Copy link</button>
         <span class="cs-note">builder only &mdash; the pad above still fights live</span>
       </div>
       <div class="cs-row">
@@ -123,6 +135,11 @@
   </div>
 
   <div class="side">
+    <div class="card">
+      <h2>Move palette <span style="color:#7ec786">(click to play)</span></h2>
+      <input id="paletteFilter" class="pal-filter" type="text" placeholder="filter &mdash; plume, air, ber&hellip;" autocomplete="off">
+      <div id="paletteList" class="pal-list"></div>
+    </div>
     <div class="card">
       <h2>Skin textures (decoded)</h2>
       <div class="texgrid" id="texGrid"></div>
@@ -159,14 +176,14 @@
   <span>press <kbd>N</kbd> &mdash; native-res 512&times;448 toggle</span>
 </footer>
 
-<script src="parsers.js?v=100"></script>
-<script src="fxparse.js?v=100"></script>
-<script src="fx.js?v=100"></script>
-<script src="loop.js?v=100"></script>
-<script src="chain.js?v=100"></script>
-<script src="particles.js?v=100"></script>
-<script src="anim.js?v=100"></script>
-<script src="combat.js?v=100"></script>
-<script src="app.js?v=100"></script>
+<script src="parsers.js?v=101"></script>
+<script src="fxparse.js?v=101"></script>
+<script src="fx.js?v=101"></script>
+<script src="loop.js?v=101"></script>
+<script src="chain.js?v=101"></script>
+<script src="particles.js?v=101"></script>
+<script src="anim.js?v=101"></script>
+<script src="combat.js?v=101"></script>
+<script src="app.js?v=101"></script>
 </body>
 </html>

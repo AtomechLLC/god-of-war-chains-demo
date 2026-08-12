@@ -250,7 +250,16 @@ const Combat = (() => {
       else start("berserkExit", null);
     }
 
-    return { st, windows, GRAPH, press, holdPress, tick, setRage, visibleBranches, isIdle };
+    // force(name) — jump straight to a graph state (move-palette navigation).
+    // Routed through start() so every callback (move card, branch stack, blend
+    // window) fires exactly as if the move were reached by input.
+    function force(name) {
+      if (!GRAPH[name]) return false;
+      start(name, null);
+      return true;
+    }
+
+    return { st, windows, GRAPH, press, holdPress, tick, setRage, visibleBranches, isIdle, force };
   }
 
   return { GRAPH, GLYPH, makeMachine };
