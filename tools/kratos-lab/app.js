@@ -2441,20 +2441,26 @@
   // the game's real activation; Select toggles Hand-to-hand, Start pauses;
   // right stick orbits the camera, L2/R2 analog-zoom. Polled per rendered
   // frame with edge detection (Chrome exposes pads after the first press).
-  const padPrev = [];
+  const padPrevBy = {}; // per-pad edge state, keyed by gamepad index
+  let padActive = -1;   // index of the pad the user actually pressed last
   let padSeen = false;
   let padDbg = ""; // raw state line for the debug HUD (press D)
+  let padStatusLast = "";
   const padStatusEl = () => $("padStatus");
+  const setPadStatus = (txt) => {
+    if (txt === padStatusLast) return;
+    padStatusLast = txt;
+    const el = padStatusEl();
+    if (el) el.textContent = txt;
+  };
   window.addEventListener("gamepadconnected", (e) => {
     status(`🎮 ${String(e.gamepad.id).slice(0, 44)} — ✕○□△ mapped · L1 block · L3+R3 rage`);
-    const el = padStatusEl();
-    if (el) el.textContent = `🎮 ${String(e.gamepad.id).slice(0, 34)} (${padLabel(e.gamepad)})`;
+    setPadStatus(`🎮 ${String(e.gamepad.id).slice(0, 34)} exposed — press a button on it`);
   });
-  window.addEventListener("gamepaddisconnected", () => {
-    const el = padStatusEl();
-    if (el) el.textContent = "";
-    padSeen = false;
-    padPrev.length = 0;
+  window.addEventListener("gamepaddisconnected", (e) => {
+    if (e.gamepad && padPrevBy[e.gamepad.index]) delete padPrevBy[e.gamepad.index];
+    if (e.gamepad && e.gamepad.index === padActive) { padActive = -1; padSeen = false; }
+    setPadStatus("🎮 waiting for controller — press any button on it");
   });
   // Button-index map. Xbox, DualShock/DualSense, and most modern/generic pads
   // report mapping "standard" in Chrome/Edge/Firefox: bottom=0 right=1 left=2
@@ -2471,31 +2477,59 @@
   }
   const padLabel = (gp) =>
     gp.mapping === "standard" ? "standard" : isSonyId(gp) ? "Sony remap" : "generic — standard order assumed";
+  // Scan ALL exposed pads and follow the one the user actually presses —
+  // taking the first slot broke on PCs where slot 0 is some other HID device
+  // (wheel, joystick, virtual pad): the DS4 sat ignored in a later slot
+  // (user-reported: the tester saw it, the lab didn't). Edge state is
+  // per-pad; a press on any other pad switches control to it.
   function pollGamepad(wallDt) {
+    try { pollGamepadInner(wallDt); } catch (e) {
+      padDbg = "pad error: " + e.message; // a pad quirk must never halt the render loop
+    }
+  }
+  function pollGamepadInner(wallDt) {
     const gps = navigator.getGamepads ? navigator.getGamepads() : [];
-    let gp = null;
-    for (const g of gps) if (g && g.connected) { gp = g; break; }
-    if (!gp) { padDbg = ""; return; }
+    const pads = [];
+    for (const g of gps) if (g && g.connected) pads.push(g);
+    if (!pads.length) { padDbg = ""; setPadStatus("🎮 waiting for controller — press any button on it"); return; }
+    // pick the active pad: any pad with a pressed button wins; else keep the
+    // previous active; else the first exposed one (idle default)
+    let gp = pads.find((g) => g.index === padActive) || null;
+    for (const g of pads) {
+      let any = false;
+      for (let i = 0; i < g.buttons.length; i++) if (g.buttons[i] && g.buttons[i].pressed) { any = true; break; }
+      if (any && (!gp || g.index !== padActive)) { gp = g; break; }
+    }
+    if (!gp) {
+      gp = pads[0];
+      setPadStatus(`🎮 ${pads.length} pad${pads.length > 1 ? "s" : ""} exposed (${String(gp.id).slice(0, 26)}…) — press a button`);
+    }
+    if (gp.index !== padActive) {
+      padActive = gp.index;
+      padSeen = false; // announce the newly-adopted pad
+    }
+    const prev = padPrevBy[gp.index] || (padPrevBy[gp.index] = []);
     const M = padMap(gp);
     const down = (i) => !!(gp.buttons[i] && gp.buttons[i].pressed);
-    const edge = (i) => down(i) && !padPrev[i];
-    if (!padSeen) {
+    const edge = (i) => down(i) && !prev[i];
+    let anyDown = false;
+    for (let i = 0; i < gp.buttons.length; i++) if (down(i)) { anyDown = true; break; }
+    if (!padSeen && anyDown) {
       padSeen = true;
       log(`🎮 controller active (${padLabel(gp)}) — ✕○□△ · △ hold launcher · L1 block · L3+R3 rage · Select hand-to-hand · Start pause · R-stick orbit · L2/R2 zoom`);
-      const el = padStatusEl();
-      if (el) el.textContent = `🎮 ${String(gp.id).slice(0, 34)} (${padLabel(gp)})`;
+      setPadStatus(`🎮 ${String(gp.id).slice(0, 34)} (${padLabel(gp)})`);
     }
-    // raw diagnostic for the debug HUD: pressed indices + axes
+    // raw diagnostic for the debug HUD: pad slot + pressed indices + axes
     const pressedIdx = [];
     for (let i = 0; i < gp.buttons.length; i++) if (down(i)) pressedIdx.push(i);
-    padDbg = `pad[${gp.mapping || "raw"}] btns:${pressedIdx.join(",") || "-"} ax:${Array.from(gp.axes).map((a) => a.toFixed(1)).join(",")}`;
+    padDbg = `pad#${gp.index}[${gp.mapping || "raw"}] btns:${pressedIdx.join(",") || "-"} ax:${Array.from(gp.axes).map((a) => a.toFixed(1)).join(",")}`;
     if (edge(M.S)) input("S");
     if (edge(M.C)) input("C");
     if (edge(M.X)) input("X");
     if (edge(M.T)) triDown();
-    if (!down(M.T) && padPrev[M.T]) triUp();
+    if (!down(M.T) && prev[M.T]) triUp();
     if (edge(M.L1)) { machine.st.l1 = true; $("btnL1").classList.add("latched"); machine.press("L1"); }
-    if (!down(M.L1) && padPrev[M.L1]) { machine.st.l1 = false; $("btnL1").classList.remove("latched"); }
+    if (!down(M.L1) && prev[M.L1]) { machine.st.l1 = false; $("btnL1").classList.remove("latched"); }
     if ((edge(M.L3) && down(M.R3)) || (edge(M.R3) && down(M.L3))) $("btnRage").click(); // L3+R3 — the real activation
     if (edge(M.SEL)) $("btnBrawl").click();
     if (edge(M.ST)) $("btnPause").click();
@@ -2509,7 +2543,7 @@
     }
     const zoom = (gp.buttons[M.L2] ? gp.buttons[M.L2].value : 0) - (gp.buttons[M.R2] ? gp.buttons[M.R2].value : 0);
     if (zoom) userDist = Math.max(1.2, Math.min(26, userDist + zoom * wallDt * 10));
-    for (let i = 0; i < gp.buttons.length; i++) padPrev[i] = down(i);
+    for (let i = 0; i < gp.buttons.length; i++) prev[i] = down(i);
   }
 
   // sliders
