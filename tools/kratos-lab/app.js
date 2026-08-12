@@ -1467,24 +1467,26 @@
     // OFF via Fx.applyMaterial (DEC-01). Shown only while attacking (the frames
     // whose blade sweep the game tests for hits).
     if (window.__hitbox && (hitboxHist.length || ringHist.length)) {
-      const hitV = [];
-      // CHARACTER-ANCHORED reach envelope: one ground circle per sample, centered
-      // on Kratos, radius = the live blade-tip distance (REAL track). The union
-      // over a swing shows the melee reach around the CHARACTER — the anchoring
-      // the decoded Concussion data proved (never weapon-attached shapes).
+      const hitV = [], hitFillV = [];
+      // CHARACTER-ANCHORED reach display: per sample, a FILLED translucent sector
+      // wedge (center → the blade tip's ±15° arc, at its height) plus a brighter
+      // rim line at the reach boundary. Overlapping wedges layer into a coverage
+      // heat-fill — the union over the swing = the move's TRUE hit area (the
+      // melee filter is the sweep). Targets outside the fill are not hit.
       for (const e of hitboxHist) {
         const fade = Math.max(0, 1 - e.age / HITBOX_LINGER); // per-vertex alpha → soft decay
         const y = e.y !== undefined ? e.y : 0.3; // at the tip's HEIGHT (launchers climb, sweeps hug the ground)
-        // SECTOR arc (±15°) at the tip's azimuth — only where the blade actually
-        // is: the union over the swing = the move's TRUE angular coverage (the
-        // melee filter). Targets outside the painted sectors are not hit.
-        const HALF = 0.26, SEG = 6;
+        const HALF = 0.26, SEG = 6, fillA = fade * 0.16;
         for (let s = 0; s < SEG; s++) {
           const a0 = e.ang - HALF + (s / SEG) * 2 * HALF, a1 = e.ang - HALF + ((s + 1) / SEG) * 2 * HALF;
-          hitV.push(
-            e.cx + Math.cos(a0) * e.r, y, e.cz + Math.sin(a0) * e.r, 0.5, 0.5, fade,
-            e.cx + Math.cos(a1) * e.r, y, e.cz + Math.sin(a1) * e.r, 0.5, 0.5, fade,
+          const x0 = e.cx + Math.cos(a0) * e.r, z0 = e.cz + Math.sin(a0) * e.r;
+          const x1 = e.cx + Math.cos(a1) * e.r, z1 = e.cz + Math.sin(a1) * e.r;
+          hitFillV.push(
+            e.cx, y, e.cz, 0.5, 0.5, fillA,
+            x0, y, z0, 0.5, 0.5, fillA,
+            x1, y, z1, 0.5, 0.5, fillA,
           );
+          hitV.push(x0, y, z0, 0.5, 0.5, fade, x1, y, z1, 0.5, 0.5, fade);
         }
       }
       // concussion rings: flat ground circles at the AUTHORED radius (meters × the
@@ -1494,8 +1496,16 @@
         const t = Math.min(1, r.age / r.durTicks);
         const rad = (r.s + (r.e - r.s) * t) * Chain.METERS_TO_WORLD;
         const fade = r.age <= r.durTicks ? 1 : Math.max(0, 1 - (r.age - r.durTicks) / (HITBOX_LINGER * 3));
-        const N = 48, y = 0.3;
-        // double-stroked circle (outer + inner line) so the authored radius reads clearly
+        const N = 48, y = 0.3, fillA = fade * 0.2;
+        // FILLED disc (hero concussions are Angle=0 = full 360°) + double-stroked rim
+        for (let s = 0; s < N; s++) {
+          const a0 = (s / N) * Math.PI * 2, a1 = ((s + 1) / N) * Math.PI * 2;
+          hitFillV.push(
+            r.cx, y, r.cz, 0.5, 0.5, fillA,
+            r.cx + Math.cos(a0) * rad, y, r.cz + Math.sin(a0) * rad, 0.5, 0.5, fillA,
+            r.cx + Math.cos(a1) * rad, y, r.cz + Math.sin(a1) * rad, 0.5, 0.5, fillA,
+          );
+        }
         for (const rr of [rad, rad - 0.7]) {
           for (let s = 0; s < N; s++) {
             const a0 = (s / N) * Math.PI * 2, a1 = ((s + 1) / N) * Math.PI * 2;
@@ -1506,7 +1516,7 @@
           }
         }
       }
-      if (hitV.length) {
+      if (hitV.length || hitFillV.length) {
         // "usual" alpha blend (not additive): additive red over the BRIGHT arena
         // floor washed out to invisible pink — alpha-blended solid red reads on
         // any background. Depth-write stays off (overlay).
@@ -1518,8 +1528,14 @@
         gl.uniform3fv(fxLocs.uMaterialColor, [1, 0.1, 0.1]);
         gl.uniform4fv(fxLocs.uLayerColor, [1, 1, 1, 0.85]);
         gl.bindTexture(gl.TEXTURE_2D, whiteTex);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(hitV), gl.DYNAMIC_DRAW);
-        gl.drawArrays(gl.LINES, 0, hitV.length / 6);
+        if (hitFillV.length) { // translucent sector/disc fills under the rims
+          gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(hitFillV), gl.DYNAMIC_DRAW);
+          gl.drawArrays(gl.TRIANGLES, 0, hitFillV.length / 6);
+        }
+        if (hitV.length) {     // bright rim lines on top
+          gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(hitV), gl.DYNAMIC_DRAW);
+          gl.drawArrays(gl.LINES, 0, hitV.length / 6);
+        }
       }
     }
     // EMBER_UV: the bright gold corner of the swoosh decal — sparks sample ONLY this
