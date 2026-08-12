@@ -453,6 +453,15 @@
   // heat-ramp colors sample regardless, Phase-5 GS dump confirms placement.]
   const chainlinkTex = fxTexFromMat(matDb.byName.MAT_chainlink, { wrapS: gl.REPEAT, wrapT: gl.CLAMP_TO_EDGE });
   const chainglowTex = fxTexFromMat(matDb.byName.MAT_chainglow, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE });
+  // RAGE OF THE GODS variants — the WAD ships REAL god-mode FX assets
+  // (MAT/GFX/PAL_godchainlink, godchainglow, godswordtrail); the RAGE toggle
+  // swaps the whole mat+texture set (decoded blend modes/colors included).
+  const godChainlinkTex = matDb.byName.MAT_godchainlink
+    ? fxTexFromMat(matDb.byName.MAT_godchainlink, { wrapS: gl.REPEAT, wrapT: gl.CLAMP_TO_EDGE }) : null;
+  const godChainglowTex = matDb.byName.MAT_godchainglow
+    ? fxTexFromMat(matDb.byName.MAT_godchainglow, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE }) : null;
+  const godTrailTex = matDb.byName.MAT_godswordtrail
+    ? fxTexFromMat(matDb.byName.MAT_godswordtrail, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE }) : null;
 
   // FIRE-01 fire billboard sprite (WARNING-4 resolution): attempt the decoded
   // MAT_pticleMat texture FIRST. MAT_pticleMat has layerCount 1 but exposes NO layer
@@ -503,6 +512,7 @@
     // the feathered amber gradient + ember speckle; black = transparent under the
     // additive blend). vT.z is the per-row age fade (1 fresh -> 0 old).
     uniform float uTrailRamp;
+    uniform float uTrailAlpha; // REAL Trail Tint A (0.8) / God Mode Trail Tint A (1.0, Rage)
     // CHAIN-03 combat-gated glow brightness (D-05, A2). When uGlowGain > 0 this is
     // the alpha-over-1.0 chainglow premult branch (CLAUDE.md Part 1): output the
     // DECODED glow texel rgb premultiplied by (alpha128 * uGlowGain) with alpha 0,
@@ -552,9 +562,10 @@
         // veil persists across the whole sweep). All colors remain real texels.
         vec3 tex = texture2D(uTex, vec2(min(vT.y / 0.87, 1.0), mix(0.75, 1.0, vT.x))).rgb;
         float edgeFade = 1.0 - smoothstep(0.87, 1.0, vT.y);
-        // Alpha holds the REAL 0.8 through the sweep; the age term only DISSOLVES
-        // rows over their last 30% of life (the post-swing fade-out).
-        float a = 0.8 * min(vT.z / 0.3, 1.0);
+        // Alpha holds the REAL Trail Tint A through the sweep (uTrailAlpha: 0.8
+        // normal / 1.0 Rage — both decoded); the age term only DISSOLVES rows
+        // over their last 30% of life (the post-swing fade-out).
+        float a = uTrailAlpha * min(vT.z / 0.3, 1.0);
         gl_FragColor = vec4(tex * 2.2 * edgeFade, a);
         return;
       }
@@ -571,6 +582,7 @@
     uLayerColor: gl.getUniformLocation(fxProg, "uLayerColor"),
     uCutoff: gl.getUniformLocation(fxProg, "uCutoff"),
     uTrailRamp: gl.getUniformLocation(fxProg, "uTrailRamp"),
+    uTrailAlpha: gl.getUniformLocation(fxProg, "uTrailAlpha"),
     uGlowGain: gl.getUniformLocation(fxProg, "uGlowGain"),
   };
   const fxBuf = gl.createBuffer();
@@ -1365,8 +1377,10 @@
       gl.uniform1f(fxLocs.uTrailRamp, 0.0);
 
       // PASS 1 — links: real decoded state = usual alpha blend + depth-write ON
-      // (MAT_chainlink 0x44010080). The ONLY pass that uploads.
-      const matL = matDb.byName.MAT_chainlink;
+      // (MAT_chainlink 0x44010080). The ONLY pass that uploads. RAGE swaps the
+      // whole decoded god-mode mat+texture set (REAL assets).
+      const rage = machine.st.rage && godChainlinkTex && godChainglowTex;
+      const matL = rage ? matDb.byName.MAT_godchainlink : matDb.byName.MAT_chainlink;
       Fx.applyMaterial(gl, matL);
       fxLog.push({ name: matL.name, mode: matL.mode, depthWrite: !matL.disableDepthWrite });
       // __fxBright (debug): overbright the dark metal so the segmented link
@@ -1375,7 +1389,7 @@
       gl.uniform3fv(fxLocs.uMaterialColor, window.__fxBright ? [8, 8, 8] : matL.materialColor);
       gl.uniform4fv(fxLocs.uLayerColor, matL.blendColor);
       gl.uniform1f(fxLocs.uCutoff, 0.35); // INFERRED cutout threshold (02-RESEARCH A3)
-      gl.bindTexture(gl.TEXTURE_2D, chainlinkTex);
+      gl.bindTexture(gl.TEXTURE_2D, rage ? godChainlinkTex : chainlinkTex);
       gl.bufferData(gl.ARRAY_BUFFER, chainVerts, gl.DYNAMIC_DRAW);
       gl.drawArrays(gl.TRIANGLES, 0, chainVertCount);
 
@@ -1410,7 +1424,7 @@
       // assert-on-unknown contract still holds (DEC-01 — no hardcoded blendFunc here;
       // the blend switch lives ONLY in fx.js). depthWrite OFF as the decoded additive
       // glow always was.
-      const matG = matDb.byName.MAT_chainglow;
+      const matG = rage ? matDb.byName.MAT_godchainglow : matDb.byName.MAT_chainglow;
       const glowGL = { name: matG.name, mode: "additivePremult", disableDepthWrite: true };
       Fx.applyMaterial(gl, glowGL);
       fxLog.push({ name: glowGL.name, mode: glowGL.mode, depthWrite: !glowGL.disableDepthWrite, glowGain: glowGainNow });
@@ -1418,7 +1432,7 @@
       gl.uniform4fv(fxLocs.uLayerColor, matG.blendColor); // identity RGBA
       gl.uniform1f(fxLocs.uCutoff, 0.0); // additive: alpha ≡ texel, no cutout
       gl.uniform1f(fxLocs.uGlowGain, glowGainNow); // >0 activates the premult branch; combat-gated
-      gl.bindTexture(gl.TEXTURE_2D, chainglowTex);
+      gl.bindTexture(gl.TEXTURE_2D, rage ? godChainglowTex : chainglowTex);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(glowV), gl.DYNAMIC_DRAW); // REAL-ratio halo ribbon
       gl.drawArrays(gl.TRIANGLES, 0, glowV.length / 6);
       // Restore the glow flag OFF so the trail pass (same fxProg) is unaffected by the
@@ -1427,8 +1441,11 @@
     }
     if (trailV.length) {
       // MAT_swordtrail decodes additive + depth-write OFF (0x48090080) — the
-      // former hardcoded guess, now data-confirmed.
-      const mat = matDb.byName.MAT_swordtrail;
+      // former hardcoded guess, now data-confirmed. RAGE swaps to the REAL
+      // god-mode trail (MAT/GFX_godswordtrail) with the REAL God Mode Trail
+      // Tint alpha (L1: 1,1,1,1 → alpha 1.0 vs the normal 0.8).
+      const rageT = machine.st.rage && godTrailTex;
+      const mat = rageT ? matDb.byName.MAT_godswordtrail : matDb.byName.MAT_swordtrail;
       Fx.applyMaterial(gl, mat);
       fxLog.push({ name: mat.name, mode: mat.mode, depthWrite: !mat.disableDepthWrite });
       gl.uniform3fv(fxLocs.uMaterialColor, mat.materialColor);
@@ -1448,7 +1465,8 @@
       // drives the impact/trail SPARKS in simStep; the sheet itself is pure decoded texels.
       gl.uniform1f(fxLocs.uTrailRamp, 1.0);
       gl.uniform1f(fxLocs.uGlowGain, 0.0); // glow premult OFF for the trail (no bleed, T-06-07-01)
-      gl.bindTexture(gl.TEXTURE_2D, trailTex);
+      gl.uniform1f(fxLocs.uTrailAlpha, rageT ? 1.0 : 0.8); // REAL Trail Tint A / God Mode Trail Tint A
+      gl.bindTexture(gl.TEXTURE_2D, rageT ? godTrailTex : trailTex);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(trailV), gl.DYNAMIC_DRAW);
       gl.drawArrays(gl.TRIANGLES, 0, trailV.length / 6);
     }
