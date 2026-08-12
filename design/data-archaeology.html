@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GoW1 Data Archaeology — how the numbers were dug up</title>
+<style>
+  body { background:#0d0b09; color:#e8ddcb; font-family: Georgia, serif; max-width: 820px; margin: 0 auto; padding: 48px 24px; line-height: 1.65; }
+  h1 { color:#c9a24b; letter-spacing: 3px; text-transform: uppercase; font-size: 24px; font-weight: normal; }
+  h2 { color:#c9a24b; font-size: 18px; font-weight: normal; margin-top: 36px; }
+  a { color:#e6a94b; }
+  code, pre { background:#1e1813; border-radius:3px; font-size:13px; font-family: Consolas, monospace; }
+  code { padding:1px 5px; }
+  pre { padding:12px 14px; overflow-x:auto; }
+  table { border-collapse: collapse; font-size:14px; margin: 12px 0; }
+  td, th { border:1px solid #33291f; padding:5px 10px; text-align:left; }
+  th { color:#c9a24b; font-weight:normal; }
+  .real { color:#7ec786; } .inf { color:#7fa0c9; } .dead { color:#a06a6a; }
+  .note { font-size:13px; color:#8a7d6a; border-left:3px solid #b3202a; padding-left:12px; }
+</style>
+</head>
+<body>
+<h1>Data Archaeology</h1>
+<p>How the numbers behind the <a href="../tools/kratos-lab/">kratos-lab</a> were
+dug out of the God of War (2005) disc: the finds, the dead ends, and the
+techniques. Everything below is tagged <span class="real">real</span> (decoded
+bytes), <span class="inf">inferred</span> (a model or interpretation), or
+<span class="dead">dead end</span> (proven absent).</p>
+
+<h2>The TWK tweak system</h2>
+<p>The game's designer parameters live in a tree format inside
+<code>part1.pak</code>: magic <code>0xFEDCBA98</code>, nested named directories,
+and data records keyed by a 32-bit hash of the parameter name —
+<code>h = h·127 + c</code> per character (from mogaika's
+<code>god_of_war_browser</code>). Names are hashed away, but the hash is weak:
+we cracked <b>680 of 1,408</b> unique keys by hashing every string in the game
+executable (plus <code>%d</code>-numbered forms), and two stronger techniques:</p>
+<ul>
+<li><b>Suffix extension with modular inversion</b> — 127 is odd, so
+<code>prefixHash = (h − H(S)) · 127<sup>−len(S)</sup> mod 2<sup>32</sup></code>
+is exact: guess a suffix, solve for the prefix, look it up. This named
+<code>Angle&nbsp;Offset</code>, <code>Scale/Offset&nbsp;X/Y/Z</code>,
+<code>Hit&nbsp;Sound&nbsp;1–6</code>, <code>Template&nbsp;0–19</code> and more —
+each corroborated by consecutive-hash families that cannot collide by chance.</li>
+<li><b>Pair-delta analysis</b> — 504 per-animation records pair up with a
+constant hash difference <code>0x75B55A5</code>. That delta has exactly one
+vocabulary solution: the suffixes <code>" Tween"</code> / <code>" Cycle"</code>
+(values fit: 0.025–0.3&nbsp;s transition blends). The base names are
+designer-tool strings that never shipped. <span class="inf">semantically
+identified, individually unrecoverable</span></li>
+</ul>
+<p>All 78 decoded instances are browsable as
+<a href="twk/index.html">.twk sheets</a>.</p>
+
+<h2>Root motion: the hidden controller channel</h2>
+<p>The skeleton is authored fully in place — the root joint never translates,
+and even the run cycle has zero locomotion in any joint.
+<span class="dead">no joint-based root motion</span> But each attack's ANM act
+carries an unread <b>type-5 datatype</b> whose state holds per-frame floats for
+the pelvis <i>plus component 422</i>: a cumulative 1-D displacement scalar,
+baked at 30&nbsp;Hz. <span class="real">the engine's character-controller
+track</span></p>
+<table>
+<tr><th>Move</th><th>Movement</th><th>Move</th><th>Movement</th></tr>
+<tr><td>combo3A</td><td>1.74 m</td><td>combo4C</td><td>4.43 m</td></tr>
+<tr><td>combo3B</td><td>2.59 m</td><td>comboLR2</td><td>1.57 m</td></tr>
+<tr><td>combo3E</td><td>4.35 m</td><td>comboLR3 (Plume)</td><td>2.91 m</td></tr>
+<tr><td>combo3F</td><td>5.26 m</td><td>blockSlam</td><td>0.35 m</td></tr>
+</table>
+<p class="note">The wind-up excursions that made naive pelvis integration slide
+backward are pose choreography over the planted root — three failed models
+taught us that before the real channel surfaced.</p>
+
+<h2>Hit volumes: hand-authored, not the weapon</h2>
+<p>The big attacks don't test the blade at all.
+<code>/TweakTemplates/Concussion/</code> instances are <i>named per attack</i>
+("BF&nbsp;Plume&nbsp;C", "Hero&nbsp;Impale1") and carry the authored AoE:
+Start/End radius in meters, duration, packed damage, and knockback impulse
+vectors — anchored at the character (<code>zeroJoint</code>), with a paired
+"F" template sized for the <i>visual</i> ring (always bigger than the hit).
+<span class="real">Plume: 2.0&nbsp;m hit, 4.5&nbsp;m flash</span></p>
+<p>The <code>Angle</code> field authors the fairness asymmetry directly:
+every hero concussion is <b>0 = full 360°</b>, while enemy attacks are
+<b>30–45° cones</b> you can dodge around.</p>
+<p>Melee swings resolve in engine code against the swept blade
+(<span class="dead">no per-frame hit-window data exists anywhere in the ANM —
+the 60&nbsp;Hz candidate tracks proved to be byte-identical exporter
+boilerplate on every act</span>).</p>
+
+<h2>The units bridge</h2>
+<p>Tweak values are meters; the mesh is not. Kratos' standing head-top measures
+≈28 mesh units, so at an assumed 2.0&nbsp;m tall, <b>1&nbsp;m ≈ 14 units</b>.
+Cross-validated two independent ways: chain-link pitch counted from footage
+(0.061 × height ≈ 1.71) matches the decoded Segment Length interleaved
+(0.25/2 × 14 = 1.75), and the decoded Link Diameter lands on the square-texel
+rule within 4%. <span class="inf">bridge</span> <span class="real">both
+anchors</span></p>
+
+<h2>Assorted finds</h2>
+<table>
+<tr><th>Find</th><th>Where</th><th>Status</th></tr>
+<tr><td>Trail swoosh is a one-shot painted decal (ramp + rib striations)</td><td>GFX_swordtrail</td><td class="real">real</td></tr>
+<tr><td>Trail Tint (1,1,1,0.8); God Mode (Rage) 1.0, RED at weapon L4–5</td><td>/Player/ Weapon Levels</td><td class="real">real</td></tr>
+<tr><td>Chain: Segment Length 0.25, Link Ø 0.13, Glow Ø 0.18</td><td>/Player/</td><td class="real">real</td></tr>
+<tr><td>God-mode FX set (chain, glow, trail) + stage-5 blade skins</td><td>weapon WAD</td><td class="real">real</td></tr>
+<tr><td>Impact flash sprite (radial burst)</td><td>GFX_flasher03</td><td class="real">real</td></tr>
+<tr><td>Fire gravity −43.64 u/s² (identical across both fire systems)</td><td>PTC_BFTpart1/2</td><td class="real">value real, reading inferred</td></tr>
+<tr><td>Costume 0–5 gameplay table (reach, damage, orb mults)</td><td>/Player/</td><td class="real">real</td></tr>
+<tr><td>"Nominal Particles 36" belongs to the blood emitter, not fire</td><td>/GlobGame/ ("goBloodSpot")</td><td class="dead">reassigned</td></tr>
+<tr><td>Queue/branch/cancel windows</td><td>engine code only</td><td class="dead">no data; modeled</td></tr>
+</table>
+
+<p><a href="../">&larr; back</a> · <a href="twk/index.html">the decoded sheets</a> ·
+<a href="https://github.com/AtomechLLC/god-of-war-chains-demo">source</a></p>
+</body>
+</html>
