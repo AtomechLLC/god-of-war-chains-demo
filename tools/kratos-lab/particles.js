@@ -42,11 +42,12 @@ const Particles = (() => {
   const len3 = (a) => Math.hypot(a[0], a[1], a[2]);
   const norm = (a) => { const l = len3(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
 
-  // INFERRED gravity: a gentle downward drift on hot embers (world units / s²).
-  // The SIGN is what the sim needs (particles settle after the initial upward
-  // emission); the magnitude is footage-tunable in Phase 7. No decoded gravity
-  // field exists — this is a labeled INFERRED constant.
-  const G = [0, -9.8, 0];
+  // Gravity: -43.64 world units/s² (≈3.1 m/s² on the meters bridge) — the value
+  // DECODED from PTC_BFTpart1/2 +0x1e4, byte-identical across BOTH blade-fire
+  // particle systems (other systems carry different per-system values at the
+  // same field: BGT -51.8/-69.2, FXCF -54.8 — a real per-system parameter).
+  // Reading that field AS gravity is the INFERRED part; the magnitude is real.
+  const G = [0, -43.64, 0];
   const EPS = 1e-6;   // |velocity| below which stretchAxis falls back to camUp
 
   const finite3 = (v) =>

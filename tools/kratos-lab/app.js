@@ -490,6 +490,19 @@
     return makeTex(img);
   })();
   let weaponLevel = 1; // 1 or 5
+  // REAL decoded /Player/ Costume 0-5 table (all values from part1.pak uid 273).
+  // wl = "Weapon Length" (gameplay reach; sits among the pure gameplay mults),
+  // dmg = Damage Mult, orb = Weapon Orb Mult. The lab applies wl as the reach
+  // multiplier on the hit display (interpretation INFERRED; values REAL).
+  const COSTUMES = [
+    { wl: 0.7, dmg: 1, orb: 1 },   // Costume 0 (default Kratos)
+    { wl: 0.6, dmg: 1, orb: 1 },
+    { wl: 0.9, dmg: 0.5, orb: 1 },
+    { wl: 0.3, dmg: 2, orb: 4 },
+    { wl: 0.35, dmg: 0.5, orb: 2 },
+    { wl: 0.7, dmg: 2, orb: 2 },
+  ];
+  let costumeIdx = 0;
 
   // FIRE-01 fire billboard sprite (WARNING-4 resolution): attempt the decoded
   // MAT_pticleMat texture FIRST. MAT_pticleMat has layerCount 1 but exposes NO layer
@@ -2070,6 +2083,13 @@
     $("btnWpnLv").textContent = `Weapon Lv ${weaponLevel}`;
     $("btnWpnLv").classList.toggle("latched", weaponLevel >= 5);
   });
+  $("btnCostume").addEventListener("click", () => {
+    costumeIdx = (costumeIdx + 1) % COSTUMES.length;
+    const cs = COSTUMES[costumeIdx];
+    $("btnCostume").textContent = `Costume ${costumeIdx}`;
+    $("btnCostume").classList.toggle("latched", costumeIdx > 0);
+    log(`👕 Costume ${costumeIdx}: reach ${cs.wl} · dmg ×${cs.dmg} · orbs ×${cs.orb} (REAL /Player/ table)`);
+  });
   $("btnRootMo").addEventListener("click", () => {
     rootMotion.on = !rootMotion.on;
     rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0; // return home on toggle
@@ -2452,8 +2472,11 @@
               // (the engine tests the blade path), so the display paints only the
               // sector the blade actually covers: spins fill the circle, forward
               // combos show their true frontal arc, launchers climb at height.
+              // reach scaled by the ACTIVE costume's REAL Weapon Length relative to
+              // the default (0.7) — Tycoonius-style short/long reach trade-offs
+              const reachK = COSTUMES[costumeIdx].wl / COSTUMES[0].wl;
               hitboxHist.push({ key, cx: pcx, cz: pcz, y: Math.max(0.3, tip[1]),
-                r: Math.hypot(tip[0] - pcx, tip[2] - pcz),
+                r: Math.hypot(tip[0] - pcx, tip[2] - pcz) * reachK,
                 ang: Math.atan2(tip[2] - pcz, tip[0] - pcx), age: 0 });
             }
             // hand = the grip/chain anchor at this sample — the trail sheet is swept by
