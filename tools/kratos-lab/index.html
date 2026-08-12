@@ -50,18 +50,24 @@
         <button class="btn rage-btn" id="btnRage">RAGE OF THE GODS</button>
       </div>
       <div class="shoulders" style="margin-top:6px">
-        <button class="btn mod-btn" id="btnAutoplay" title="Loop a scripted combo so the chain/glow/trail FX play hands-free">&#9654; Autoplay</button>
-        <button class="btn mod-btn" id="btnFxOnly" title="Render the FX (chain, glow, trail) alone against black to inspect them">FX only</button>
-        <button class="btn mod-btn latched" id="btnArena" title="Meter-grid arena: 1 m cells, heavy line every 4 m (bridge: Kratos &#8776; 2.0 m = 28 mesh units)">Arena</button>
-        <button class="btn mod-btn latched" id="btnRootMo" title="REAL decoded controller movement (ANM type-5 comp 422): each attack's cumulative displacement scalar — combo3A 1.74 m &#8230; combo3F 5.26 m, Plume 2.9 m. Amounts/timing real; axis -Z (user-verified facing). Teleports home past 2 big squares (8 m).">Root motion</button>
-        <button class="btn mod-btn" id="btnWpnLv" title="Swap the blades between the REAL stage-1 and stage-5 skins (WAD GFX_stage1Btx / GFX_stage5Btx). During Rage, applies the level's REAL God Mode Trail Tint: white at L1-3, RED at L4-5 (decoded /Player/ Weapon Level tree).">Weapon Lv 1</button>
-        <button class="btn mod-btn" id="btnCostume" title="Cycle the REAL decoded Costume 0-5 gameplay table (/Player/): Weapon Length (reach), Damage Mult, Weapon Orb Mult. The hit display's reach scales by the costume's Weapon Length vs the default 0.7 (values real; reach interpretation inferred).">Costume 0</button>
+        <span class="grp-label">view</span>
+        <button class="btn mod-btn" id="btnFxOnly" title="Render the FX (chain, glow, trail) alone against black — see Data Archaeology for provenance">FX only</button>
+        <button class="btn mod-btn latched" id="btnArena" title="Meter-grid arena: 1 m cells, heavy line every 4 m (Kratos &#8776; 2.0 m)">Arena</button>
+        <button class="btn mod-btn" id="btnHitbox" title="Swept hit-volume display: red = melee reach sectors (real blade track), cylinders = authored concussion AoEs">Hitboxes</button>
+        <button class="btn mod-btn latched" id="btnFollow" title="Camera orbit center follows Kratos (root-motion travel stays framed). Off = fixed-origin orbit.">Follow</button>
       </div>
       <div class="shoulders" style="margin-top:6px">
-        <button class="btn mod-btn" id="btnPause" title="Freeze the sim on the current frame (render keeps running, so you can screenshot). Click again to resume.">&#10073;&#10073; Pause</button>
-        <button class="btn mod-btn" id="btnStep" title="Advance exactly one 1/60s sim frame (use while paused for frame-by-frame capture)">&#8677; Frame</button>
-        <button class="btn mod-btn" id="btnSlow" title="Slow-motion (5×). Click again for realtime.">&#189;&#215; Slo-mo</button>
-        <button class="btn mod-btn" id="btnHitbox" title="Show the attack hit volumes: capsules along each blade's REAL decoded track (type-10), radius from the REAL Blade Collision Tolerance 0.5 m (radius interpretation INFERRED). Active window = attacking frames (VERIFIED: no per-frame hit-window data exists in the ANM — the 60 Hz tracks are constant boilerplate; windows are engine code).">Hitboxes</button>
+        <span class="grp-label">sim</span>
+        <button class="btn mod-btn latched" id="btnRootMo" title="REAL decoded per-attack movement (ANM comp-422 channel: combo3A 1.74 m &#8230; combo3F 5.26 m). Teleports home past 8 m.">Root motion</button>
+        <button class="btn mod-btn" id="btnWpnLv" title="Swap between the REAL stage-1 and stage-5 blade skins; L5 Rage uses the decoded RED God Mode Trail Tint">Weapon Lv 1</button>
+        <button class="btn mod-btn" id="btnCostume" title="Cycle the REAL decoded Costume 0-5 table: reach (Weapon Length), damage &amp; orb multipliers">Costume 0</button>
+      </div>
+      <div class="shoulders" style="margin-top:6px">
+        <span class="grp-label">capture</span>
+        <button class="btn mod-btn" id="btnAutoplay" title="Loop a scripted combo hands-free">&#9654; Autoplay</button>
+        <button class="btn mod-btn" id="btnPause" title="Freeze the sim (render keeps running). Click again to resume.">&#10073;&#10073; Pause</button>
+        <button class="btn mod-btn" id="btnStep" title="Advance exactly one 1/60s sim frame">&#8677; Frame</button>
+        <button class="btn mod-btn" id="btnSlow" title="Slow-motion (5&#215;). Click again for realtime.">&#189;&#215; Slo-mo</button>
       </div>
       <div class="diamond">
         <div class="slot"></div>
@@ -145,14 +151,14 @@
   <span>press <kbd>N</kbd> &mdash; native-res 512&times;448 toggle</span>
 </footer>
 
-<script src="parsers.js?v=98"></script>
-<script src="fxparse.js?v=98"></script>
-<script src="fx.js?v=98"></script>
-<script src="loop.js?v=98"></script>
-<script src="chain.js?v=98"></script>
-<script src="particles.js?v=98"></script>
-<script src="anim.js?v=98"></script>
-<script src="combat.js?v=98"></script>
-<script src="app.js?v=98"></script>
+<script src="parsers.js?v=99"></script>
+<script src="fxparse.js?v=99"></script>
+<script src="fx.js?v=99"></script>
+<script src="loop.js?v=99"></script>
+<script src="chain.js?v=99"></script>
+<script src="particles.js?v=99"></script>
+<script src="anim.js?v=99"></script>
+<script src="combat.js?v=99"></script>
+<script src="app.js?v=99"></script>
 </body>
 </html>

@@ -959,6 +959,11 @@
   // start zoomed out (full figure + blade-path + arena); user wheel-zooms freely.
   // Camera distance is USER-CONTROLLED ONLY — no auto-frame (see renderFrame).
   let yaw = 0.6, pitch = 0.15, dist = 14.0, userDist = 14.0, drag = null, autoSpin = true;
+  // FOLLOW camera (btnFollow, default ON): the orbit center tracks Kratos in
+  // display space, so real root-motion travel stays framed. OFF = the classic
+  // fixed-origin orbit. Smoothed toward the pelvis each rendered frame.
+  let followCam = true;
+  const camTgt = [0, 0, 0], camTgtGoal = [0, 0, 0];
   canvas.addEventListener("mousedown", (e) => { drag = [e.clientX, e.clientY]; autoSpin = false; });
   window.addEventListener("mouseup", () => (drag = null));
   window.addEventListener("mousemove", (e) => {
@@ -1746,10 +1751,20 @@
       `move ${machine.st.current}   dist ${dist.toFixed(1)}\n` +
       `hero ${window.__fxOnly ? "HIDDEN (FX-only)" : "drawn"}   native ${nativeRes ? "ON" : "off"}   pool ${fxPool.count}`;
     const rot = M.mul(M.rotX(pitch), M.rotY(yaw));
+    // follow target: Kratos' pelvis in display space ((mesh − ctr) × scale);
+    // eased so the camera glides after him rather than hard-locking
+    if (followCam && skin && skin.lastWorld && JID.pelvis !== undefined) {
+      const pj = JID.pelvis * 16;
+      camTgtGoal[0] = (skin.lastWorld[pj + 12] - mesh.ctr[0]) * s0;
+      camTgtGoal[2] = (skin.lastWorld[pj + 14] - mesh.ctr[2]) * s0;
+    } else { camTgtGoal[0] = 0; camTgtGoal[2] = 0; }
+    const camK = Math.min(1, wallDt * 6);
+    camTgt[0] += (camTgtGoal[0] - camTgt[0]) * camK;
+    camTgt[2] += (camTgtGoal[2] - camTgt[2]) * camK;
     // view = camera transform (world→view); its row-0/row-1 give the world-space
     // camera right/up the billboard pool needs (drawPool). Split out of the mvp
     // compose so drawFx can hand it to drawPool.
-    const view = M.mul(M.trans(0, 0, -dist), rot);
+    const view = M.mul(M.mul(M.trans(0, 0, -dist), rot), M.trans(-camTgt[0], 0, -camTgt[2]));
     // native pass projects at the 4:3 DISPLAY aspect (non-square GS pixels) —
     // NOT the 512/448 storage aspect (02-RESEARCH A2)
     const mvp = M.mul(M.persp(0.9, nativeRes ? NATIVE.displayAspect : w / h, 0.05, 50), view);
@@ -2010,7 +2025,20 @@
 
   // ---------- inputs --------------------------------------------------------
   const pressBtn = (id) => { const el = $(id); el.classList.add("pressed"); setTimeout(() => el.classList.remove("pressed"), 110); };
+  // first-run demo: autoplay runs on page load until the visitor presses any
+  // attack input themselves (autoInput guards the automated presses from
+  // autoplay/combo-play so they don't stop their own demo)
+  let autoDemo = false, autoInput = false;
+  function stopDemo() {
+    if (!autoDemo) return;
+    autoDemo = false;
+    setAutoplay(null);
+    $("btnAutoplay").classList.remove("latched");
+    $("btnAutoplay").innerHTML = "&#9654; Autoplay";
+  }
+  function autoPress(key) { autoInput = true; input(key); autoInput = false; }
   function input(key) {
+    if (!autoInput) stopDemo();
     if (key === "S") pressBtn("btnS");
     if (key === "T") pressBtn("btnT");
     if (key === "C") pressBtn("btnC");
@@ -2041,7 +2069,7 @@
   function tickAutoplay() {
     if (!autoplay) return;
     if (autoplay.wait > 0) { autoplay.wait--; return; }
-    input(autoplay.seq[autoplay.i++ % autoplay.seq.length]);
+    autoPress(autoplay.seq[autoplay.i++ % autoplay.seq.length]);
     autoplay.wait = autoplay.gap; // sim steps between inputs (26 ≈ 0.43s @60Hz)
   }
 
@@ -2073,6 +2101,10 @@
   $("btnArena").addEventListener("click", () => {
     arenaOn = !arenaOn;
     $("btnArena").classList.toggle("latched", arenaOn);
+  });
+  $("btnFollow").addEventListener("click", () => {
+    followCam = !followCam;
+    $("btnFollow").classList.toggle("latched", followCam);
   });
   $("btnHitbox").addEventListener("click", () => {
     window.__hitbox = !window.__hitbox;
@@ -2229,6 +2261,7 @@
 
   function setComboPlay(on) {
     if (on === combo.playing || (on && !combo.seq.length)) return;
+    if (on) stopDemo(); // starting a user combo is taking control
     if (on && autoplay) { // mutual exclusion: combo play takes over from autoplay
       setAutoplay(null);
       $("btnAutoplay").classList.remove("latched");
@@ -2261,7 +2294,7 @@
     if (machine.isIdle()) {
       if (combo.wait > 0) { combo.wait--; return; }
       const before = st.current;
-      input(key);
+      autoPress(key);
       // no branch from this stance (e.g. ○ in rage idle): skip the entry so
       // playback can never deadlock on an impossible input
       if (st.current === before) log(`◦ combo skip: ${Combat.GLYPH[key].txt} (no branch from ${before})`);
@@ -2276,7 +2309,7 @@
     if (st.t / st.dur < Math.min(machine.windows.queue + 0.05, 0.95)) return;
     combo.pressed = true;
     const qBefore = st.queued;
-    input(key);
+    autoPress(key);
     if (st.queued && st.queued !== qBefore) { combo.idx++; renderComboSeq(); }
   }
 
@@ -2302,6 +2335,12 @@
   // ---------- main loop -----------------------------------------------------
   updateMoveCard();
   pushBranchBlock("idleCombat");
+  // first-run demo (usability): show the chains/trail/shockwave immediately on
+  // load; the first REAL input (pad/keyboard/combo play) takes control
+  autoDemo = true;
+  setAutoplay("mix");
+  $("btnAutoplay").classList.add("latched");
+  $("btnAutoplay").innerHTML = "&#10073;&#10073; Autoplay";
   status(`ready — ${mesh.verts.toLocaleString()} verts, ${clipsJson.clips.length} clips`);
   // Fixed-timestep sim (REND-03): everything time-authored — combat machine,
   // heat, pose, blade tracks, trail history, blend window — advances in exact
