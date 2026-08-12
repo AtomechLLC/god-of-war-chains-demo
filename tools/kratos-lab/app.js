@@ -957,13 +957,16 @@
   // from the blades. s/e = Start/End Radius in METERS, dur seconds, imp = Ground/Air
   // Impulse Away. The blade sweeps stay engine melee; these are the impact moves.
   // Move mapping (BF=base, 3F/7A=book enders) is INFERRED from the instance names.
+  // Each attack pairs a "C" (collision — the s/e/dur here) with an "F" template
+  // (fx: the authored VISUAL shockwave ring — different radii, always shown).
   const CONCUSSION = {
-    comboLR3: { s: 2.0, e: 2.0, dur: 0.1, imp: 500 },   // Plume of Prometheus (007 "BF Plume C")
-    combo3F:  { s: 2.75, e: 2.0, dur: 0.1, imp: 500 },  // 011 "3F Plume C"
-    combo7A:  { s: 2.5, e: 2.0, dur: 0.1, imp: 250 },   // 009 "7A Plume C"
-    airImpaleLand: { s: 4.0, e: 2.0, dur: 0.1, imp: 1000 }, // 013 "Hero Impale1"
+    comboLR3: { s: 2.0, e: 2.0, dur: 0.1, imp: 500, fx: { s: 4.5, e: 2.0, dur: 0.1 } },   // 007/008 "BF Plume C/F"
+    combo3F:  { s: 2.75, e: 2.0, dur: 0.1, imp: 500, fx: { s: 4.25, e: 2.0, dur: 0.1 } }, // 011/012 "3F Plume C/F"
+    combo7A:  { s: 2.5, e: 2.0, dur: 0.1, imp: 250, fx: { s: 3.5, e: 2.0, dur: 0.1 } },   // 009/010 "7A Plume C/F"
+    airImpaleLand: { s: 4.0, e: 2.0, dur: 0.1, imp: 1000, fx: { s: 0, e: 4.0, dur: 0.35 } }, // 013/015 "Hero Impale1/FX"
   };
-  const ringHist = []; // live concussion rings {cx,cz, s,e,durTicks, age}
+  const ringHist = []; // live concussion DEBUG rings {cx,cz, s,e,durTicks, age} (Hitboxes overlay)
+  const fxRings = [];  // live SHOCKWAVE visuals {cx,cz, s,e,durTicks, age} — REAL "F"-template radii/timing, always shown
   // Concussion TRIGGER TIME (derived from REAL data): the slam is where the move's
   // comp-422 controller displacement completes — first t reaching 90% of the clip's
   // net travel. (The hit-counter edge fires at move START, spawning the ring where
@@ -1492,6 +1495,44 @@
     // swordtrail texel (real bytes, INFERRED assignment). Per-particle rgb (the
     // BFT/BGT variant tint) is kept as-is (no tint override). Empty pool → drawPool
     // no-ops; fxState() stays clean.
+    // PLUME/IMPALE SHOCKWAVE — the authored "F"-template ring (REAL radii/timing
+    // from the decoded Concussion F pairs), rendered as an additive ground band in
+    // the decoded blade-glow amber. Always shown (a game visual, not the debug
+    // overlay); only the band LOOK is INFERRED (no decoded ring shader exists).
+    if (fxRings.length) {
+      const fxrV = [];
+      for (const r of fxRings) {
+        const t = Math.min(1, r.age / r.durTicks);
+        const rad = (r.s + (r.e - r.s) * t) * Chain.METERS_TO_WORLD;
+        if (rad < 0.5) continue;
+        const fade = r.age <= r.durTicks ? 1 : Math.max(0, 1 - (r.age - r.durTicks) / 14);
+        const inner = rad * 0.78, N = 40, y = 0.4;
+        for (let s = 0; s < N; s++) {
+          const a0 = (s / N) * Math.PI * 2, a1 = ((s + 1) / N) * Math.PI * 2;
+          const ox0 = Math.cos(a0), oz0 = Math.sin(a0), ox1 = Math.cos(a1), oz1 = Math.sin(a1);
+          fxrV.push(
+            r.cx + ox0 * inner, y, r.cz + oz0 * inner, 0.5, 0.5, fade,
+            r.cx + ox0 * rad, y, r.cz + oz0 * rad, 0.5, 0.5, fade,
+            r.cx + ox1 * rad, y, r.cz + oz1 * rad, 0.5, 0.5, fade,
+            r.cx + ox0 * inner, y, r.cz + oz0 * inner, 0.5, 0.5, fade,
+            r.cx + ox1 * rad, y, r.cz + oz1 * rad, 0.5, 0.5, fade,
+            r.cx + ox1 * inner, y, r.cz + oz1 * inner, 0.5, 0.5, fade,
+          );
+        }
+      }
+      if (fxrV.length) {
+        Fx.applyMaterial(gl, { name: "fxShockRing", mode: "additive", disableDepthWrite: true });
+        fxLog.push({ name: "fxShockRing", mode: "additive", depthWrite: false });
+        gl.uniform1f(fxLocs.uTrailRamp, 0);
+        gl.uniform1f(fxLocs.uGlowGain, 0);
+        gl.uniform1f(fxLocs.uCutoff, 0);
+        gl.uniform3fv(fxLocs.uMaterialColor, bladeLightL.color); // REAL decoded warm amber
+        gl.uniform4fv(fxLocs.uLayerColor, [1, 1, 1, 0.55]);
+        gl.bindTexture(gl.TEXTURE_2D, whiteTex);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(fxrV), gl.DYNAMIC_DRAW);
+        gl.drawArrays(gl.TRIANGLES, 0, fxrV.length / 6);
+      }
+    }
     // HITBOX overlay (btnHitbox): the game's weapon collision = the blade capsule
     // swept along the REAL type-10 track. Drawn as camera-facing octagon hoops
     // along hilt→tip; radius = Blade Collision Tolerance (REAL 0.5, read as
@@ -2280,6 +2321,8 @@
         while (hitboxHist.length && hitboxHist[0].age > HITBOX_LINGER) hitboxHist.shift();
         for (const r of ringHist) r.age++;
         while (ringHist.length && ringHist[0].age > ringHist[0].durTicks + HITBOX_LINGER * 3) ringHist.shift();
+        for (const r of fxRings) r.age++;
+        while (fxRings.length && fxRings[0].age > fxRings[0].durTicks + 14) fxRings.shift();
         // FIRE-02: edge-detect the landed-hit counter ONCE per tick (combat.js start()
         // increments st.hits on each non-idle move, combat.js:172). A change since last
         // tick is a new hit → burst impact sparks off the blade (below). prevHits advances
@@ -2294,8 +2337,10 @@
           const tStar = concussionTime(machine.st.current);
           if (machine.st.t >= tStar && machine.st.t - STEP < tStar) {
             const pj = (JID.pelvis !== undefined ? JID.pelvis : 0) * 16;
-            ringHist.push({ cx: skin.lastWorld[pj + 12], cz: skin.lastWorld[pj + 14],
-              s: cd.s, e: cd.e, durTicks: Math.max(1, Math.round(cd.dur * 60)), age: 0 });
+            const cx = skin.lastWorld[pj + 12], cz = skin.lastWorld[pj + 14];
+            ringHist.push({ cx, cz, s: cd.s, e: cd.e, durTicks: Math.max(1, Math.round(cd.dur * 60)), age: 0 });
+            if (cd.fx) fxRings.push({ cx, cz, s: cd.fx.s, e: cd.fx.e,
+              durTicks: Math.max(1, Math.round(cd.fx.dur * 60)), age: 0 }); // authored shockwave visual
           }
         }
         // copy before offsetting — bladePos may return a shared internal buffer
