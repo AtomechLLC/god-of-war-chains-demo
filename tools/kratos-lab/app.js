@@ -2430,6 +2430,51 @@
     if (k === "shift") { machine.st.l1 = false; $("btnL1").classList.remove("latched"); }
   });
 
+  // ---- gamepad support (usability): the PS2 pad, on a real pad -------------
+  // Standard-mapping Gamepad API: ✕=0 ○=1 □=2 △=3 L1=4 L2=6 R2=7 Select=8
+  // Start=9 L3=10 R3=11. Face buttons map 1:1 (△ keeps the hold-launcher,
+  // exactly like the K key); L1 blocks while held; L3+R3 together = RAGE —
+  // the game's real activation; Select toggles Hand-to-hand, Start pauses;
+  // right stick orbits the camera, L2/R2 analog-zoom. Polled per rendered
+  // frame with edge detection (Chrome exposes pads after the first press).
+  const padPrev = [];
+  let padSeen = false;
+  window.addEventListener("gamepadconnected", (e) =>
+    status(`🎮 ${String(e.gamepad.id).slice(0, 44)} — ✕○□△ mapped · L1 block · L3+R3 rage`));
+  function pollGamepad(wallDt) {
+    const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+    let gp = null;
+    for (const g of gps) if (g && g.connected) { gp = g; break; }
+    if (!gp) return;
+    const down = (i) => !!(gp.buttons[i] && gp.buttons[i].pressed);
+    const edge = (i) => down(i) && !padPrev[i];
+    if (!padSeen) {
+      padSeen = true;
+      log("🎮 controller active — ✕○□△ · △ hold launcher · L1 block · L3+R3 rage · Select hand-to-hand · Start pause · R-stick orbit · L2/R2 zoom");
+    }
+    if (edge(2)) input("S");
+    if (edge(1)) input("C");
+    if (edge(0)) input("X");
+    if (edge(3)) triDown();
+    if (!down(3) && padPrev[3]) triUp();
+    if (edge(4)) { machine.st.l1 = true; $("btnL1").classList.add("latched"); machine.press("L1"); }
+    if (!down(4) && padPrev[4]) { machine.st.l1 = false; $("btnL1").classList.remove("latched"); }
+    if ((edge(10) && down(11)) || (edge(11) && down(10))) $("btnRage").click(); // L3+R3 — the real activation
+    if (edge(8)) $("btnBrawl").click();
+    if (edge(9)) $("btnPause").click();
+    // right stick orbit + analog trigger zoom (mirrors drag/wheel)
+    const dz = (v) => (Math.abs(v) > 0.18 ? v : 0);
+    const rx = dz(gp.axes[2] || 0), ry = dz(gp.axes[3] || 0);
+    if (rx || ry) {
+      autoSpin = false;
+      yaw += rx * wallDt * 2.6;
+      pitch = Math.max(-1.4, Math.min(1.5, pitch + ry * wallDt * 2.0));
+    }
+    const zoom = (gp.buttons[6] ? gp.buttons[6].value : 0) - (gp.buttons[7] ? gp.buttons[7].value : 0);
+    if (zoom) userDist = Math.max(1.2, Math.min(26, userDist + zoom * wallDt * 10));
+    for (let i = 0; i < gp.buttons.length; i++) padPrev[i] = down(i);
+  }
+
   // sliders
   const bindSlider = (sid, vid, key) => {
     $(sid).addEventListener("input", () => {
@@ -3069,6 +3114,7 @@
     try {
       const wallDt = (now - last) / 1000;
       last = now;
+      pollGamepad(wallDt); // edge-detected pad input, once per rendered frame
       let n;
       if (paused) {
         n = pendingSteps; pendingSteps = 0; // only frame-step advances the sim
@@ -3095,7 +3141,7 @@
     // ticks, so scripts drive frames through this). The old variable-dt
     // parameter is GONE: sim always advances by exactly Loop.STEP (1/60s),
     // and the render's presentation dt is pinned to STEP for determinism.
-    step() { simStep(); renderFrame(Loop.STEP); renderTimeline(); },
+    step() { pollGamepad(Loop.STEP); simStep(); renderFrame(Loop.STEP); renderTimeline(); },
     // --- replay controls (dev/QA capture aid) ---
     // pause(v): freeze/unfreeze the sim (render keeps running so the camera stays
     // live and screenshots work). pause() toggles. Returns the new paused state.
