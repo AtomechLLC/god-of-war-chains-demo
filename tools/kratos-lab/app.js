@@ -1474,7 +1474,7 @@
       // the decoded Concussion data proved (never weapon-attached shapes).
       for (const e of hitboxHist) {
         const fade = Math.max(0, 1 - e.age / HITBOX_LINGER); // per-vertex alpha → soft decay
-        const N = 32, y = 0.3;
+        const N = 32, y = e.y !== undefined ? e.y : 0.3; // ring at the tip's HEIGHT (launchers climb, sweeps hug the ground)
         for (let s = 0; s < N; s++) {
           const a0 = (s / N) * Math.PI * 2, a1 = ((s + 1) / N) * Math.PI * 2;
           hitV.push(
@@ -2255,7 +2255,9 @@
             {
               const pj = (JID.pelvis !== undefined ? JID.pelvis : 0) * 16;
               const pcx = skin.lastWorld[pj + 12], pcz = skin.lastWorld[pj + 14];
-              hitboxHist.push({ cx: pcx, cz: pcz, r: Math.hypot(tip[0] - pcx, tip[2] - pcz), age: 0 });
+              // record the tip HEIGHT too — vertical attacks (launchers) draw their
+              // reach rings up at blade height, not as a false ground sweep
+              hitboxHist.push({ cx: pcx, cz: pcz, y: Math.max(0.3, tip[1]), r: Math.hypot(tip[0] - pcx, tip[2] - pcz), age: 0 });
             }
             // hand = the grip/chain anchor at this sample — the trail sheet is swept by
             // the WHOLE chain+blade assembly (footage: at full extension the trail
