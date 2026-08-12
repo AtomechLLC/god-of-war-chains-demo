@@ -922,6 +922,19 @@
   // capsule overlay shows the SWEPT hit shape, fading over HITBOX_LINGER frames.
   const hitboxHist = [];
   const HITBOX_LINGER = 20;
+  // REAL decoded CONCUSSION hit volumes (part1.pak /TweakTemplates/Concussion/NNN,
+  // instances NAMED per attack — "BF Plume C", "3F Plume C", "7A Plume C", "Hero
+  // Impale1/2"): hand-authored AoE spheres at the CHARACTER (zeroJoint), decoupled
+  // from the blades. s/e = Start/End Radius in METERS, dur seconds, imp = Ground/Air
+  // Impulse Away. The blade sweeps stay engine melee; these are the impact moves.
+  // Move mapping (BF=base, 3F/7A=book enders) is INFERRED from the instance names.
+  const CONCUSSION = {
+    comboLR3: { s: 2.0, e: 2.0, dur: 0.1, imp: 500 },   // Plume of Prometheus (007 "BF Plume C")
+    combo3F:  { s: 2.75, e: 2.0, dur: 0.1, imp: 500 },  // 011 "3F Plume C"
+    combo7A:  { s: 2.5, e: 2.0, dur: 0.1, imp: 250 },   // 009 "7A Plume C"
+    airImpaleLand: { s: 4.0, e: 2.0, dur: 0.1, imp: 1000 }, // 013 "Hero Impale1"
+  };
+  const ringHist = []; // live concussion rings {cx,cz, s,e,durTicks, age}
   // Segment tracking: a push gap (attacking paused between combo moves) starts a NEW
   // segment — each swing gets its OWN swoosh decal + ribbon strip. Connecting across
   // gaps stretched quads between disjoint arcs (hard radial cuts) and spread one
@@ -1430,7 +1443,7 @@
     // meters — the radius interpretation is INFERRED). Additive red, depth-write
     // OFF via Fx.applyMaterial (DEC-01). Shown only while attacking (the frames
     // whose blade sweep the game tests for hits).
-    if (window.__hitbox && hitboxHist.length) {
+    if (window.__hitbox && (hitboxHist.length || ringHist.length)) {
       const hitV = [];
       const rx = view[0], ry = view[4], rz = view[8];
       const ux = view[1], uy = view[5], uz = view[9];
@@ -1453,6 +1466,22 @@
         const line = (p, q) => hitV.push(p[0], p[1], p[2], 0.5, 0.5, fade, q[0], q[1], q[2], 0.5, 0.5, fade);
         for (let h = 0; h <= 3; h++) for (let s = 0; s < 8; s++) line(pts[h][s], pts[h][(s + 1) % 8]);
         for (const s of [0, 2, 4, 6]) for (let h = 0; h < 3; h++) line(pts[h][s], pts[h + 1][s]);
+      }
+      // concussion rings: flat ground circles at the AUTHORED radius (meters × the
+      // bridge), interpolating Start→End Radius over the authored duration, then
+      // lingering with fade — the REAL AoE hit volume of the impact moves.
+      for (const r of ringHist) {
+        const t = Math.min(1, r.age / r.durTicks);
+        const rad = (r.s + (r.e - r.s) * t) * Chain.METERS_TO_WORLD;
+        const fade = r.age <= r.durTicks ? 1 : Math.max(0, 1 - (r.age - r.durTicks) / HITBOX_LINGER);
+        const N = 32, y = 0.3;
+        for (let s = 0; s < N; s++) {
+          const a0 = (s / N) * Math.PI * 2, a1 = ((s + 1) / N) * Math.PI * 2;
+          hitV.push(
+            r.cx + Math.cos(a0) * rad, y, r.cz + Math.sin(a0) * rad, 0.5, 0.5, fade,
+            r.cx + Math.cos(a1) * rad, y, r.cz + Math.sin(a1) * rad, 0.5, 0.5, fade,
+          );
+        }
       }
       if (hitV.length) {
         Fx.applyMaterial(gl, { name: "hitboxOverlay", mode: "additive", disableDepthWrite: true });
@@ -2084,15 +2113,25 @@
       // trail history being sampled at exactly 60Hz.
       if (blade) {
         const attacking = !machine.isIdle();
-        // age + expire the lingering hitbox snapshots (drawn in drawFx)
+        // age + expire the lingering hitbox snapshots + concussion rings (drawFx)
         for (const e of hitboxHist) e.age++;
         while (hitboxHist.length && hitboxHist[0].age > HITBOX_LINGER) hitboxHist.shift();
+        for (const r of ringHist) r.age++;
+        while (ringHist.length && ringHist[0].age > ringHist[0].durTicks + HITBOX_LINGER) ringHist.shift();
         // FIRE-02: edge-detect the landed-hit counter ONCE per tick (combat.js start()
         // increments st.hits on each non-idle move, combat.js:172). A change since last
         // tick is a new hit → burst impact sparks off the blade (below). prevHits advances
         // AFTER the per-blade loop so BOTH blades see the same edge. Edge-triggered (once
         // per hit), NEVER per attacking frame (Pitfall 5 — a discrete event, not a rate).
         const hitEdge = machine.st.hits !== prevHits;
+        // REAL concussion AoE on mapped impact moves: spawn the authored ring at
+        // the character's current position on the hit frame (drawn when Hitboxes on)
+        if (hitEdge && CONCUSSION[machine.st.current]) {
+          const cd = CONCUSSION[machine.st.current];
+          const pj = (JID.pelvis !== undefined ? JID.pelvis : 0) * 16;
+          ringHist.push({ cx: skin.lastWorld[pj + 12], cz: skin.lastWorld[pj + 14],
+            s: cd.s, e: cd.e, durTicks: Math.max(1, Math.round(cd.dur * 60)), age: 0 });
+        }
         // copy before offsetting — bladePos may return a shared internal buffer
         const track0 = rig.bladePos(machine.st.current, machine.st.t);
         const track = track0 ? Array.from(track0) : null;

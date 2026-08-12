@@ -1,0 +1,46 @@
+; =====================================================================
+; Concussions_AttackHitVolumes.twk — decoded attack hit-volume data (GoW1)
+; Source: part1.pak /TweakTemplates/Concussion/NNN instances (75 root strings,
+;         24 unique templates; full-pak sweep 2026-08). Key names cracked
+;         against SCUS_973.99 strings (node hash h*127+c).
+; THE FINDING: the game's big-attack hit volumes are HAND-AUTHORED concussion
+; spheres anchored at the CHARACTER ("zeroJoint"), decoupled from the blade
+; model — confirming that gameplay hit registration is not the weapon sweep
+; for impact moves. Radii are METERS (matches the Kratos≈2.0 m bridge).
+; Each attack has a "C" (collision) and an "F" (FX visual ring) template.
+; Blade-chain swings remain engine melee (no data — verified separately).
+; ALL VALUES [real]. Attack association = the instance's own name string.
+; =====================================================================
+
+/TweakTemplates/Concussion/  — hero attack hit volumes
+  007  "BF Plume C"       StartRadius 2.0   EndRadius 2.0  Duration 0.1  GroundImpulseAway 500   AirImpulseAway 500    ; Plume of Prometheus (comboLR3)
+  008  "BF Plume F"       StartRadius 4.5   EndRadius 2.0  Duration 0.1  (visual ring)
+  009  "7A Plume C"       StartRadius 2.5   EndRadius 2.0  Duration 0.1  GroundImpulseAway 250   AirImpulseAway 250    ; combo7A ender
+  010  "7A Plume F"       StartRadius 3.5   EndRadius 2.0  Duration 0.1  (visual ring)
+  011  "3F Plume C"       StartRadius 2.75  EndRadius 2.0  Duration 0.1  GroundImpulseAway 500   AirImpulseAway 500    ; combo3F ender
+  012  "3F Plume F"       StartRadius 4.25  EndRadius 2.0  Duration 0.1  (visual ring)
+  013  "Hero Impale1"     StartRadius 4.0   EndRadius 2.0  Duration 0.1  GroundImpulseUp -3000  AirImpulseAway 1000 AirImpulseUp -3000  ; airImpale slam
+  014  "Hero Impale2"     StartRadius 8.0   EndRadius 2.5  Duration 0.15 GroundImpulseAway 1000  AirImpulseAway 1000
+  015  "Hero Impale1FX"   StartRadius 0     EndRadius 4.0  Duration 0.35 (visual ring)
+  016  "Hero Impale2FX"   StartRadius 0     EndRadius 8.0  Duration 0.35 (visual ring)
+  005  "Thunderbolt ch1"  StartRadius 2.0   EndRadius 2.0  Duration 0.1  GroundImpulseAway 1000  AirImpulseAway 1000   ; Zeus charge lv1
+  006  "Thunderbolt ch2"  StartRadius 4.0   EndRadius 2.0  Duration 0.1  GroundImpulseAway 1000  AirImpulseAway 1000   ; Zeus charge lv2
+
+/TweakTemplates/Concussion/  — enemy / level concussions (same schema)
+  000  "Medusa Nuke S"    StartRadius 7.5   EndRadius 3.0  Duration 0.1
+  001  "Medusa Nuke L"    StartRadius 15    EndRadius 3.0  Duration 0.3
+  003  "Medusa Small FX"  StartRadius 0     EndRadius 7.5  Duration 0.3
+  004  "Medusa Large FX"  StartRadius 0     EndRadius 15   Duration 0.6
+  017  "CY2_Overhead"     StartRadius 0     EndRadius 3.0  Duration 0.1  GroundImpulseAway 1000 GroundImpulseUp -3000
+  033  "arrowExplosion"   StartRadius 0     EndRadius 3.0  Duration 0.1  GroundImpulseAway 1000 GroundImpulseUp -3000
+  040  "Cyclops Stomp"    StartRadius 1.0   EndRadius 4.0  Duration 0.25 GroundImpulseAway 1000 GroundImpulseUp -3000
+  050  "MI2_Slam"         StartRadius 0     EndRadius 20   Duration 1.0  GroundImpulseAway 1000 GroundImpulseUp -3000
+  070  "harpyExplosion"   StartRadius 2.0   EndRadius 2.0  Duration 0.1  GroundImpulseAway 1000 GroundImpulseUp -3000
+  120  "Siren Pillar"     StartRadius 1.25  EndRadius 2.0  Duration 4.0  GroundImpulseAway 1500 GroundImpulseUp -3000
+  121  "Siren Sonic FX"   StartRadius 20    EndRadius 5.0  Duration 0.15 GroundImpulseAway 1000 GroundImpulseUp -3000
+  250  "hydra deck hits"  StartRadius 6.0   EndRadius 3.0  Duration 0.1  GroundImpulseAway 1000 GroundImpulseUp -3000
+
+; Other cracked template fields (per instance, from Concussion/009 full decode):
+;   Type, Freeze, Freeze Factor, Angle, Context, Damage (packed byte),
+;   anchor joint string ("zeroJoint"), FX name string ("goRunDust"),
+;   + ~15 hashes still unnamed (values decoded, names unrecovered).
