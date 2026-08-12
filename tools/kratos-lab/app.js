@@ -21,7 +21,10 @@
     combo4D: "SPIRIT OF HERCULES",
     dashMultiStab: "CYCLONE OF CHAOS",
     blockLauncher: "LAUNCHER",
-    berserkEnter: "RAGE OF THE GODS",
+    // re-identified: the "berserk" set is the bare-handed brawl (blades
+    // sheathed in its blade tracks), NOT Rage of the Gods — rage keeps the
+    // blade moveset and only swaps the FX set (blue glyphs / god textures)
+    berserkEnter: "HAND-TO-HAND",
     airV1: "AIR SLAM",
   };
 
@@ -1043,6 +1046,13 @@
     combo7A:  { s: 2.5, e: 2.0, dur: 0.1, imp: 250, fx: { s: 3.5, e: 2.0, dur: 0.1 } },   // 009/010 "7A Plume C/F"
     airImpaleLand: { s: 4.0, e: 2.0, dur: 0.1, imp: 1000, fx: { s: 0, e: 4.0, dur: 0.35 } }, // 013/015 "Hero Impale1/FX"
   };
+  // RAGE BRAWLING (decoded 2026-08-12): the berCombo*/berAir* melee acts author
+  // the blades SHEATHED — their type-10 tracks pin BOTH tips at the dorsal
+  // sheath (y≈26-32, |x|≤5, ≤1.5 m excursion all clip) while the HANDS do fast
+  // 1.3 m strikes. Normal combos' tracks equal the hand at rest and whip to
+  // 7 m. GoW1's Rage of the Gods is hand-to-hand: blade FX (trail/fire/tip
+  // flash) are suppressed on these moves and the hits are the FISTS.
+  const FIST_MOVES = /^ber(Combo|Air)/;
   const ringHist = []; // live concussion DEBUG rings {cx,cz, s,e,durTicks, age} (Hitboxes overlay)
   const fxRings = [];  // live SHOCKWAVE visuals {cx,cz, s,e,durTicks, age} — REAL "F"-template radii/timing, always shown
   // Concussion TRIGGER TIME (derived from REAL data): the slam is where the move's
@@ -1999,6 +2009,9 @@
         extra += `concussion AoE <b>${cd.s} m</b>${cd.e !== cd.s ? `→${cd.e} m` : ""} · knockback <b>${cd.imp}</b>` +
           (cd.fx ? ` · fx ring ${cd.fx.s}→${cd.fx.e} m` : "") + `<br>`;
       }
+      if (FIST_MOVES.test(name)) {
+        extra += `<b>rage brawling</b> — blades sheathed (the type-10 track pins both tips dorsal); the strikes are the FISTS<br>`;
+      }
       $("moveData").innerHTML =
         `<b>${c.name}</b> — ANM clip id ${c.id}<br>` +
         `duration <b>${c.dur.toFixed(4)}s</b> (${Math.round(c.dur * 30)} frames)<br>` +
@@ -2106,11 +2119,19 @@
     const node = Combat.GRAPH[move];
     if (!dur || !rig || (node && node.loop) || NO_MELEE.test(move)) return (HITWIN_CACHE[move] = out); // stances/traversal: no strike
     const n = Math.max(2, Math.round(dur * 60));
+    // strike-point sampler: blade track for armed moves; the HAND JOINTS for
+    // rage brawling (blades sheathed — their track barely moves, the fists do)
+    const fists = FIST_MOVES.test(move);
+    const strikeAt = (t) => {
+      if (!fists) { const tr0 = rig.bladePos(move, t); return tr0 ? Array.from(tr0) : null; }
+      const w = rig.computePose(move, t);
+      const l = JID.lWeapIH * 16, r = JID.rWeapIH * 16;
+      return [w[l + 12], w[l + 13], w[l + 14], w[r + 12], w[r + 13], w[r + 14]];
+    };
     const speeds = [0];
     let prev = null, maxS = 0;
     for (let i = 0; i <= n; i++) {
-      const tr0 = rig.bladePos(move, (i / n) * dur);
-      const tr = tr0 ? Array.from(tr0) : null; // copy — shared internal buffer
+      const tr = strikeAt((i / n) * dur);
       if (tr && prev) {
         const dl = Math.hypot(tr[0] - prev[0], tr[1] - prev[1], tr[2] - prev[2]);
         const dr = Math.hypot(tr[3] - prev[3], tr[4] - prev[4], tr[5] - prev[5]);
@@ -2376,7 +2397,13 @@
     const on = !machine.st.rage;
     $("btnRage").classList.toggle("latched", on);
     machine.setRage(on);
-    log(on ? "★ RAGE OF THE GODS" : "☆ rage ends");
+    log(on ? "★ RAGE OF THE GODS — blades stay out, god FX set + buff (re-identified)" : "☆ rage ends");
+  });
+  $("btnBrawl").addEventListener("click", () => {
+    const on = !machine.st.brawl;
+    $("btnBrawl").classList.toggle("latched", on);
+    machine.setBrawl(on);
+    log(on ? "👊 HAND-TO-HAND — blades sheathed, the fists strike (the 'berserk' clip set)" : "🗡 blades drawn — normal moveset");
   });
 
   let kDown = 0;
@@ -2685,6 +2712,7 @@
     setComboPlay(false);
     if (autoplay) $("btnAutoplay").click();
     if (machine.st.rage) $("btnRage").click();
+    if (machine.st.brawl) $("btnBrawl").click();
     if (machine.st.l1) $("btnL1").click();
     if (window.__fxOnly) $("btnFxOnly").click();
     if (!arenaOn) $("btnArena").click();
@@ -2830,6 +2858,9 @@
       // trail history being sampled at exactly 60Hz.
       if (blade) {
         const attacking = !machine.isIdle();
+        // rage brawling: blades stay sheathed (the track parks them dorsal) —
+        // blade-borne FX are wrong on these moves; the strike point is the FIST
+        const fists = FIST_MOVES.test(machine.st.current);
         // age + expire the lingering hitbox snapshots + concussion rings (drawFx)
         for (const e of hitboxHist) e.age++;
         while (hitboxHist.length && hitboxHist[0].age > HITBOX_LINGER) hitboxHist.shift();
@@ -2881,6 +2912,8 @@
           // size/life param semantics undecoded, Pitfall 1); all Phase-7 footage-tunable.
           // The color is NOT set here — the REAL MAT_pticleMat.blendColor is applied at the
           // spark DRAW (Pitfall 4 — never fabricate a real effect color).
+          // impact FX anchor: the blade for armed moves, the FIST for rage brawling
+          const fistPos = [world[hand * 16 + 12], world[hand * 16 + 13], world[hand * 16 + 14]];
           if (hitEdge && sparkFxc && Array.isArray(sparkFxc.matrix)) {
             const SPARK_BURST_N = 14;             // INFERRED sparks per hit (A1/A6)
             const SPARK_BURST_LIFE = 20 * STEP;   // INFERRED ~0.33s short shower (A1)
@@ -2890,7 +2923,7 @@
             const SPARK_BURST_SPREAD = 5.0;       // INFERRED per-component pos+vel fan half-range (units/s, A1)
             // world spawn anchor = decoded blade-local FXC translation × live blade matrix,
             // sampled ONCE (spawnAnchor); the sparks decouple afterward (SC1 / Pitfall 4).
-            const spos = Particles.spawnAnchor(bladeSim[key].mat, sparkFxc.matrix);
+            const spos = fists ? fistPos : Particles.spawnAnchor(bladeSim[key].mat, sparkFxc.matrix);
             // burst() jitters BOTH pos and vel per-component by the sampler (runtime
             // Math.random — the fan, so each spark flies its own direction; D-07 keeps RNG
             // OUT of the pure tested paths). Higher energy than continuous fire = the
@@ -2908,7 +2941,7 @@
           // on-hit FLASH: one GFX_flasher03 radial burst at THIS blade's tip on the
           // hit frame (REAL sprite; size/life/alpha INFERRED — no flash-emitter data)
           if (hitEdge && flasherTex) {
-            const ftip = xformM(bm, blade.tip);
+            const ftip = fists ? fistPos : xformM(bm, blade.tip);
             fxPool.spawn({
               pos: [ftip[0], ftip[1], ftip[2]],
               vel: [0, 0, 0],
@@ -2920,23 +2953,27 @@
           }
           if (attacking) {
             const tip = xformM(bm, blade.tip);
-            // character-anchored reach sample: Kratos' position + this blade's live
-            // horizontal tip distance (REAL track) — the swing paints its reach
-            // envelope around the CHARACTER, matching how the game anchors hits
+            // character-anchored reach sample: Kratos' position + the strike
+            // point's live horizontal distance — blade TIP for armed moves
+            // (REAL track), the FIST for rage brawling (blades sheathed)
             {
               const pj = (JID.pelvis !== undefined ? JID.pelvis : 0) * 16;
               const pcx = skin.lastWorld[pj + 12], pcz = skin.lastWorld[pj + 14];
-              // record the tip HEIGHT and AZIMUTH — the melee filter IS the sweep
-              // (the engine tests the blade path), so the display paints only the
-              // sector the blade actually covers: spins fill the circle, forward
+              const rp = fists ? fistPos : tip;
+              // record the strike HEIGHT and AZIMUTH — the melee filter IS the
+              // sweep (the engine tests the strike path), so the display paints
+              // only the sector actually covered: spins fill the circle, forward
               // combos show their true frontal arc, launchers climb at height.
               // reach scaled by the ACTIVE costume's REAL Weapon Length relative to
               // the default (0.7) — Tycoonius-style short/long reach trade-offs
               const reachK = COSTUMES[costumeIdx].wl / COSTUMES[0].wl;
-              hitboxHist.push({ key, cx: pcx, cz: pcz, y: Math.max(0.3, tip[1]),
-                r: Math.hypot(tip[0] - pcx, tip[2] - pcz) * reachK,
-                ang: Math.atan2(tip[2] - pcz, tip[0] - pcx), age: 0 });
+              hitboxHist.push({ key, cx: pcx, cz: pcz, y: Math.max(0.3, rp[1]),
+                r: Math.hypot(rp[0] - pcx, rp[2] - pcz) * reachK,
+                ang: Math.atan2(rp[2] - pcz, rp[0] - pcx), age: 0 });
             }
+            // rage brawling: no swoosh decal, no blade fire — the blades are on
+            // his back; skip everything blade-borne for this tick
+            if (fists) continue;
             // hand = the grip/chain anchor at this sample — the trail sheet is swept by
             // the WHOLE chain+blade assembly (footage: at full extension the trail
             // extends down the chain), so rows span hand→tip, not hilt→tip.

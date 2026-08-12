@@ -105,31 +105,38 @@ const Combat = (() => {
     airImpaleLand: { branches: [] },
     land: { branches: [] },
     combatLand2: { branches: [] },
-    // ---- rage of the gods (berserk) ----------------------------------------
+    // ---- hand-to-hand brawl (the "berserk" set) -----------------------------
+    // RE-IDENTIFIED 2026-08-12: these clips author the blades SHEATHED (their
+    // type-10 blade tracks pin both tips at the dorsal sheath while the hands
+    // strike) — a complete bare-handed moveset with enter/exit transitions.
+    // This is NOT Rage of the Gods: rage keeps the normal blade moveset (the
+    // wiki-corroborated visual is blue blade glyphs + aura — the god-mode FX
+    // set), while this brawl set matches the disarmed hand-to-hand duel
+    // (INFERRED: the Ares finale).
     berserkEnter: { next: "berserkIdle", branches: [] },
     berserkIdle: {
-      loop: true, category: "rage idle",
+      loop: true, category: "brawl idle",
       branches: [
-        { input: "S", to: "berComboH1", fancy: "rage horizontal chain", tag: "real" },
-        { input: "T", to: "berComboV1", fancy: "rage vertical chain", tag: "real" },
-        { input: "X", to: "berJumpAir", fancy: "rage jump", tag: "real" },
+        { input: "S", to: "berComboH1", fancy: "fists — horizontal chain", tag: "real" },
+        { input: "T", to: "berComboV1", fancy: "fists — vertical chain", tag: "real" },
+        { input: "X", to: "berJumpAir", fancy: "fists — jump", tag: "real" },
       ],
     },
-    berComboH1: { branches: [ { input: "S", to: "berComboH2", fancy: "rage H2", tag: "real" },
-                              { input: "T", to: "berComboStab", fancy: "rage stab finisher", tag: "inferred" } ] },
-    berComboH2: { branches: [ { input: "S", to: "berComboH3", fancy: "rage H3", tag: "real" },
-                              { input: "T", to: "berComboStab", fancy: "rage stab finisher", tag: "inferred" } ] },
-    berComboH3: { branches: [ { input: "S", to: "berComboH4", fancy: "rage H ender", tag: "real" } ] },
+    berComboH1: { branches: [ { input: "S", to: "berComboH2", fancy: "fists H2", tag: "real" },
+                              { input: "T", to: "berComboStab", fancy: "fists stab finisher", tag: "inferred" } ] },
+    berComboH2: { branches: [ { input: "S", to: "berComboH3", fancy: "fists H3", tag: "real" },
+                              { input: "T", to: "berComboStab", fancy: "fists stab finisher", tag: "inferred" } ] },
+    berComboH3: { branches: [ { input: "S", to: "berComboH4", fancy: "fists H ender", tag: "real" } ] },
     berComboH4: { ender: true, branches: [] },
-    berComboV1: { branches: [ { input: "T", to: "berComboV2", fancy: "rage V2", tag: "real" } ] },
-    berComboV2: { branches: [ { input: "T", to: "berComboV3", fancy: "rage V3", tag: "real" } ] },
-    berComboV3: { branches: [ { input: "T", to: "berComboV4", fancy: "rage V ender", tag: "real" } ] },
+    berComboV1: { branches: [ { input: "T", to: "berComboV2", fancy: "fists V2", tag: "real" } ] },
+    berComboV2: { branches: [ { input: "T", to: "berComboV3", fancy: "fists V3", tag: "real" } ] },
+    berComboV3: { branches: [ { input: "T", to: "berComboV4", fancy: "fists V ender", tag: "real" } ] },
     berComboV4: { ender: true, branches: [] },
     berComboStab: { ender: true, branches: [] },
-    berJumpAir: { loop: true, category: "rage air",
-      branches: [ { input: "S", to: "berAirH1", fancy: "rage air chain", tag: "real" },
-                  { input: "T", to: "berAirV2", fancy: "rage air slam", tag: "real" } ] },
-    berAirH1: { air: true, branches: [ { input: "S", to: "berAirH2", fancy: "rage air 2", tag: "real" } ] },
+    berJumpAir: { loop: true, category: "brawl air",
+      branches: [ { input: "S", to: "berAirH1", fancy: "fists air chain", tag: "real" },
+                  { input: "T", to: "berAirV2", fancy: "fists air slam", tag: "real" } ] },
+    berAirH1: { air: true, branches: [ { input: "S", to: "berAirH2", fancy: "fists air 2", tag: "real" } ] },
     berAirH2: { air: true, ender: true, landTo: "berLand", branches: [] },
     berAirV2: { air: true, next: "berAirV2Land", branches: [] },
     berAirV2Land: { branches: [] },
@@ -145,9 +152,9 @@ const Combat = (() => {
     const windows = { queue: 0.20, branch: 0.70, cancel: 0.50 }; // fractions of clip
     const st = {
       current: "idleCombat", t: 0, dur: clipDur("idleCombat") || 1.4,
-      queued: null, rage: false, l1: false, hits: 0,
-      idle: () => (st.rage ? "berserkIdle" : "idleCombat"),
-      airIdle: () => (st.rage ? "berJumpAir" : "jumpAir"),
+      queued: null, rage: false, brawl: false, l1: false, hits: 0,
+      idle: () => (st.brawl ? "berserkIdle" : "idleCombat"),
+      airIdle: () => (st.brawl ? "berJumpAir" : "jumpAir"),
     };
 
     function node() { return GRAPH[st.current] || { branches: [] }; }
@@ -244,8 +251,18 @@ const Combat = (() => {
       }
     }
 
+    // RAGE OF THE GODS (re-identified 2026-08-12): a BUFF, not a moveset —
+    // Kratos keeps the normal blade combos; the aura + god-mode FX set +
+    // damage/armor change. No stance transition on toggle.
     function setRage(on) {
       st.rage = on;
+    }
+
+    // HAND-TO-HAND BRAWL: the "berserk" clip set — blades sheathed, fists
+    // strike (INFERRED context: the disarmed Ares-duel finale). Enter/exit
+    // transitions are the authored berserkEnter/berserkExit clips.
+    function setBrawl(on) {
+      st.brawl = on;
       if (on) start("berserkEnter", null);
       else start("berserkExit", null);
     }
@@ -259,7 +276,7 @@ const Combat = (() => {
       return true;
     }
 
-    return { st, windows, GRAPH, press, holdPress, tick, setRage, visibleBranches, isIdle, force };
+    return { st, windows, GRAPH, press, holdPress, tick, setRage, setBrawl, visibleBranches, isIdle, force };
   }
 
   return { GRAPH, GLYPH, makeMachine };
