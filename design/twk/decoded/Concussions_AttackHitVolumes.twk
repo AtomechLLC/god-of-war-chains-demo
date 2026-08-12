@@ -40,6 +40,14 @@
   121  "Siren Sonic FX"   StartRadius 20    EndRadius 5.0  Duration 0.15 GroundImpulseAway 1000 GroundImpulseUp -3000
   250  "hydra deck hits"  StartRadius 6.0   EndRadius 3.0  Duration 0.1  GroundImpulseAway 1000 GroundImpulseUp -3000
 
+; ANGLE (cross-instance comparison, 2026-08): the arc restriction of the AoE.
+;   ALL HERO concussions: Angle = 0 = UNRESTRICTED 360 degrees — Plumes/Impales/
+;   Thunderbolts hit targets BEHIND Kratos (crowd-control by design).
+;   ENEMY attacks are directional CONES: CY2_Overhead 45, harpyExplosion 45,
+;   arrowExplosion 45, MI2_Slam 30 — dodgeable arcs. The player/enemy fairness
+;   asymmetry is authored directly in this field.
+;   (Melee swings have no Angle data — their filter is the blade sweep itself.)
+;
 ; Other cracked template fields (per instance, from Concussion/009 full decode):
 ;   Type, Freeze, Freeze Factor, Angle, Context, Damage (packed byte),
 ;   anchor joint string ("zeroJoint"), FX name string ("goRunDust"),

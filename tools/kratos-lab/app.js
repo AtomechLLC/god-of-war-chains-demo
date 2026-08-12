@@ -1474,9 +1474,13 @@
       // the decoded Concussion data proved (never weapon-attached shapes).
       for (const e of hitboxHist) {
         const fade = Math.max(0, 1 - e.age / HITBOX_LINGER); // per-vertex alpha → soft decay
-        const N = 32, y = e.y !== undefined ? e.y : 0.3; // ring at the tip's HEIGHT (launchers climb, sweeps hug the ground)
-        for (let s = 0; s < N; s++) {
-          const a0 = (s / N) * Math.PI * 2, a1 = ((s + 1) / N) * Math.PI * 2;
+        const y = e.y !== undefined ? e.y : 0.3; // at the tip's HEIGHT (launchers climb, sweeps hug the ground)
+        // SECTOR arc (±15°) at the tip's azimuth — only where the blade actually
+        // is: the union over the swing = the move's TRUE angular coverage (the
+        // melee filter). Targets outside the painted sectors are not hit.
+        const HALF = 0.26, SEG = 6;
+        for (let s = 0; s < SEG; s++) {
+          const a0 = e.ang - HALF + (s / SEG) * 2 * HALF, a1 = e.ang - HALF + ((s + 1) / SEG) * 2 * HALF;
           hitV.push(
             e.cx + Math.cos(a0) * e.r, y, e.cz + Math.sin(a0) * e.r, 0.5, 0.5, fade,
             e.cx + Math.cos(a1) * e.r, y, e.cz + Math.sin(a1) * e.r, 0.5, 0.5, fade,
@@ -2255,9 +2259,13 @@
             {
               const pj = (JID.pelvis !== undefined ? JID.pelvis : 0) * 16;
               const pcx = skin.lastWorld[pj + 12], pcz = skin.lastWorld[pj + 14];
-              // record the tip HEIGHT too — vertical attacks (launchers) draw their
-              // reach rings up at blade height, not as a false ground sweep
-              hitboxHist.push({ cx: pcx, cz: pcz, y: Math.max(0.3, tip[1]), r: Math.hypot(tip[0] - pcx, tip[2] - pcz), age: 0 });
+              // record the tip HEIGHT and AZIMUTH — the melee filter IS the sweep
+              // (the engine tests the blade path), so the display paints only the
+              // sector the blade actually covers: spins fill the circle, forward
+              // combos show their true frontal arc, launchers climb at height.
+              hitboxHist.push({ cx: pcx, cz: pcz, y: Math.max(0.3, tip[1]),
+                r: Math.hypot(tip[0] - pcx, tip[2] - pcz),
+                ang: Math.atan2(tip[2] - pcz, tip[0] - pcx), age: 0 });
             }
             // hand = the grip/chain anchor at this sample — the trail sheet is swept by
             // the WHOLE chain+blade assembly (footage: at full extension the trail
