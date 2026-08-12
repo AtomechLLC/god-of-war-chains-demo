@@ -1473,14 +1473,17 @@
       for (const r of ringHist) {
         const t = Math.min(1, r.age / r.durTicks);
         const rad = (r.s + (r.e - r.s) * t) * Chain.METERS_TO_WORLD;
-        const fade = r.age <= r.durTicks ? 1 : Math.max(0, 1 - (r.age - r.durTicks) / HITBOX_LINGER);
-        const N = 32, y = 0.3;
-        for (let s = 0; s < N; s++) {
-          const a0 = (s / N) * Math.PI * 2, a1 = ((s + 1) / N) * Math.PI * 2;
-          hitV.push(
-            r.cx + Math.cos(a0) * rad, y, r.cz + Math.sin(a0) * rad, 0.5, 0.5, fade,
-            r.cx + Math.cos(a1) * rad, y, r.cz + Math.sin(a1) * rad, 0.5, 0.5, fade,
-          );
+        const fade = r.age <= r.durTicks ? 1 : Math.max(0, 1 - (r.age - r.durTicks) / (HITBOX_LINGER * 3));
+        const N = 48, y = 0.3;
+        // double-stroked circle (outer + inner line) so the authored radius reads clearly
+        for (const rr of [rad, rad - 0.7]) {
+          for (let s = 0; s < N; s++) {
+            const a0 = (s / N) * Math.PI * 2, a1 = ((s + 1) / N) * Math.PI * 2;
+            hitV.push(
+              r.cx + Math.cos(a0) * rr, y, r.cz + Math.sin(a0) * rr, 0.5, 0.5, fade,
+              r.cx + Math.cos(a1) * rr, y, r.cz + Math.sin(a1) * rr, 0.5, 0.5, fade,
+            );
+          }
         }
       }
       if (hitV.length) {
@@ -2117,7 +2120,7 @@
         for (const e of hitboxHist) e.age++;
         while (hitboxHist.length && hitboxHist[0].age > HITBOX_LINGER) hitboxHist.shift();
         for (const r of ringHist) r.age++;
-        while (ringHist.length && ringHist[0].age > ringHist[0].durTicks + HITBOX_LINGER) ringHist.shift();
+        while (ringHist.length && ringHist[0].age > ringHist[0].durTicks + HITBOX_LINGER * 3) ringHist.shift();
         // FIRE-02: edge-detect the landed-hit counter ONCE per tick (combat.js start()
         // increments st.hits on each non-idle move, combat.js:172). A change since last
         // tick is a new hit → burst impact sparks off the blade (below). prevHits advances
