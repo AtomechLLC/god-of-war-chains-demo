@@ -1476,6 +1476,14 @@
       // vertical half-extent of a strike slab: the REAL Blade Collision Tolerance
       // (0.5 m) reused as the strike's thickness band (interpretation INFERRED)
       const SLAB_H = 0.5 * Chain.METERS_TO_WORLD;
+      // corner rails: connect each slab's 4 wall corners to the PREVIOUS sample of
+      // the same blade (consecutive ticks only — no rails across swing gaps), so
+      // the sweep reads as one continuous extruded volume with depth.
+      const cornerOf = (s, side, yy) => {
+        const a = s.ang + side * 0.26;
+        return [s.cx + Math.cos(a) * s.r, yy, s.cz + Math.sin(a) * s.r];
+      };
+      const prevSample = {};
       for (const e of hitboxHist) {
         const fade = Math.max(0, 1 - e.age / HITBOX_LINGER); // per-vertex alpha → soft decay
         const y = e.y !== undefined ? e.y : 0.3;
@@ -1503,6 +1511,17 @@
           if (s === 0) hitV.push(x0, yLo, z0, 0.5, 0.5, fade, x0, yHi, z0, 0.5, 0.5, fade);
           if (s === SEG - 1) hitV.push(x1, yLo, z1, 0.5, 0.5, fade, x1, yHi, z1, 0.5, 0.5, fade);
         }
+        // depth rails to the previous same-blade slab (consecutive ticks only)
+        const p = prevSample[e.key];
+        if (p && p.age === e.age + 1) {
+          const pLo = Math.max(0.3, p.y - SLAB_H), pHi = p.y + SLAB_H;
+          const railA = fade * 0.7;
+          for (const [side, ya, yb] of [[-1, yLo, pLo], [1, yLo, pLo], [-1, yHi, pHi], [1, yHi, pHi]]) {
+            const c0 = cornerOf(e, side, ya), c1 = cornerOf(p, side, yb);
+            hitV.push(c0[0], c0[1], c0[2], 0.5, 0.5, railA, c1[0], c1[1], c1[2], 0.5, 0.5, railA);
+          }
+        }
+        prevSample[e.key] = e;
       }
       // concussion rings: flat ground circles at the AUTHORED radius (meters × the
       // bridge), interpolating Start→End Radius over the authored duration, then
@@ -2305,7 +2324,7 @@
               // (the engine tests the blade path), so the display paints only the
               // sector the blade actually covers: spins fill the circle, forward
               // combos show their true frontal arc, launchers climb at height.
-              hitboxHist.push({ cx: pcx, cz: pcz, y: Math.max(0.3, tip[1]),
+              hitboxHist.push({ key, cx: pcx, cz: pcz, y: Math.max(0.3, tip[1]),
                 r: Math.hypot(tip[0] - pcx, tip[2] - pcz),
                 ang: Math.atan2(tip[2] - pcz, tip[0] - pcx), age: 0 });
             }
