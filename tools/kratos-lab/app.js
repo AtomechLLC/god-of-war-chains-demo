@@ -1473,20 +1473,35 @@
       // rim line at the reach boundary. Overlapping wedges layer into a coverage
       // heat-fill — the union over the swing = the move's TRUE hit area (the
       // melee filter is the sweep). Targets outside the fill are not hit.
+      // vertical half-extent of a strike slab: the REAL Blade Collision Tolerance
+      // (0.5 m) reused as the strike's thickness band (interpretation INFERRED)
+      const SLAB_H = 0.5 * Chain.METERS_TO_WORLD;
       for (const e of hitboxHist) {
         const fade = Math.max(0, 1 - e.age / HITBOX_LINGER); // per-vertex alpha → soft decay
-        const y = e.y !== undefined ? e.y : 0.3; // at the tip's HEIGHT (launchers climb, sweeps hug the ground)
-        const HALF = 0.26, SEG = 6, fillA = fade * 0.16;
+        const y = e.y !== undefined ? e.y : 0.3;
+        const yLo = Math.max(0.3, y - SLAB_H), yHi = y + SLAB_H;
+        const HALF = 0.26, SEG = 6, fillA = fade * 0.14;
         for (let s = 0; s < SEG; s++) {
           const a0 = e.ang - HALF + (s / SEG) * 2 * HALF, a1 = e.ang - HALF + ((s + 1) / SEG) * 2 * HALF;
           const x0 = e.cx + Math.cos(a0) * e.r, z0 = e.cz + Math.sin(a0) * e.r;
           const x1 = e.cx + Math.cos(a1) * e.r, z1 = e.cz + Math.sin(a1) * e.r;
+          // flat wedge at mid-height (top-down readability)
           hitFillV.push(
             e.cx, y, e.cz, 0.5, 0.5, fillA,
             x0, y, z0, 0.5, 0.5, fillA,
             x1, y, z1, 0.5, 0.5, fillA,
           );
-          hitV.push(x0, y, z0, 0.5, 0.5, fade, x1, y, z1, 0.5, 0.5, fade);
+          // curved OUTER WALL (vertical volume — readable from the side)
+          hitFillV.push(
+            x0, yLo, z0, 0.5, 0.5, fillA, x1, yLo, z1, 0.5, 0.5, fillA, x1, yHi, z1, 0.5, 0.5, fillA,
+            x0, yLo, z0, 0.5, 0.5, fillA, x1, yHi, z1, 0.5, 0.5, fillA, x0, yHi, z0, 0.5, 0.5, fillA,
+          );
+          // rims: top + bottom arcs
+          hitV.push(x0, yLo, z0, 0.5, 0.5, fade, x1, yLo, z1, 0.5, 0.5, fade);
+          hitV.push(x0, yHi, z0, 0.5, 0.5, fade, x1, yHi, z1, 0.5, 0.5, fade);
+          // vertical edge connectors at the sector ends
+          if (s === 0) hitV.push(x0, yLo, z0, 0.5, 0.5, fade, x0, yHi, z0, 0.5, 0.5, fade);
+          if (s === SEG - 1) hitV.push(x1, yLo, z1, 0.5, 0.5, fade, x1, yHi, z1, 0.5, 0.5, fade);
         }
       }
       // concussion rings: flat ground circles at the AUTHORED radius (meters × the
@@ -1497,14 +1512,25 @@
         const rad = (r.s + (r.e - r.s) * t) * Chain.METERS_TO_WORLD;
         const fade = r.age <= r.durTicks ? 1 : Math.max(0, 1 - (r.age - r.durTicks) / (HITBOX_LINGER * 3));
         const N = 48, y = 0.3, fillA = fade * 0.2;
-        // FILLED disc (hero concussions are Angle=0 = full 360°) + double-stroked rim
+        // cylinder wall height: the sphere's vertical coverage, capped at 1.5 m
+        const yTop = y + Math.min(rad, 1.5 * Chain.METERS_TO_WORLD);
         for (let s = 0; s < N; s++) {
           const a0 = (s / N) * Math.PI * 2, a1 = ((s + 1) / N) * Math.PI * 2;
+          const x0 = r.cx + Math.cos(a0) * rad, z0 = r.cz + Math.sin(a0) * rad;
+          const x1 = r.cx + Math.cos(a1) * rad, z1 = r.cz + Math.sin(a1) * rad;
+          // FILLED ground disc (hero concussions: Angle=0 = full 360°)
           hitFillV.push(
             r.cx, y, r.cz, 0.5, 0.5, fillA,
-            r.cx + Math.cos(a0) * rad, y, r.cz + Math.sin(a0) * rad, 0.5, 0.5, fillA,
-            r.cx + Math.cos(a1) * rad, y, r.cz + Math.sin(a1) * rad, 0.5, 0.5, fillA,
+            x0, y, z0, 0.5, 0.5, fillA,
+            x1, y, z1, 0.5, 0.5, fillA,
           );
+          // cylinder WALL (side-view volume)
+          hitFillV.push(
+            x0, y, z0, 0.5, 0.5, fillA, x1, y, z1, 0.5, 0.5, fillA, x1, yTop, z1, 0.5, 0.5, fillA,
+            x0, y, z0, 0.5, 0.5, fillA, x1, yTop, z1, 0.5, 0.5, fillA, x0, yTop, z0, 0.5, 0.5, fillA,
+          );
+          // top rim
+          hitV.push(x0, yTop, z0, 0.5, 0.5, fade, x1, yTop, z1, 0.5, 0.5, fade);
         }
         for (const rr of [rad, rad - 0.7]) {
           for (let s = 0; s < N; s++) {
