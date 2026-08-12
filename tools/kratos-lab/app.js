@@ -1881,10 +1881,23 @@
   function updateDataCards(name) {
     const c = CLIP[name];
     if (c) {
+      // REAL per-move movement from the comp-422 controller channel (meters via
+      // the Kratos-height bridge) + the authored concussion, when this move has one
+      let extra = "";
+      const d0 = rig.rootDisp(name, 0), d1 = rig.rootDisp(name, c.dur);
+      if (d0 !== null && d1 !== null && Math.abs(d1 - d0) > 0.5) {
+        extra += `movement <b>${(Math.abs(d1 - d0) / Chain.METERS_TO_WORLD).toFixed(2)} m</b> (type-5 comp-422 track)<br>`;
+      }
+      const cd = CONCUSSION[name];
+      if (cd) {
+        extra += `concussion AoE <b>${cd.s} m</b>${cd.e !== cd.s ? `→${cd.e} m` : ""} · knockback <b>${cd.imp}</b>` +
+          (cd.fx ? ` · fx ring ${cd.fx.s}→${cd.fx.e} m` : "") + `<br>`;
+      }
       $("moveData").innerHTML =
         `<b>${c.name}</b> — ANM clip id ${c.id}<br>` +
         `duration <b>${c.dur.toFixed(4)}s</b> (${Math.round(c.dur * 30)} frames)<br>` +
         `blend-in <b>${c.blend}s</b>${c.blend === 0 ? " (hard cut)" : ""}<br>` +
+        extra +
         `keyframes sampled at <b>${c.kfHz} Hz</b><br>` +
         `header @ 0x${c.off.toString(16).toUpperCase()} in ANM_hero.bin`;
     } else {
