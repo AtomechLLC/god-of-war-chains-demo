@@ -2047,7 +2047,74 @@
   }
 
   // ---------- timeline ------------------------------------------------------
+  // hit-active row (usability): NO per-frame hit-window data exists in the ANM
+  // (proven — the 60Hz candidate tracks are exporter boilerplate), so the row is
+  // DERIVED from the REAL type-10 blade track: a tick is "hot" while either tip
+  // moves at strike speed. Gate = max(25 u/s ≈ 1.8 m/s, 35% of the move's own
+  // peak) — both constants INFERRED; the track being differenced is real. The
+  // solid block is the AUTHORED concussion window [trigger, trigger+0.1s].
+  const HITWIN_CACHE = {};
+  function hitWindows(move) {
+    if (HITWIN_CACHE[move]) return HITWIN_CACHE[move];
+    const out = { segs: [], conc: null };
+    const dur = DUR[move];
+    const node = Combat.GRAPH[move];
+    if (!dur || !rig || (node && node.loop)) return (HITWIN_CACHE[move] = out); // stances: no strike
+    const n = Math.max(2, Math.round(dur * 60));
+    const speeds = [0];
+    let prev = null, maxS = 0;
+    for (let i = 0; i <= n; i++) {
+      const tr0 = rig.bladePos(move, (i / n) * dur);
+      const tr = tr0 ? Array.from(tr0) : null; // copy — shared internal buffer
+      if (tr && prev) {
+        const dl = Math.hypot(tr[0] - prev[0], tr[1] - prev[1], tr[2] - prev[2]);
+        const dr = Math.hypot(tr[3] - prev[3], tr[4] - prev[4], tr[5] - prev[5]);
+        const s = Math.max(dl, dr) * (n / dur); // tip speed, units/s
+        speeds.push(s);
+        maxS = Math.max(maxS, s);
+      } else if (i > 0) speeds.push(0);
+      prev = tr;
+    }
+    const thresh = Math.max(25, maxS * 0.35); // INFERRED strike-speed gate
+    let start = null;
+    for (let i = 0; i <= n; i++) {
+      const hot = maxS > 0 && speeds[i] >= thresh;
+      if (hot && start === null) start = i;
+      if ((!hot || i === n) && start !== null) { out.segs.push([start / n, i / n]); start = null; }
+    }
+    out.segs = out.segs.filter(([a, b]) => (b - a) * n >= 2); // drop 1-tick speckle
+    const cd = CONCUSSION[move];
+    if (cd) {
+      const t0 = concussionTime(move) / dur;
+      out.conc = [t0, Math.min(1, t0 + cd.dur / dur)];
+    }
+    return (HITWIN_CACHE[move] = out);
+  }
+  let hitRowMove = null;
+  function renderHitRow() {
+    if (machine.st.current === hitRowMove) return;
+    hitRowMove = machine.st.current;
+    const row = $("tlHitRow");
+    row.innerHTML = "";
+    const hw = hitWindows(hitRowMove);
+    for (const [a, b] of hw.segs) {
+      const d = document.createElement("div");
+      d.className = "tl-hit-seg";
+      d.style.left = `${a * 100}%`;
+      d.style.width = `${(b - a) * 100}%`;
+      row.append(d);
+    }
+    if (hw.conc) {
+      const d = document.createElement("div");
+      d.className = "tl-hit-conc";
+      d.style.left = `${hw.conc[0] * 100}%`;
+      d.style.width = `${Math.max(0.8, (hw.conc[1] - hw.conc[0]) * 100)}%`;
+      row.append(d);
+    }
+  }
+
   function renderTimeline() {
+    renderHitRow();
     const { t, dur } = machine.st;
     const w = machine.windows;
     const pct = (x) => `${Math.max(0, Math.min(100, x * 100))}%`;
@@ -2107,11 +2174,12 @@
       }
     }
   }
-  {
-    const tlEl = $("tlTrack");
+  // scrub binding shared by the main track AND the hit-active row beneath it
+  // (both span the same horizontal geometry, so each maps its own rect)
+  for (const tlEl of [$("tlTrack"), $("tlHitRow")]) {
     let tlScrub = false;
     tlEl.style.cursor = "ew-resize";
-    tlEl.title = "drag to scrub the current move (auto-pauses)";
+    if (!tlEl.title) tlEl.title = "drag to scrub the current move (auto-pauses)";
     tlEl.addEventListener("pointerdown", (e) => {
       try { tlEl.setPointerCapture(e.pointerId); } catch {} // stale/synthetic ids throw
       tlScrub = true;

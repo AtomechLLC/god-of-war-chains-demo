@@ -73,6 +73,11 @@ header .status { margin-left: auto; color: var(--dim); font-size: 12px; font-fam
 .tl-branchpt { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--gold); }
 .tl-hitmark { position: absolute; top: 0; bottom: 0; width: 2px; display: none;
   background: repeating-linear-gradient(180deg, #e6303c 0 3px, transparent 3px 6px); }
+/* hit-active row: sweep windows derived from the real blade track + the
+   authored concussion block, aligned under the main track */
+.tl-hitrow { position: relative; height: 7px; margin-top: 3px; background: #0a0806; border-radius: 3px; overflow: hidden; }
+.tl-hit-seg { position: absolute; top: 0; bottom: 0; background: rgba(230,48,60,.45); }
+.tl-hit-conc { position: absolute; top: 0; bottom: 0; background: #e6303c; box-shadow: 0 0 6px rgba(230,48,60,.8); }
 .tl-head { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--red-hot); box-shadow: 0 0 8px rgba(230,48,60,.8); }
 .tl-legend { display: flex; gap: 16px; margin-top: 5px; font-family: var(--mono); font-size: 10px; color: var(--dim); }
 .tl-legend .sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
