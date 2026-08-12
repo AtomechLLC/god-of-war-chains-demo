@@ -865,6 +865,11 @@
   const ARENA_HALF = 28 * ARENA_M;         // ±28 m floor (user-doubled) — long root-motion runs stay inside
   const ARENA_WALL_H = 7 * ARENA_M;        // 7 m walls — jump/aerial arcs stay inside
   const ARENA_TILE = 8 * ARENA_M;          // texture tile = 8 m
+  // far clip plane, DERIVED so arena resizes can't re-clip the floor (the
+  // doubled arena outgrew the old fixed far=50): max wheel zoom-out (26) +
+  // the farthest arena corner in display units as seen from a hero followed
+  // at the 16 m teleport radius, + margin.
+  const CAM_FAR = 26 + (ARENA_HALF * Math.SQRT2 + 4 * 4 * ARENA_M) * s0 + 10;
   const arenaTex = (() => {
     const c = document.createElement("canvas"); c.width = c.height = 1024;
     const g = c.getContext("2d");
@@ -1805,7 +1810,7 @@
     const view = M.mul(M.mul(M.trans(0, 0, -dist), rot), M.trans(-camTgt[0], 0, -camTgt[2]));
     // native pass projects at the 4:3 DISPLAY aspect (non-square GS pixels) —
     // NOT the 512/448 storage aspect (02-RESEARCH A2)
-    const mvp = M.mul(M.persp(0.9, nativeRes ? NATIVE.displayAspect : w / h, 0.05, 50), view);
+    const mvp = M.mul(M.persp(0.9, nativeRes ? NATIVE.displayAspect : w / h, 0.05, CAM_FAR), view);
     // arena first: opaque, depth-write ON, so the hero/FX depth-test over it.
     // Skipped in FX-only (black isolation stays black).
     if (arenaOn && !window.__fxOnly) drawArena(M.mul(mvp, modelMat));
