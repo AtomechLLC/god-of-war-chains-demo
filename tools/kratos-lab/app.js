@@ -1435,20 +1435,24 @@
       const rx = view[0], ry = view[4], rz = view[8];
       const ux = view[1], uy = view[5], uz = view[9];
       const R = 0.5 * Chain.METERS_TO_WORLD;
+      // WIREFRAME capsules (user): camera-facing octagon RINGS at 4 stations along
+      // hilt→tip + 4 longitudinal spars — gl.LINES through the same FX program.
       for (const e of hitboxHist) {
         const fade = Math.max(0, 1 - e.age / HITBOX_LINGER); // per-vertex alpha → soft decay
+        const pts = [];
         for (let h = 0; h <= 3; h++) {
           const c = lerp3(e.a, e.b, h / 3);
+          const ring = [];
           for (let s = 0; s < 8; s++) {
-            const a0 = (s / 8) * Math.PI * 2, a1 = ((s + 1) / 8) * Math.PI * 2;
-            const c0 = Math.cos(a0) * R, s0 = Math.sin(a0) * R, c1 = Math.cos(a1) * R, s1 = Math.sin(a1) * R;
-            hitV.push(
-              c[0], c[1], c[2], 0.5, 0.5, fade,
-              c[0] + rx * c0 + ux * s0, c[1] + ry * c0 + uy * s0, c[2] + rz * c0 + uz * s0, 0, 0, fade,
-              c[0] + rx * c1 + ux * s1, c[1] + ry * c1 + uy * s1, c[2] + rz * c1 + uz * s1, 1, 0, fade,
-            );
+            const a0 = (s / 8) * Math.PI * 2;
+            const c0 = Math.cos(a0) * R, s0 = Math.sin(a0) * R;
+            ring.push([c[0] + rx * c0 + ux * s0, c[1] + ry * c0 + uy * s0, c[2] + rz * c0 + uz * s0]);
           }
+          pts.push(ring);
         }
+        const line = (p, q) => hitV.push(p[0], p[1], p[2], 0.5, 0.5, fade, q[0], q[1], q[2], 0.5, 0.5, fade);
+        for (let h = 0; h <= 3; h++) for (let s = 0; s < 8; s++) line(pts[h][s], pts[h][(s + 1) % 8]);
+        for (const s of [0, 2, 4, 6]) for (let h = 0; h < 3; h++) line(pts[h][s], pts[h + 1][s]);
       }
       if (hitV.length) {
         Fx.applyMaterial(gl, { name: "hitboxOverlay", mode: "additive", disableDepthWrite: true });
@@ -1457,10 +1461,10 @@
         gl.uniform1f(fxLocs.uGlowGain, 0);
         gl.uniform1f(fxLocs.uCutoff, 0);
         gl.uniform3fv(fxLocs.uMaterialColor, [1, 1, 1]);
-        gl.uniform4fv(fxLocs.uLayerColor, [1, 0.15, 0.1, 0.12]); // low per-hoop alpha — ~20 lingering snapshots stack additively
+        gl.uniform4fv(fxLocs.uLayerColor, [1, 0.2, 0.15, 0.5]); // thin lines — higher alpha than the old filled fans
         gl.bindTexture(gl.TEXTURE_2D, whiteTex);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(hitV), gl.DYNAMIC_DRAW);
-        gl.drawArrays(gl.TRIANGLES, 0, hitV.length / 6);
+        gl.drawArrays(gl.LINES, 0, hitV.length / 6);
       }
     }
     // EMBER_UV: the bright gold corner of the swoosh decal — sparks sample ONLY this
