@@ -963,7 +963,8 @@
 
   // start zoomed out (full figure + blade-path + arena); user wheel-zooms freely.
   // Camera distance is USER-CONTROLLED ONLY — no auto-frame (see renderFrame).
-  let yaw = 0.6, pitch = 0.15, dist = 14.0, userDist = 14.0, autoSpin = true;
+  // start distance 10 (user): the doubled arena made the old 14 read too far out
+  let yaw = 0.6, pitch = 0.15, dist = 10.0, userDist = 10.0, autoSpin = true;
   // FOLLOW camera (btnFollow, default ON): the orbit center tracks Kratos in
   // display space, so real root-motion travel stays framed. OFF = the classic
   // fixed-origin orbit. Smoothed toward the pelvis each rendered frame.
@@ -1916,6 +1917,17 @@
   // gameplay). y/vy implement exactly that model here.
   const rootMotion = { on: true, x: 0, z: 0, y: 0, vy: 0, px: 0, pz: 0, prevTrack: null, prevTrackY: null, pendingRebase: false };
   const GRAV_UNITS = 50 * Chain.METERS_TO_WORLD; // REAL /GlobGame/ Gravity 50 m/s² × units bridge
+  // JUMP GAIN — INFERRED (footage-calibrated, user bar: apex ≈ Kratos' height).
+  // The pure jump clips' comp-421 channels are the authored ANIMATION rise only
+  // (jumpUp+jumpAir apex = 12.2 units = 0.87 m); the engine computes the true
+  // controller arc from ballistic tweaks that are provably uncracked (the
+  // goHero jump sections carry clip names + Tween/Cycle only). Gain 2.3 scales
+  // the REAL curve shape/timing to a ~2.0 m apex. Scripted full-magnitude
+  // channels (comboJump 6.4 m, blockLauncher launch-follow 6.2 m, airImpale)
+  // are NOT gained — their channels are already the whole arc.
+  const JUMP_GAIN = 2.3;
+  const JUMP_GAIN_CLIPS = /^(jumpUp|jumpAir|jumpDoubleAir|berJumpAir|berJumpDoubleAir)$/;
+  const jumpGain = (move) => (JUMP_GAIN_CLIPS.test(move) ? JUMP_GAIN : 1);
   let lastState = { name: "idleCombat", t: 0 };
   const machine = Combat.makeMachine((n) => DUR[n], {
     onMove(name, prev, via) {
@@ -1977,7 +1989,9 @@
           yMax = Math.max(yMax, v);
         }
         if (y0 !== null && yMax - y0 > 0.5) {
-          extra += `jump rise <b>${((yMax - y0) / Chain.METERS_TO_WORLD).toFixed(2)} m</b> (comp-421 vertical channel)<br>`;
+          const g = jumpGain(name);
+          extra += `jump rise <b>${((yMax - y0) / Chain.METERS_TO_WORLD).toFixed(2)} m</b> (comp-421 vertical channel)` +
+            (g !== 1 ? ` · shown ×${g} <span style="color:#86aed0">(inferred — engine ballistics uncracked)</span>` : "") + `<br>`;
         }
       }
       const cd = CONCUSSION[name];
@@ -2422,12 +2436,25 @@
   // resolution: branch from the current move; no branch → resolve from stance)
   function comboEndState(seq) {
     let cur = "idleCombat";
+    // follow pass-through clips (jumpUp → jumpAir): the machine settles on the
+    // .next state, and THAT is where the follow-up branches live — without
+    // this, an ✕ entry previewed "no branches" instead of the air attacks
+    const settle = () => {
+      let guard = 0;
+      while (guard++ < 4) {
+        const n = Combat.GRAPH[cur];
+        if (n && !n.loop && !(n.branches || []).length && n.next && Combat.GRAPH[n.next]) cur = n.next;
+        else break;
+      }
+    };
     for (const k of seq) {
+      settle();
       const node = Combat.GRAPH[cur];
       let b = node && (node.branches || []).find((x) => x.input === k && !x.mod);
       if (!b) b = (Combat.GRAPH.idleCombat.branches || []).find((x) => x.input === k && !x.mod);
       if (b && Combat.GRAPH[b.to]) cur = b.to;
     }
+    settle();
     return cur;
   }
 
@@ -2750,17 +2777,22 @@
         //  3. no channel + ground state → fall under the REAL decoded
         //     /GlobGame/ Gravity (50 m/s²) until the floor, e.g. during `land`
         const rvY = rig.rootDispY(machine.st.current, machine.st.t);
-        if (rvY !== null) {
+        const gn = Combat.GRAPH[machine.st.current];
+        const airState = !!(gn && (gn.air || (gn.category && gn.category.includes("air"))));
+        // ground STANCES carry a flat constant 421 (idle-bob boilerplate,
+        // e.g. idleCombat = 0.032) — a channel that must NOT own the height,
+        // or residual air y freezes and Kratos idles floating (caught in
+        // verification). Channel drives only non-stance moves and air loops.
+        const channelOwns = rvY !== null && (!(gn && gn.loop) || airState);
+        if (channelOwns) {
           if (!rootMotion.pendingRebase && rootMotion.prevTrackY !== null) {
-            rootMotion.y += (rvY - rootMotion.prevTrackY);
+            rootMotion.y += (rvY - rootMotion.prevTrackY) * jumpGain(machine.st.current);
           }
           rootMotion.prevTrackY = rvY;
           rootMotion.vy = 0;
           if (rootMotion.y < 0) rootMotion.y = 0; // channel never digs below the floor
         } else {
           rootMotion.prevTrackY = null;
-          const gn = Combat.GRAPH[machine.st.current];
-          const airState = !!(gn && (gn.air || (gn.category && gn.category.includes("air"))));
           if (rootMotion.y > 0 && !airState) {
             rootMotion.vy -= GRAV_UNITS * STEP;
             rootMotion.y = Math.max(0, rootMotion.y + rootMotion.vy * STEP);
