@@ -1,10 +1,9 @@
 ; =====================================================================
 ; System_Flash.twk — decoded designer tweak data (God of War 1)
 ; Source: part1.pak @0x36ad60, TWK instance uid 7 (magic 0xfedcba98)
-; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
-; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
-; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
-; "God Mode" = Rage of the Gods.
+; Key names cracked vs SCUS_973.99 strings + %d forms + suffix-extension
+; (structurally vetted: consecutive-hash families, XYZ/RGB triples).
+; ALL VALUES [real]. @hash(...) = name unrecovered. God Mode = Rage.
 ; =====================================================================
 
 /System/Flash/

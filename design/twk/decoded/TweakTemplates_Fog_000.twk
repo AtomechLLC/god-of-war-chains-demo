@@ -1,14 +1,13 @@
 ; =====================================================================
 ; TweakTemplates_Fog_000.twk — decoded designer tweak data (God of War 1)
 ; Source: part1.pak @0x368a50, TWK instance uid 5 (magic 0xfedcba98)
-; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
-; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
-; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
-; "God Mode" = Rage of the Gods.
+; Key names cracked vs SCUS_973.99 strings + %d forms + suffix-extension
+; (structurally vetted: consecutive-hash families, XYZ/RGB triples).
+; ALL VALUES [real]. @hash(...) = name unrecovered. God Mode = Rage.
 ; =====================================================================
 
 /TweakTemplates/Fog/000/
-  @hash(0x55b00cf6)                    "360 Lightning"   ; [real] str32
+  Instance Name                        "360 Lightning"   ; [real] str32
   Fog_R                                          0.35   ; [real] f32
   Fog_G                                          0.25   ; [real] f32
   Fog_B                                           0.2   ; [real] f32

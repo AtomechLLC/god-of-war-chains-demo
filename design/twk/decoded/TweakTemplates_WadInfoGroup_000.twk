@@ -1,14 +1,13 @@
 ; =====================================================================
 ; TweakTemplates_WadInfoGroup_000.twk — decoded designer tweak data (God of War 1)
 ; Source: part1.pak @0x36d260, TWK instance uid 62 (magic 0xfedcba98)
-; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
-; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
-; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
-; "God Mode" = Rage of the Gods.
+; Key names cracked vs SCUS_973.99 strings + %d forms + suffix-extension
+; (structurally vetted: consecutive-hash families, XYZ/RGB triples).
+; ALL VALUES [real]. @hash(...) = name unrecovered. God Mode = Rage.
 ; =====================================================================
 
 /TweakTemplates/WadInfoGroup/000/
-  @hash(0x55b00cf6)                    5065726d616e656e7400626c65000065…   ; [real] hex32
+  Instance Name                        5065726d616e656e7400626c65000065…   ; [real] hex32
   GO 0 Name                            676f4865726f006e7400626c65000065…   ; [real] hex32
   GO 1 Name                            676f4d4149426c616465006c65000065…   ; [real] hex32
   GO 2 Name                            676f4d4149476f64426c616465000065…   ; [real] hex32
@@ -25,10 +24,10 @@
   GO 13 Name                           "goLightningSingleBolt"   ; [real] str32
   GO 14 Name                           676f4c696768746e696e675261646975…   ; [real] hex32
   GO 15 Name                           676f4d657748006e696e675261646975…   ; [real] hex32
-  @hash(0x9e80f20e)                    676f4579654265616d00675261646975…   ; [real] hex32
-  @hash(0x4fbe748d)                    676f4d656448656164466c6173680075…   ; [real] hex32
-  @hash(0x00fbf70c)                    676f4d6564486561644e756b65000075…   ; [real] hex32
-  @hash(0xb239798b)                    676f426f6c740061644e756b65000075…   ; [real] hex32
+  GO 16 Name                           676f4579654265616d00675261646975…   ; [real] hex32
+  GO 17 Name                           676f4d656448656164466c6173680075…   ; [real] hex32
+  GO 18 Name                           676f4d6564486561644e756b65000075…   ; [real] hex32
+  GO 19 Name                           676f426f6c740061644e756b65000075…   ; [real] hex32
   @hash(0x6493a015)                    676f426f6c7448697400756b65000075…   ; [real] hex32
   @hash(0x15d12294)                    676f426f6c7443686172676555700075…   ; [real] hex32
   @hash(0xc70ea513)                    676f537464426f6c7400676555700075…   ; [real] hex32

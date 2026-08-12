@@ -1,0 +1,19 @@
+; =====================================================================
+; TweakTemplates_MFX_520.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x339380, TWK instance uid 2 (magic 0xfedcba98)
+; Key names cracked vs SCUS_973.99 strings + %d forms + suffix-extension
+; (structurally vetted: consecutive-hash families, XYZ/RGB triples).
+; ALL VALUES [real]. @hash(...) = name unrecovered. God Mode = Rage.
+; =====================================================================
+
+/TweakTemplates/MFX/520/
+  Instance Name                        48697420456666656374006800000000…   ; [real] hex32
+  @hash(0x33317a59)                        0x2074ffff   ; [real] raw
+  @hash(0x405ce7fc)                        0x2074ff00   ; [real] raw
+  @hash(0x4867d77b)                        0x2074ff00   ; [real] raw
+  @hash(0x1e14d549)                        0x2074ff00   ; [real] raw
+  @hash(0x25f57a5d)                        0x2074ff00   ; [real] raw
+  @hash(0x35159154)                        0x2074ff00   ; [real] raw
+  @hash(0xe54a19a6)                    "goArmorSlice"   ; [real] str32
+  @hash(0x0f01c134)                        0x72416f00   ; [real] raw
+  @hash(0xae05dea4)                        0x72416f00   ; [real] raw

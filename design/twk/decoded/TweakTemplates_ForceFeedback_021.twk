@@ -1,0 +1,37 @@
+; =====================================================================
+; TweakTemplates_ForceFeedback_021.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x339b10, TWK instance uid 1 (magic 0xfedcba98)
+; Key names cracked vs SCUS_973.99 strings + %d forms + suffix-extension
+; (structurally vetted: consecutive-hash families, XYZ/RGB triples).
+; ALL VALUES [real]. @hash(...) = name unrecovered. God Mode = Rage.
+; =====================================================================
+
+/TweakTemplates/ForceFeedback/021/
+  Instance Name                         "medium buzz"   ; [real] str32
+  Duration                                          1   ; [real] f32
+  @hash(0x57a02b56)                                60   ; [real] f32
+  @hash(0x7af1a83d)                                 2   ; [real] f32
+  @hash(0x472f6035)                                 0   ; [real] f32
+  @hash(0x4d77623f)                                 0   ; [real] f32
+  @hash(0x74138923)                        0x00000001   ; [real] raw
+  @hash(0x27a044dd)                                60   ; [real] f32
+  @hash(0x4af1c1c4)                               214   ; [real] f32
+  @hash(0x78b407bc)                                 0   ; [real] f32
+  @hash(0xcedd3738)                                 0   ; [real] f32
+  @hash(0xfcc4ec1c)                        0x00000003   ; [real] raw
+  Attack                                         0.03   ; [real] f32
+  @hash(0x2ad2dd5a)                               0.5   ; [real] f32
+  @hash(0x08404743)                                 0   ; [real] f32
+  @hash(0x98851ec7)                                 0   ; [real] f32
+  Input 0 Bias                                      0   ; [real] f32
+  Input 0 Scale                                     2   ; [real] f32
+  Input 0 Operator                                  2   ; [real] f32
+  Input 1 Bias                                      0   ; [real] f32
+  Input 1 Scale                                     0   ; [real] f32
+  Input 1 Operator                                  0   ; [real] f32
+  Input 2 Bias                                      0   ; [real] f32
+  Input 2 Scale                                     0   ; [real] f32
+  Input 2 Operator                                  0   ; [real] f32
+  Input 3 Bias                                      0   ; [real] f32
+  Input 3 Scale                                     0   ; [real] f32
+  Input 3 Operator                                  0   ; [real] f32

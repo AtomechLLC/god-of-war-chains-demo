@@ -1,10 +1,9 @@
 ; =====================================================================
 ; Player.twk — decoded designer tweak data (God of War 1)
 ; Source: part1.pak @0x369bf0, TWK instance uid 273 (magic 0xfedcba98)
-; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
-; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
-; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
-; "God Mode" = Rage of the Gods.
+; Key names cracked vs SCUS_973.99 strings + %d forms + suffix-extension
+; (structurally vetted: consecutive-hash families, XYZ/RGB triples).
+; ALL VALUES [real]. @hash(...) = name unrecovered. God Mode = Rage.
 ; =====================================================================
 
 /Player/
@@ -263,14 +262,14 @@
   Template 14                                 0.69922   ; [real] f32
   Milestone 15 Hits                          0.699255   ; [real] f32
   Template 15                                 0.69922   ; [real] f32
-  @hash(0xde59256b)                           0.69926   ; [real] f32
-  @hash(0x973f0d2b)                           0.69922   ; [real] f32
-  @hash(0x8f96a7ea)                          0.699266   ; [real] f32
-  @hash(0x973f0d2c)                           0.69922   ; [real] f32
-  @hash(0x40d42a69)                          0.699272   ; [real] f32
-  @hash(0x973f0d2d)                           0.69922   ; [real] f32
-  @hash(0xf211ace8)                          0.699278   ; [real] f32
-  @hash(0x973f0d2e)                           0.69922   ; [real] f32
+  Milestone 16 Hits                           0.69926   ; [real] f32
+  Template 16                                 0.69922   ; [real] f32
+  Milestone 17 Hits                          0.699266   ; [real] f32
+  Template 17                                 0.69922   ; [real] f32
+  Milestone 18 Hits                          0.699272   ; [real] f32
+  Template 18                                 0.69922   ; [real] f32
+  Milestone 19 Hits                          0.699278   ; [real] f32
+  Template 19                                 0.69922   ; [real] f32
 
 /Player/Reticle/
   Valid Tint R                                    0.2   ; [real] f32

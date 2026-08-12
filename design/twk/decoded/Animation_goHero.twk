@@ -1,0 +1,2457 @@
+; =====================================================================
+; Animation_goHero.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x5e458c80, TWK instance uid 149 (magic 0xfedcba98)
+; Key names cracked vs SCUS_973.99 strings + %d forms + suffix-extension
+; (structurally vetted: consecutive-hash families, XYZ/RGB triples).
+; ALL VALUES [real]. @hash(...) = name unrecovered. God Mode = Rage.
+; =====================================================================
+
+/Animation/goHero/
+  @hash(0xe3191165)                                 0   ; [real] f32
+  @hash(0xdbbdbbc0)                                 0   ; [real] f32
+  @hash(0x0d35afaf)                              0.05   ; [real] f32
+  @hash(0x05da5a0a)                                 0   ; [real] f32
+  @hash(0x2601324f)                               0.1   ; [real] f32
+  @hash(0x1ea5dcaa)                                 0   ; [real] f32
+  @hash(0x1c120db3)                               0.1   ; [real] f32
+  @hash(0x14b6b80e)                                 0   ; [real] f32
+  @hash(0xc23b8fe8)                               0.2   ; [real] f32
+  @hash(0xbae03a43)                                 0   ; [real] f32
+  @hash(0x8d515254)                              0.05   ; [real] f32
+  @hash(0x85f5fcaf)                                 0   ; [real] f32
+  @hash(0x9fddda3f)                               0.1   ; [real] f32
+  @hash(0x9882849a)                                 0   ; [real] f32
+  @hash(0x8d619740)                               0.1   ; [real] f32
+  @hash(0x8606419b)                                 0   ; [real] f32
+  @hash(0x7ae55441)                              0.05   ; [real] f32
+  @hash(0x7389fe9c)                                 0   ; [real] f32
+  @hash(0x7aa04ce4)                               0.1   ; [real] f32
+  @hash(0x7344f73f)                                 0   ; [real] f32
+  @hash(0xc93603ef)                              0.05   ; [real] f32
+  @hash(0xc1daae4a)                                 0   ; [real] f32
+  @hash(0x4cbcd6f0)                                 0   ; [real] f32
+  @hash(0x4561814b)                                 0   ; [real] f32
+  @hash(0x24958cce)                               0.1   ; [real] f32
+  @hash(0x1d3a3729)                                 0   ; [real] f32
+  @hash(0x23e65fff)                               0.1   ; [real] f32
+  @hash(0x1c8b0a5a)                                 0   ; [real] f32
+  @hash(0xe993b884)                               0.2   ; [real] f32
+  @hash(0xe23862df)                                 0   ; [real] f32
+  @hash(0x0ab83be9)                               0.1   ; [real] f32
+  @hash(0x035ce644)                                 0   ; [real] f32
+  @hash(0x3cd48b31)                              0.05   ; [real] f32
+  @hash(0x3579358c)                                 0   ; [real] f32
+  @hash(0xb198699c)                               0.2   ; [real] f32
+  @hash(0xaa3d13f7)                                 0   ; [real] f32
+  @hash(0xac9742d7)                               0.2   ; [real] f32
+  @hash(0xa53bed32)                                 0   ; [real] f32
+  @hash(0x6004e7b3)                               0.2   ; [real] f32
+  @hash(0x58a9920e)                                 0   ; [real] f32
+  @hash(0xfa7e683f)                                 0   ; [real] f32
+  @hash(0xf323129a)                                 0   ; [real] f32
+  @hash(0x9991c269)                               0.1   ; [real] f32
+  @hash(0x92366cc4)                                 0   ; [real] f32
+  @hash(0x8ca50bb0)                               0.2   ; [real] f32
+  @hash(0x8549b60b)                                 0   ; [real] f32
+  @hash(0x7a28c8b1)                               0.2   ; [real] f32
+  @hash(0x72cd730c)                                 0   ; [real] f32
+  @hash(0x4d335ae9)                               0.1   ; [real] f32
+  @hash(0x45d80544)                                 0   ; [real] f32
+  @hash(0x171f79a3)                               0.2   ; [real] f32
+  @hash(0x0fc423fe)                                 0   ; [real] f32
+  @hash(0xbafa32ae)                                 0   ; [real] f32
+  @hash(0xb39edd09)                                 0   ; [real] f32
+  @hash(0xc6e412ea)                               0.1   ; [real] f32
+  @hash(0xbf88bd45)                                 0   ; [real] f32
+  @hash(0x2a2ba104)                               0.2   ; [real] f32
+  @hash(0x22d04b5f)                                 0   ; [real] f32
+  @hash(0x3aa83f08)                                 0   ; [real] f32
+  @hash(0x334ce963)                                 0   ; [real] f32
+  @hash(0x0e479ae2)                                 0   ; [real] f32
+  @hash(0x06ec453d)                                 0   ; [real] f32
+  @hash(0x8250d85e)                               0.2   ; [real] f32
+  @hash(0x7af582b9)                                 0   ; [real] f32
+  @hash(0x1d4ee5f6)                                 0   ; [real] f32
+  @hash(0x15f39051)                                 0   ; [real] f32
+  @hash(0xe94bdbb4)                               0.2   ; [real] f32
+  @hash(0xe1f0860f)                                 0   ; [real] f32
+  @hash(0xd6cf98b5)                               0.2   ; [real] f32
+  @hash(0xcf744310)                                 0   ; [real] f32
+  @hash(0xc45355b6)                               0.2   ; [real] f32
+  @hash(0xbcf80011)                                 0   ; [real] f32
+  @hash(0xb1d712b7)                               0.2   ; [real] f32
+  @hash(0xaa7bbd12)                                 0   ; [real] f32
+  @hash(0xb70b26ed)                               0.2   ; [real] f32
+  @hash(0xafafd148)                                 0   ; [real] f32
+  @hash(0x86428ca6)                               0.2   ; [real] f32
+  @hash(0x7ee73701)                                 0   ; [real] f32
+  @hash(0x73c649a7)                               0.2   ; [real] f32
+  @hash(0x6c6af402)                                 0   ; [real] f32
+  @hash(0x614a06a8)                               0.2   ; [real] f32
+  @hash(0x59eeb103)                                 0   ; [real] f32
+  @hash(0x4ecdc3a9)                               0.2   ; [real] f32
+  @hash(0x47726e04)                                 0   ; [real] f32
+  @hash(0x3cab0db0)                               0.2   ; [real] f32
+  @hash(0x354fb80b)                                 0   ; [real] f32
+  @hash(0x7613fa19)                             0.075   ; [real] f32
+  @hash(0x6eb8a474)                                 0   ; [real] f32
+  @hash(0x18da0e08)                              0.05   ; [real] f32
+  @hash(0x117eb863)                                 0   ; [real] f32
+  @hash(0x3c665266)                               0.1   ; [real] f32
+  @hash(0x350afcc1)                                 0   ; [real] f32
+  @hash(0x71d43a5a)                               0.3   ; [real] f32
+  @hash(0x6a78e4b5)                                 0   ; [real] f32
+  @hash(0xbd142871)                                 0   ; [real] f32
+  @hash(0xb5b8d2cc)                                 0   ; [real] f32
+  @hash(0x5aa49f59)                             0.075   ; [real] f32
+  @hash(0x534949b4)                                 0   ; [real] f32
+  @hash(0xd2aff02c)                              0.05   ; [real] f32
+  @hash(0xcb549a87)                                 0   ; [real] f32
+  @hash(0x278dc6ad)                               0.2   ; [real] f32
+  @hash(0x20327108)                                 0   ; [real] f32
+  @hash(0xdd28f1be)                                 0   ; [real] f32
+  @hash(0xd5cd9c19)                                 0   ; [real] f32
+  @hash(0xa2349ed1)                                 0   ; [real] f32
+  @hash(0x9ad9492c)                                 0   ; [real] f32
+  @hash(0x06b199f9)                              0.05   ; [real] f32
+  @hash(0xff564454)                                 0   ; [real] f32
+  @hash(0xeb51f1a1)                               0.2   ; [real] f32
+  @hash(0xe3f69bfc)                                 0   ; [real] f32
+  @hash(0xf880a962)                             0.025   ; [real] f32
+  @hash(0xf12553bd)                                 0   ; [real] f32
+  @hash(0xbf58977e)                               0.2   ; [real] f32
+  @hash(0xb7fd41d9)                                 0   ; [real] f32
+  @hash(0x34cd3035)                               0.2   ; [real] f32
+  @hash(0x2d71da90)                                 0   ; [real] f32
+  @hash(0xb693e1c9)                               0.2   ; [real] f32
+  @hash(0xaf388c24)                                 0   ; [real] f32
+  @hash(0x5f2d8879)                               0.2   ; [real] f32
+  @hash(0x57d232d4)                                 0   ; [real] f32
+  @hash(0xa96d7362)                               0.2   ; [real] f32
+  @hash(0xa2121dbd)                                 0   ; [real] f32
+  @hash(0x76c7c525)                               0.2   ; [real] f32
+  @hash(0x6f6c6f80)                                 0   ; [real] f32
+  @hash(0xb015a320)                               0.1   ; [real] f32
+  @hash(0xa8ba4d7b)                                 0   ; [real] f32
+  @hash(0x486a66bd)                               0.2   ; [real] f32
+  @hash(0x410f1118)                                 0   ; [real] f32
+  @hash(0xcd24e8e7)                               0.2   ; [real] f32
+  @hash(0xc5c99342)                                 0   ; [real] f32
+  @hash(0x083788c5)                               0.4   ; [real] f32
+  @hash(0x00dc3320)                                 0   ; [real] f32
+  @hash(0x85639916)                               0.4   ; [real] f32
+  @hash(0x7e084371)                                 0   ; [real] f32
+  @hash(0x039a1083)                              0.05   ; [real] f32
+  @hash(0xfc3ebade)                                 0   ; [real] f32
+  @hash(0xdea18a85)                               0.1   ; [real] f32
+  @hash(0xd74634e0)                                 0   ; [real] f32
+  @hash(0xcc0e7079)                               0.2   ; [real] f32
+  @hash(0xc4b31ad4)                                 0   ; [real] f32
+  @hash(0xe1508677)                               0.2   ; [real] f32
+  @hash(0xd9f530d2)                                 0   ; [real] f32
+  @hash(0x551d9a1b)                              0.35   ; [real] f32
+  @hash(0x4dc24476)                                 0   ; [real] f32
+  @hash(0x7025707f)                                 0   ; [real] f32
+  @hash(0x68ca1ada)                                 0   ; [real] f32
+  @hash(0x6423a1e8)                               0.2   ; [real] f32
+  @hash(0x5cc84c43)                                 0   ; [real] f32
+  @hash(0x51a75ee9)                             0.125   ; [real] f32
+  @hash(0x4a4c0944)                                 0   ; [real] f32
+  @hash(0x3f2b1bea)                             0.125   ; [real] f32
+  @hash(0x37cfc645)                                 0   ; [real] f32
+  @hash(0x2caed8eb)                              0.05   ; [real] f32
+  @hash(0x25538346)                                 0   ; [real] f32
+  @hash(0x1a3295ec)                               0.1   ; [real] f32
+  @hash(0x12d74047)                                 0   ; [real] f32
+  @hash(0x07b652ed)                              0.05   ; [real] f32
+  @hash(0x005afd48)                                 0   ; [real] f32
+  @hash(0x387e6567)                               0.2   ; [real] f32
+  @hash(0x31230fc2)                                 0   ; [real] f32
+  @hash(0x26022268)                              0.05   ; [real] f32
+  @hash(0x1ea6ccc3)                                 0   ; [real] f32
+  @hash(0x1385df69)                               0.2   ; [real] f32
+  @hash(0x0c2a89c4)                                 0   ; [real] f32
+  @hash(0x01099c6a)                              0.05   ; [real] f32
+  @hash(0xf9ae46c5)                                 0   ; [real] f32
+  @hash(0x0cd928e6)                               0.2   ; [real] f32
+  @hash(0x057dd341)                                 0   ; [real] f32
+  @hash(0xfa5ce5e7)                               0.2   ; [real] f32
+  @hash(0xf3019042)                                 0   ; [real] f32
+  @hash(0xe133ec65)                              0.15   ; [real] f32
+  @hash(0xd9d896c0)                                 0   ; [real] f32
+  @hash(0xb58eafe4)                              0.15   ; [real] f32
+  @hash(0xae335a3f)                                 0   ; [real] f32
+  @hash(0x034aab08)                               0.1   ; [real] f32
+  @hash(0xfbef5563)                                 0   ; [real] f32
+  @hash(0x3a5da8aa)                               0.2   ; [real] f32
+  @hash(0x33025305)                                 0   ; [real] f32
+  @hash(0x27e165ab)                               0.2   ; [real] f32
+  @hash(0x20861006)                                 0   ; [real] f32
+  @hash(0x156522ac)                               0.2   ; [real] f32
+  @hash(0x0e09cd07)                                 0   ; [real] f32
+  @hash(0x7d47394f)                              0.25   ; [real] f32
+  @hash(0x75ebe3aa)                                 0   ; [real] f32
+  @hash(0xc43a9d1e)                               0.2   ; [real] f32
+  @hash(0xbcdf4779)                                 0   ; [real] f32
+  @hash(0x0e993fe0)                              0.25   ; [real] f32
+  @hash(0x073dea3b)                               2.2   ; [real] f32
+  @hash(0x1e62a144)                              0.25   ; [real] f32
+  @hash(0x17074b9f)                               2.2   ; [real] f32
+  @hash(0xaf790f4a)                              0.25   ; [real] f32
+  @hash(0xa81db9a5)                               2.2   ; [real] f32
+  @hash(0x3c28774f)                              0.25   ; [real] f32
+  @hash(0x34cd21aa)                               2.2   ; [real] f32
+  @hash(0xcd3ee555)                              0.25   ; [real] f32
+  @hash(0xc5e38fb0)                               2.2   ; [real] f32
+  @hash(0x2705a455)                              0.25   ; [real] f32
+  @hash(0x1faa4eb0)                               2.2   ; [real] f32
+  @hash(0x1f5f1dde)                              0.05   ; [real] f32
+  @hash(0x1803c839)                                 0   ; [real] f32
+  @hash(0x7667c7d5)                               0.2   ; [real] f32
+  @hash(0x6f0c7230)                                 0   ; [real] f32
+  @hash(0x1657f341)                               0.1   ; [real] f32
+  @hash(0x0efc9d9c)                                 0   ; [real] f32
+  @hash(0x03dbb042)                               0.1   ; [real] f32
+  @hash(0xfc805a9d)                                 0   ; [real] f32
+  @hash(0xaa4cdd5c)                              0.15   ; [real] f32
+  @hash(0xa2f187b7)                                 0   ; [real] f32
+  @hash(0xbb5ec812)                               0.2   ; [real] f32
+  @hash(0xb403726d)                                 0   ; [real] f32
+  @hash(0xa8e28513)                               0.2   ; [real] f32
+  @hash(0xa1872f6e)                                 0   ; [real] f32
+  @hash(0x02bc2764)                               0.1   ; [real] f32
+  @hash(0xfb60d1bf)                                 0   ; [real] f32
+  @hash(0x17c156e4)                               0.1   ; [real] f32
+  @hash(0x1066013f)                                 0   ; [real] f32
+  @hash(0xe63033e4)                               0.1   ; [real] f32
+  @hash(0xded4de3f)                                 0   ; [real] f32
+  @hash(0xa3c07d77)                               0.1   ; [real] f32
+  @hash(0x9c6527d2)                                 0   ; [real] f32
+  @hash(0xbc01c447)                              0.15   ; [real] f32
+  @hash(0xb4a66ea2)                                 0   ; [real] f32
+  @hash(0x5109cc74)                               0.2   ; [real] f32
+  @hash(0x49ae76cf)                                 0   ; [real] f32
+  @hash(0xa7c50a3b)                                 0   ; [real] f32
+  @hash(0xa069b496)                                 0   ; [real] f32
+  @hash(0x08c2ba78)                               0.1   ; [real] f32
+  @hash(0x016764d3)                                 0   ; [real] f32
+  @hash(0x316da817)                              0.05   ; [real] f32
+  @hash(0x2a125272)                                 0   ; [real] f32
+  @hash(0x0af6cfb2)                               0.2   ; [real] f32
+  @hash(0x039b7a0d)                                 0   ; [real] f32
+  @hash(0xe6e0780d)                               0.2   ; [real] f32
+  @hash(0xdf852268)                                 0   ; [real] f32
+  @hash(0x180bbc14)                               0.1   ; [real] f32
+  @hash(0x10b0666f)                                 0   ; [real] f32
+  @hash(0xfa9113c3)                                 0   ; [real] f32
+  @hash(0xf335be1e)                                 0   ; [real] f32
+  @hash(0xe2365206)                                 0   ; [real] f32
+  @hash(0xdadafc61)                                 0   ; [real] f32
+  @hash(0x46eaee7e)                               0.2   ; [real] f32
+  @hash(0x3f8f98d9)                                 0   ; [real] f32
+  @hash(0xaa73e287)                                 0   ; [real] f32
+  @hash(0xa3188ce2)                                 0   ; [real] f32
+  @hash(0xe69c2374)                                 0   ; [real] f32
+  @hash(0xdf40cdcf)                                 0   ; [real] f32
+  @hash(0xb3ebce4a)                               0.2   ; [real] f32
+  @hash(0xac9078a5)                                 0   ; [real] f32
+  @hash(0x46653571)                               0.2   ; [real] f32
+  @hash(0x3f09dfcc)                                 0   ; [real] f32
+  @hash(0xdf90614f)                                 0   ; [real] f32
+  @hash(0xd8350baa)                                 0   ; [real] f32
+  @hash(0x2c28ba6a)                                 0   ; [real] f32
+  @hash(0x24cd64c5)                                 0   ; [real] f32
+  @hash(0xbe2d4ec1)                               0.2   ; [real] f32
+  @hash(0xb6d1f91c)                                 0   ; [real] f32
+  @hash(0xf55c7d42)                                 0   ; [real] f32
+  @hash(0xee01279d)                                 0   ; [real] f32
+  @hash(0xc5aa5e86)                                 0   ; [real] f32
+  @hash(0xbe4f08e1)                                 0   ; [real] f32
+  @hash(0x815ba3d5)                                 0   ; [real] f32
+  @hash(0x7a004e30)                                 0   ; [real] f32
+  @hash(0xae322e81)                                 0   ; [real] f32
+  @hash(0xa6d6d8dc)                                 0   ; [real] f32
+  @hash(0xb64f1c94)                              0.15   ; [real] f32
+  @hash(0xaef3c6ef)                                 0   ; [real] f32
+  @hash(0x3239ec76)                              0.15   ; [real] f32
+  @hash(0x2ade96d1)                                 0   ; [real] f32
+  @hash(0xb2cfb0b3)                               0.2   ; [real] f32
+  @hash(0xab745b0e)                                 0   ; [real] f32
+  @hash(0x8421f9a8)                               0.1   ; [real] f32
+  @hash(0x7cc6a403)                                 0   ; [real] f32
+  @hash(0xa5c1a097)                             0.025   ; [real] f32
+  @hash(0x9e664af2)                                 0   ; [real] f32
+  @hash(0x12acd18f)                              0.05   ; [real] f32
+  @hash(0x0b517bea)                                 0   ; [real] f32
+  @hash(0x01905984)                              0.02   ; [real] f32
+  @hash(0xfa3503df)                                 0   ; [real] f32
+  @hash(0xbf7a7e78)                               0.2   ; [real] f32
+  @hash(0xb81f28d3)                                 0   ; [real] f32
+  @hash(0xacfe3b79)                                 0   ; [real] f32
+  @hash(0xa5a2e5d4)                                 0   ; [real] f32
+  @hash(0x9a81f87a)                               0.2   ; [real] f32
+  @hash(0x9326a2d5)                                 0   ; [real] f32
+  @hash(0xec77f890)                               0.1   ; [real] f32
+  @hash(0xe51ca2eb)                                 2   ; [real] f32
+  @hash(0xb813b23b)                               0.1   ; [real] f32
+  @hash(0xb0b85c96)                                 0   ; [real] f32
+  @hash(0x45d50789)                         0.0999999   ; [real] f32
+  @hash(0x3e79b1e4)                                 2   ; [real] f32
+  @hash(0x97427c57)                               0.1   ; [real] f32
+  @hash(0x8fe726b2)                                 0   ; [real] f32
+  @hash(0x74271a1b)                               0.2   ; [real] f32
+  @hash(0x6ccbc476)                                 0   ; [real] f32
+  @hash(0xed664f9d)                          0.166667   ; [real] f32
+  @hash(0xe60af9f8)                                 0   ; [real] f32
+  @hash(0x0962b564)                               0.2   ; [real] f32
+  @hash(0x02075fbf)                                 0   ; [real] f32
+  @hash(0xf6e67265)                                 0   ; [real] f32
+  @hash(0xef8b1cc0)                                 0   ; [real] f32
+  @hash(0xe46a2f66)                                 0   ; [real] f32
+  @hash(0xdd0ed9c1)                                 0   ; [real] f32
+  @hash(0xd8175774)                               0.2   ; [real] f32
+  @hash(0xd0bc01cf)                                 0   ; [real] f32
+  @hash(0xf11c3375)                                 0   ; [real] f32
+  @hash(0xe9c0ddd0)                                 0   ; [real] f32
+  @hash(0xde9ff076)                              0.05   ; [real] f32
+  @hash(0xd7449ad1)                                 0   ; [real] f32
+  @hash(0xd5d6995e)                              0.05   ; [real] f32
+  @hash(0xce7b43b9)                                 0   ; [real] f32
+  @hash(0xff67f3f4)                               0.1   ; [real] f32
+  @hash(0xf80c9e4f)                                 0   ; [real] f32
+  @hash(0xf9129f71)                               0.5   ; [real] f32
+  @hash(0xf1b749cc)                                 2   ; [real] f32
+  @hash(0x70990a33)                               0.2   ; [real] f32
+  @hash(0x693db48e)                                 2   ; [real] f32
+  @hash(0x01af7839)                               0.2   ; [real] f32
+  @hash(0xfa542294)                                 2   ; [real] f32
+  @hash(0x117f03e6)                               0.2   ; [real] f32
+  @hash(0x0a23ae41)                                 2   ; [real] f32
+  @hash(0x24a7d37a)                               0.3   ; [real] f32
+  @hash(0x1d4c7dd5)                                 0   ; [real] f32
+  @hash(0x5a8c15f5)                               0.1   ; [real] f32
+  @hash(0x5330c050)                                 0   ; [real] f32
+  @hash(0xf8474c00)                               0.2   ; [real] f32
+  @hash(0xf0ebf65b)                               1.5   ; [real] f32
+  @hash(0xb398af3b)                               0.2   ; [real] f32
+  @hash(0xac3d5996)                               2.7   ; [real] f32
+  @hash(0xc471c05e)                               0.1   ; [real] f32
+  @hash(0xbd166ab9)                                 0   ; [real] f32
+  @hash(0xa9cd0647)                               0.1   ; [real] f32
+  @hash(0xa271b0a2)                                 0   ; [real] f32
+  @hash(0x308fa866)                               0.2   ; [real] f32
+  @hash(0x293452c1)                                 0   ; [real] f32
+  @hash(0x61ec6c1a)                              0.02   ; [real] f32
+  @hash(0x5a911675)                                 0   ; [real] f32
+  @hash(0x7fc582f2)                               0.1   ; [real] f32
+  @hash(0x786a2d4d)                                 0   ; [real] f32
+  @hash(0x9124b9e0)                              0.15   ; [real] f32
+  @hash(0x89c9643b)                                 0   ; [real] f32
+  @hash(0x93ee16cb)                              0.22   ; [real] f32
+  @hash(0x8c92c126)                                 0   ; [real] f32
+  @hash(0xb426cde6)                               0.2   ; [real] f32
+  @hash(0xaccb7841)                                 0   ; [real] f32
+  @hash(0x28504fdb)                               0.2   ; [real] f32
+  @hash(0x20f4fa36)                                 0   ; [real] f32
+  @hash(0xeaff90cc)                               0.2   ; [real] f32
+  @hash(0xe3a43b27)                                 0   ; [real] f32
+  @hash(0x9a0464ea)                               0.2   ; [real] f32
+  @hash(0x92a90f45)                                 0   ; [real] f32
+  @hash(0xa6df3e75)                               0.2   ; [real] f32
+  @hash(0x9f83e8d0)                                 0   ; [real] f32
+  @hash(0xd8e9fde2)                               0.2   ; [real] f32
+  @hash(0xd18ea83d)                                 0   ; [real] f32
+  @hash(0x578bcaf9)                               0.2   ; [real] f32
+  @hash(0x50307554)                              1.48   ; [real] f32
+  @hash(0x16bd3956)                               0.2   ; [real] f32
+  @hash(0x0f61e3b1)                                 0   ; [real] f32
+  @hash(0x9af91774)                               0.5   ; [real] f32
+  @hash(0x939dc1cf)                               7.5   ; [real] f32
+  @hash(0xa7ee5006)                               0.1   ; [real] f32
+  @hash(0xa092fa61)                                 0   ; [real] f32
+  @hash(0xbeaedf9a)                                 0   ; [real] f32
+  @hash(0xb75389f5)                                 0   ; [real] f32
+  @hash(0x26a50f0b)                              0.15   ; [real] f32
+  @hash(0x1f49b966)                                 0   ; [real] f32
+  @hash(0x1e2d3024)                               0.2   ; [real] f32
+  @hash(0x16d1da7f)                                 0   ; [real] f32
+  @hash(0x24ab4388)                              0.25   ; [real] f32
+  @hash(0x1d4fede3)                                 0   ; [real] f32
+  @hash(0x046d8281)                              0.15   ; [real] f32
+  @hash(0xfd122cdc)                                 0   ; [real] f32
+  @hash(0x9151eca0)                               0.2   ; [real] f32
+  @hash(0x89f696fb)                                 0   ; [real] f32
+  @hash(0x6d013337)                               0.2   ; [real] f32
+  @hash(0x65a5dd92)                                 0   ; [real] f32
+  @hash(0xf04fcb08)                              0.45   ; [real] f32
+  @hash(0xe8f47563)                                 0   ; [real] f32
+  @hash(0xeaa35656)                              0.42   ; [real] f32
+  @hash(0xe34800b1)                                 0   ; [real] f32
+  @hash(0x7ae8545e)                               0.2   ; [real] f32
+  @hash(0x738cfeb9)                           4.99997   ; [real] f32
+  @hash(0xa7087f37)                               0.2   ; [real] f32
+  @hash(0x9fad2992)                                 0   ; [real] f32
+  @hash(0x4f0ddba4)                               0.2   ; [real] f32
+  @hash(0x47b285ff)                                 0   ; [real] f32
+  @hash(0xd43aff24)                               0.2   ; [real] f32
+  @hash(0xccdfa97f)                                 0   ; [real] f32
+  @hash(0x9cc63627)                               0.2   ; [real] f32
+  @hash(0x956ae082)                          0.999999   ; [real] f32
+  @hash(0x2ddca42d)                               0.2   ; [real] f32
+  @hash(0x26814e88)                          0.999999   ; [real] f32
+  @hash(0xeedabd5d)                               0.2   ; [real] f32
+  @hash(0xe77f67b8)                                 0   ; [real] f32
+  @hash(0xaad08442)                              0.18   ; [real] f32
+  @hash(0xa3752e9d)                                 0   ; [real] f32
+  @hash(0xed829bd6)                               0.2   ; [real] f32
+  @hash(0xe6274631)                                 0   ; [real] f32
+  @hash(0x3be6f248)                              0.18   ; [real] f32
+  @hash(0x348b9ca3)                                 0   ; [real] f32
+  @hash(0x53c5fddc)                               0.2   ; [real] f32
+  @hash(0x4c6aa837)                                 0   ; [real] f32
+  @hash(0xd485c1d2)                               0.2   ; [real] f32
+  @hash(0xcd2a6c2d)                                 0   ; [real] f32
+  @hash(0x40a3a9da)                               0.2   ; [real] f32
+  @hash(0x39485435)                                 0   ; [real] f32
+  @hash(0xd1ba17e0)                               0.2   ; [real] f32
+  @hash(0xca5ec23b)                                 0   ; [real] f32
+  @hash(0x9a454ee3)                               0.2   ; [real] f32
+  @hash(0x92e9f93e)                                 0   ; [real] f32
+  @hash(0x53860b40)                              0.15   ; [real] f32
+  @hash(0x4c2ab59b)                                 0   ; [real] f32
+  @hash(0xe49c7946)                              0.15   ; [real] f32
+  @hash(0xdd4123a1)                                 0   ; [real] f32
+  @hash(0x09054e56)                               0.2   ; [real] f32
+  @hash(0x01a9f8b1)                                 0   ; [real] f32
+  @hash(0xd1908559)                               0.2   ; [real] f32
+  @hash(0xca352fb4)                          0.999999   ; [real] f32
+  @hash(0x62a6f35f)                               0.2   ; [real] f32
+  @hash(0x5b4b9dba)                          0.999999   ; [real] f32
+  @hash(0x9aa6d222)                               0.2   ; [real] f32
+  @hash(0x934b7c7d)                                 0   ; [real] f32
+  @hash(0x2bbd4028)                               0.2   ; [real] f32
+  @hash(0x2461ea83)                                 0   ; [real] f32
+  @hash(0xf448772b)                               0.2   ; [real] f32
+  @hash(0xeced2186)                                 0   ; [real] f32
+  @hash(0xbf6df24b)                              0.07   ; [real] f32
+  @hash(0xb8129ca6)                                 0   ; [real] f32
+  @hash(0xbc602739)                              0.12   ; [real] f32
+  @hash(0xb504d194)                                 0   ; [real] f32
+  @hash(0x84eb5e3c)                               0.2   ; [real] f32
+  @hash(0x7d900897)                                 1   ; [real] f32
+  @hash(0x1601cc42)                               0.2   ; [real] f32
+  @hash(0x0ea6769d)                                 1   ; [real] f32
+  @hash(0x8ed8c7fc)                               0.2   ; [real] f32
+  @hash(0x877d7257)                                 0   ; [real] f32
+  @hash(0x4f61f55f)                               0.2   ; [real] f32
+  @hash(0x48069fba)                                 0   ; [real] f32
+  @hash(0x101bab6f)                               0.1   ; [real] f32
+  @hash(0x08c055ca)                                 0   ; [real] f32
+  @hash(0x609d69f4)                               0.1   ; [real] f32
+  @hash(0x5942144f)                                 0   ; [real] f32
+  @hash(0x5fee4f67)                               0.1   ; [real] f32
+  @hash(0x5892f9c2)                                 0   ; [real] f32
+  @hash(0xf2d2d968)                               0.1   ; [real] f32
+  @hash(0xeb7783c3)                                 0   ; [real] f32
+  @hash(0xd292bcab)                               0.2   ; [real] f32
+  @hash(0xcb376706)                                 0   ; [real] f32
+  @hash(0xe8a25830)                               0.2   ; [real] f32
+  @hash(0xe147028b)                                 0   ; [real] f32
+  @hash(0xe3a4231f)                               0.2   ; [real] f32
+  @hash(0xdc48cd7a)                                 0   ; [real] f32
+  @hash(0x9bd73f76)                               0.2   ; [real] f32
+  @hash(0x947be9d1)                                 0   ; [real] f32
+  @hash(0x92eafd4b)                               0.2   ; [real] f32
+  @hash(0x8b8fa7a6)                                 0   ; [real] f32
+  @hash(0x8fdfff81)                               0.2   ; [real] f32
+  @hash(0x8884a9dc)                                 0   ; [real] f32
+  @hash(0xc8a0f326)                               0.2   ; [real] f32
+  @hash(0xc1459d81)                               1.7   ; [real] f32
+  @hash(0xb624b027)                               0.2   ; [real] f32
+  @hash(0xaec95a82)                               1.7   ; [real] f32
+  @hash(0xa3a86d28)                               0.2   ; [real] f32
+  @hash(0x9c4d1783)                               1.7   ; [real] f32
+  @hash(0x912c2a29)                               0.2   ; [real] f32
+  @hash(0x89d0d484)                               1.7   ; [real] f32
+  @hash(0x7eafe72a)                               0.2   ; [real] f32
+  @hash(0x77549185)                               1.7   ; [real] f32
+  @hash(0x62926b63)                               0.2   ; [real] f32
+  @hash(0x5b3715be)                               1.7   ; [real] f32
+  @hash(0x50162864)                               0.2   ; [real] f32
+  @hash(0x48bad2bf)                               1.7   ; [real] f32
+  @hash(0x3d99e565)                               0.2   ; [real] f32
+  @hash(0x363e8fc0)                                 5   ; [real] f32
+  @hash(0x6d24c795)                              0.02   ; [real] f32
+  @hash(0x65c971f0)                                 0   ; [real] f32
+  @hash(0x1d847449)                               0.2   ; [real] f32
+  @hash(0x16291ea4)                                 0   ; [real] f32
+  @hash(0x8a655e62)                         0.0999998   ; [real] f32
+  @hash(0x830a08bd)                           5.29998   ; [real] f32
+  @hash(0xdbb88254)                         0.0999996   ; [real] f32
+  @hash(0xd45d2caf)                               1.7   ; [real] f32
+  @hash(0xc93c3f55)                         0.0999999   ; [real] f32
+  @hash(0xc1e0e9b0)                               1.7   ; [real] f32
+  @hash(0xb6bffc56)                         0.0999998   ; [real] f32
+  @hash(0xaf64a6b1)                           4.99993   ; [real] f32
+  @hash(0x899a1fce)                         0.0999998   ; [real] f32
+  @hash(0x823eca29)                           5.29996   ; [real] f32
+  @hash(0x1ab08dd4)                         0.0999998   ; [real] f32
+  @hash(0x1355382f)                           5.29998   ; [real] f32
+  @hash(0x87716ff3)                               0.2   ; [real] f32
+  @hash(0x80161a4e)                                 0   ; [real] f32
+  @hash(0x74f52cf4)                              0.05   ; [real] f32
+  @hash(0x6d99d74f)                                 0   ; [real] f32
+  @hash(0x6278e9f5)                               0.2   ; [real] f32
+  @hash(0x5b1d9450)                                 0   ; [real] f32
+  @hash(0x1394cfa9)                               0.2   ; [real] f32
+  @hash(0x0c397a04)                                 2   ; [real] f32
+  @hash(0x01188caa)                               0.2   ; [real] f32
+  @hash(0xf9bd3705)                               1.3   ; [real] f32
+  @hash(0xee9c49ab)                               0.2   ; [real] f32
+  @hash(0xe740f406)                                 2   ; [real] f32
+  @hash(0xdc2006ac)                               0.2   ; [real] f32
+  @hash(0xd4c4b107)                               1.3   ; [real] f32
+
+/Animation/goHero/Navigation/
+  ANIStand                                "standidle"   ; [real] str32
+  ANITurnOnSpot                           "standidle"   ; [real] str32
+  ANIWalk                              6277616c6b00646c6500000000000000…   ; [real] hex32
+  ANIStrafeF                           66726f6e7400646c6500000000000000…   ; [real] hex32
+  ANIStrafeR                           726967687400646c6500000000000000…   ; [real] hex32
+  ANIStrafeB                           726561720000646c6500000000000000…   ; [real] hex32
+  ANIStrafeL                           6c6566740000646c6500000000000000…   ; [real] hex32
+  ANIFlyH                              686f76657200646c6500000000000000…   ; [real] hex32
+  ANIFlyF                                "flyforward"   ; [real] str32
+  ANIFlyR                              666c7972696768740064000000000000…   ; [real] hex32
+  ANIFlyB                              666c796261636b000064000000000000…   ; [real] hex32
+  ANIFlyL                              666c796c656674000064000000000000…   ; [real] hex32
+  ANIWallHang                             "WallhangI"   ; [real] str32
+  ANIWallHangCatch                     "WallhangCatch"   ; [real] str32
+  ANIWallHangR                         57616c6c68616e675200746368000000…   ; [real] hex32
+  ANIWallHangL                         57616c6c68616e674c00746368000000…   ; [real] hex32
+  ANIJump                              6a756d70416972004c00746368000000…   ; [real] hex32
+  ANIVJump                             6a756d70557000004c00746368000000…   ; [real] hex32
+  ANIWJump                             6a756d7077616c6c0000746368000000…   ; [real] hex32
+  ANIDblJump                           "jumpdoubleair"   ; [real] str32
+  ANIVDblJump                          "jumpdoubleair"   ; [real] str32
+  ANIFall                              66616c6c760075626c65616972000000…   ; [real] hex32
+  ANIDblFall                           66616c6c760075626c65616972000000…   ; [real] hex32
+  ANIHighFall                          636f6d62617466616c6c006972000000…   ; [real] hex32
+  ANIVFall                             66616c6c760066616c6c006972000000…   ; [real] hex32
+  ANIVDblFall                          66616c6c760066616c6c006972000000…   ; [real] hex32
+  ANILand                              6c616e64000066616c6c006972000000…   ; [real] hex32
+  ANIVLand                             6c616e64000066616c6c006972000000…   ; [real] hex32
+  ANIHighLand                          "highFallLand"   ; [real] str32
+  ANIClimb                             62636c696d62006c4c616e6400000000…   ; [real] hex32
+  ANIClimbIdle                         "wallclimbidle"   ; [real] str32
+  ANIClimbAL                           77616c6c436c696d62414c0065000000…   ; [real] hex32
+  ANIClimbAR                           77616c6c436c696d6241520065000000…   ; [real] hex32
+  ANIClimbALIdle                       "wallClimbALIdle"   ; [real] str32
+  ANIClimbARIdle                       "wallClimbARIdle"   ; [real] str32
+  ANIClimbCL                           77616c6c436c696d62434c00646c6500…   ; [real] hex32
+  ANIClimbCR                           77616c6c436c696d62435200646c6500…   ; [real] hex32
+  ANISlide                             66616c6c7600696d62435200646c6500…   ; [real] hex32
+  ANISwim                              7377696d0000696d62435200646c6500…   ; [real] hex32
+  ANISwimIdle                          7377696d69646c6500435200646c6500…   ; [real] hex32
+  ANITread                             7472656164006c6500435200646c6500…   ; [real] hex32
+  ANITreadSwim                         74726561647377696d005200646c6500…   ; [real] hex32
+  ANIDiveDashC                         7377696d4461736850550000646c6500…   ; [real] hex32
+  ANIDiveDashCI                        7377696d4461736869646c65006c6500…   ; [real] hex32
+  ANIDiveDash                          7377696d6461736800646c65006c6500…   ; [real] hex32
+  ANIDive1                             7377696d6469766500646c65006c6500…   ; [real] hex32
+  ANIDive2                             7377696d6469766531006c65006c6500…   ; [real] hex32
+  ANIBalanceWalk                       62616c77616c6b0031006c65006c6500…   ; [real] hex32
+  ANIBalanceCatch                      "balancebeamcatch"   ; [real] str32
+  ANIBalancePullupL                    "balancebeampullup"   ; [real] str32
+  ANIBalancePullupR                    "balancebeampullup2"   ; [real] str32
+  ANIWallCatch                         77616c6c6361746368006d70756c6c75…   ; [real] hex32
+  ANIWallPullup                        77616c6c70756c6c75700070756c6c75…   ; [real] hex32
+  ANIWallFront                         77616c6c46726f6e74490070756c6c75…   ; [real] hex32
+  ANIWallFrontR                        77616c6c46726f6e74520070756c6c75…   ; [real] hex32
+  ANIWallFrontL                        77616c6c46726f6e744c0070756c6c75…   ; [real] hex32
+  ANIWallBack                          77616c6c4261636b49000070756c6c75…   ; [real] hex32
+  ANIWallBackR                         77616c6c4261636b52000070756c6c75…   ; [real] hex32
+  ANIWallBackL                         77616c6c4261636b4c000070756c6c75…   ; [real] hex32
+  ANIRope                              726f706569646c6500000070756c6c75…   ; [real] hex32
+  ANIRopeU                             726f70655570006500000070756c6c75…   ; [real] hex32
+  ANIRopeD                             726f7065446f776e00000070756c6c75…   ; [real] hex32
+  ANIRopeSWStart                       726f70657377696e6773746172740075…   ; [real] hex32
+  ANIRopeSW1                           "ropeswingmidtofrnt"   ; [real] str32
+  ANIRopeSW2                           "ropeswingfrnttomid"   ; [real] str32
+  ANIRopeSW3                           "ropeswingmidtoback"   ; [real] str32
+  ANIRopeSW4                           "ropeswingbacktomid"   ; [real] str32
+  ANIRopeIdle                          726f70657377696e6769646c65006f6d…   ; [real] hex32
+  ANIRSlide                            726f7065736c69646500646c65006f6d…   ; [real] hex32
+  ANIBRope                             726f7065686f68690000646c65006f6d…   ; [real] hex32
+  ANIBRopeF                            726f7065686f68000000646c65006f6d…   ; [real] hex32
+  ANIZipLine                           7a69706c696e65000000646c65006f6d…   ; [real] hex32
+  ANILadder                            4c616464657255700000646c65006f6d…   ; [real] hex32
+  ANILadderU                           6c616464657255700000646c65006f6d…   ; [real] hex32
+  ANILadderD                           6c6164646572446f776e006c65006f6d…   ; [real] hex32
+  ANILDis1                             6469736d6f756e743100006c65006f6d…   ; [real] hex32
+  ANILDis2                             6469736d6f756e743200006c65006f6d…   ; [real] hex32
+  ANILSlide                            6c6164646572736c6964650065006f6d…   ; [real] hex32
+  ANIPushI                             7075736849646c650064650065006f6d…   ; [real] hex32
+  ANIPushL                             50756c6c4c006c650064650065006f6d…   ; [real] hex32
+  ANIPushR                             50756c6c52006c650064650065006f6d…   ; [real] hex32
+  ANIPushF                             5075736800006c650064650065006f6d…   ; [real] hex32
+  ANIPushB                             50756c6c00006c650064650065006f6d…   ; [real] hex32
+  ANIStartKickBox                      4b69636b426f78310064650065006f6d…   ; [real] hex32
+  ANIKickBoxIdle                       4b69636b426f78330064650065006f6d…   ; [real] hex32
+  ANIKickBox                           4b69636b426f78320064650065006f6d…   ; [real] hex32
+  ANICrankIdle                         6372616e6b49646c6500650065006f6d…   ; [real] hex32
+  ANICrankPush                         507573680049646c6500650065006f6d…   ; [real] hex32
+  ANICrankPull                         50756c6c0049646c6500650065006f6d…   ; [real] hex32
+  ANICrankPushL                        4372616e6b507573684c000065006f6d…   ; [real] hex32
+  ANICrankPullL                        4372616e6b50756c6c4c000065006f6d…   ; [real] hex32
+  ANICrankPushR                        4372616e6b5075736852000065006f6d…   ; [real] hex32
+  ANICrankPullR                        4372616e6b50756c6c52000065006f6d…   ; [real] hex32
+  ANILever                             6c6576657270756c6c00000065006f6d…   ; [real] hex32
+  ANIUWLever                           6c6576657250756c6c55570065006f6d…   ; [real] hex32
+  ANITandF1                            54726964656e7450756c6c3031006f6d…   ; [real] hex32
+  ANITandF2                            54726964656e7450756c6c3032006f6d…   ; [real] hex32
+  ANITandF3                            54726964656e7450756c6c3033006f6d…   ; [real] hex32
+  ANICSM1                              636865737447726162006c3033006f6d…   ; [real] hex32
+  ANICSM2                              63686573744f70656e006c3033006f6d…   ; [real] hex32
+
+/Animation/goHero/Navigation/Bank 1/
+  ANIStand                             6265727365726b49646c650033006f6d…   ; [real] hex32
+  ANITurnOnSpot                        6265727365726b49646c650033006f6d…   ; [real] hex32
+  ANIWalk                              62657277616c6b00646c650033006f6d…   ; [real] hex32
+  ANIStrafeF                           66726f6e74006b00646c650033006f6d…   ; [real] hex32
+  ANIStrafeR                           7269676874006b00646c650033006f6d…   ; [real] hex32
+  ANIStrafeB                           7265617200006b00646c650033006f6d…   ; [real] hex32
+  ANIStrafeL                           6c65667400006b00646c650033006f6d…   ; [real] hex32
+  ANIFlyH                              686f766572006b00646c650033006f6d…   ; [real] hex32
+  ANIFlyF                              666c79666f7277617264000033006f6d…   ; [real] hex32
+  ANIFlyR                              666c7972696768740064000033006f6d…   ; [real] hex32
+  ANIFlyB                              666c796261636b000064000033006f6d…   ; [real] hex32
+  ANIFlyL                              666c796c656674000064000033006f6d…   ; [real] hex32
+  ANIWallHang                          57616c6c68616e674900000033006f6d…   ; [real] hex32
+  ANIWallHangCatch                     57616c6c68616e674361746368006f6d…   ; [real] hex32
+  ANIWallHangR                         57616c6c68616e675200746368006f6d…   ; [real] hex32
+  ANIWallHangL                         57616c6c68616e674c00746368006f6d…   ; [real] hex32
+  ANIJump                              6265724a756d70416972006368006f6d…   ; [real] hex32
+  ANIVJump                             6265724a756d70416972006368006f6d…   ; [real] hex32
+  ANIWJump                             6a756d7077616c6c0072006368006f6d…   ; [real] hex32
+  ANIDblJump                           6265724a756d70446f75626c65416972…   ; [real] hex32
+  ANIVDblJump                          6265724a756d70446f75626c65416972…   ; [real] hex32
+  ANIFall                              62657246616c6c4e0075626c65416972…   ; [real] hex32
+  ANIDblFall                           62657246616c6c4e0075626c65416972…   ; [real] hex32
+  ANIHighFall                          62657246616c6c4e0075626c65416972…   ; [real] hex32
+  ANIVFall                             62657246616c6c4e0075626c65416972…   ; [real] hex32
+  ANIVDblFall                          62657246616c6c4e0075626c65416972…   ; [real] hex32
+  ANILand                              6265724c616e64000075626c65416972…   ; [real] hex32
+  ANIVLand                             6265724c616e64000075626c65416972…   ; [real] hex32
+  ANIHighLand                          6265724c616e64000075626c65416972…   ; [real] hex32
+  ANIClimb                             62636c696d6200000075626c65416972…   ; [real] hex32
+  ANIClimbIdle                         77616c6c636c696d6269646c65006972…   ; [real] hex32
+  ANIClimbAL                           77616c6c436c696d62414c0065006972…   ; [real] hex32
+  ANIClimbAR                           77616c6c436c696d6241520065006972…   ; [real] hex32
+  ANIClimbALIdle                       77616c6c436c696d62414c49646c6500…   ; [real] hex32
+  ANIClimbARIdle                       77616c6c436c696d62415249646c6500…   ; [real] hex32
+  ANIClimbCL                           77616c6c436c696d62434c00646c6500…   ; [real] hex32
+  ANIClimbCR                           77616c6c436c696d62435200646c6500…   ; [real] hex32
+  ANISlide                             736c69646500696d62435200646c6500…   ; [real] hex32
+  ANISwim                              7377696d0000696d62435200646c6500…   ; [real] hex32
+  ANISwimIdle                          7377696d69646c6500435200646c6500…   ; [real] hex32
+  ANITread                             7472656164006c6500435200646c6500…   ; [real] hex32
+  ANITreadSwim                         74726561647377696d005200646c6500…   ; [real] hex32
+  ANIDiveDashC                         7377696d4461736850550000646c6500…   ; [real] hex32
+  ANIDiveDashCI                        7377696d4461736869646c65006c6500…   ; [real] hex32
+  ANIDiveDash                          7377696d6461736800646c65006c6500…   ; [real] hex32
+  ANIDive1                             7377696d6469766500646c65006c6500…   ; [real] hex32
+  ANIDive2                             7377696d6469766531006c65006c6500…   ; [real] hex32
+  ANIBalanceWalk                       62616c77616c6b0031006c65006c6500…   ; [real] hex32
+  ANIBalanceCatch                      62616c616e63656265616d6361746368…   ; [real] hex32
+  ANIBalancePullupL                    "balancebeampullup"   ; [real] str32
+  ANIBalancePullupR                    "balancebeampullup2"   ; [real] str32
+  ANIWallCatch                         77616c6c6361746368006d70756c6c75…   ; [real] hex32
+  ANIWallPullup                        77616c6c70756c6c75700070756c6c75…   ; [real] hex32
+  ANIWallFront                         77616c6c46726f6e74490070756c6c75…   ; [real] hex32
+  ANIWallFrontR                        77616c6c46726f6e74520070756c6c75…   ; [real] hex32
+  ANIWallFrontL                        77616c6c46726f6e744c0070756c6c75…   ; [real] hex32
+  ANIWallBack                          77616c6c4261636b49000070756c6c75…   ; [real] hex32
+  ANIWallBackR                         77616c6c4261636b52000070756c6c75…   ; [real] hex32
+  ANIWallBackL                         77616c6c4261636b4c000070756c6c75…   ; [real] hex32
+  ANIRope                              726f706569646c6500000070756c6c75…   ; [real] hex32
+  ANIRopeU                             726f70655570006500000070756c6c75…   ; [real] hex32
+  ANIRopeD                             726f7065446f776e00000070756c6c75…   ; [real] hex32
+  ANIRopeSWStart                       726f70657377696e6773746172740075…   ; [real] hex32
+  ANIRopeSW1                           726f70657377696e6700746172740075…   ; [real] hex32
+  ANIRopeSW2                           726f70657377696e6732006172740075…   ; [real] hex32
+  ANIRopeSW3                           726f70657377696e6733006172740075…   ; [real] hex32
+  ANIRopeSW4                           726f70657377696e6734006172740075…   ; [real] hex32
+  ANIRopeIdle                          726f70657377696e6769646c65000075…   ; [real] hex32
+  ANIRSlide                            726f7065736c69646500646c65000075…   ; [real] hex32
+  ANIBRope                             726f7065686f68690000646c65000075…   ; [real] hex32
+  ANIBRopeF                            726f7065686f68000000646c65000075…   ; [real] hex32
+  ANIZipLine                           7a69706c696e65000000646c65000075…   ; [real] hex32
+  ANILadder                            6c616464657269646c65006c65000075…   ; [real] hex32
+  ANILadderU                           6c616464657255700065006c65000075…   ; [real] hex32
+  ANILadderD                           6c6164646572446f776e006c65000075…   ; [real] hex32
+  ANILDis1                             6469736d6f756e743100006c65000075…   ; [real] hex32
+  ANILDis2                             6469736d6f756e743200006c65000075…   ; [real] hex32
+  ANILSlide                            6c6164646572736c6964650065000075…   ; [real] hex32
+  ANIPushI                             7075736849646c650064650065000075…   ; [real] hex32
+  ANIPushL                             50756c6c4c006c650064650065000075…   ; [real] hex32
+  ANIPushR                             50756c6c52006c650064650065000075…   ; [real] hex32
+  ANIPushF                             5075736800006c650064650065000075…   ; [real] hex32
+  ANIPushB                             50756c6c00006c650064650065000075…   ; [real] hex32
+  ANIStartKickBox                      4b69636b426f78310064650065000075…   ; [real] hex32
+  ANIKickBoxIdle                       4b69636b426f78330064650065000075…   ; [real] hex32
+  ANIKickBox                           4b69636b426f78320064650065000075…   ; [real] hex32
+  ANICrankIdle                         6372616e6b49646c6500650065000075…   ; [real] hex32
+  ANICrankPush                         4372616e6b5075736852000065000075…   ; [real] hex32
+  ANICrankPull                         4372616e6b50756c6c52000065000075…   ; [real] hex32
+  ANICrankPushL                        4372616e6b507573684c000065000075…   ; [real] hex32
+  ANICrankPullL                        4372616e6b50756c6c4c000065000075…   ; [real] hex32
+  ANICrankPushR                        4372616e6b5075736852000065000075…   ; [real] hex32
+  ANICrankPullR                        4372616e6b50756c6c52000065000075…   ; [real] hex32
+  ANILever                             6c6576657270756c6c00000065000075…   ; [real] hex32
+  ANIUWLever                           6c6576657250756c6c55570065000075…   ; [real] hex32
+  ANITandF1                            54726964656e7450756c6c3031000075…   ; [real] hex32
+  ANITandF2                            54726964656e7450756c6c3032000075…   ; [real] hex32
+  ANITandF3                            54726964656e7450756c6c3033000075…   ; [real] hex32
+  ANICSM1                              636865737447726162006c3033000075…   ; [real] hex32
+  ANICSM2                              63686573744f70656e006c3033000075…   ; [real] hex32
+
+/Animation/goHero/Navigation/Bank 1/ANIWalk_ACT0/000/
+  Type                                     0x73656801   ; [real] raw
+  @hash(0x175d4cf5)                        0x73650000   ; [real] raw
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c0033000075…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIWalk_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.449989   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c0033000075…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIWalk_ACT1/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                        0.0999924   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c0033000075…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIWalk_ACT1/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                          0.59942   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c0033000075…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIWalk_ACT2/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c0033000075…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIWalk_ACT2/002/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.499992   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c0033000075…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIHighLand_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_HERO_GETHITVOC_A"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIBalanceWalk_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.539467   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_BEAMWALK"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIBalanceWalk_ACT0/001/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.949477   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_BEAMWALK"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIPushL_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.449989   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIPushL_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.969986   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIPushR_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.449989   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIPushR_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.933593   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIPushF_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.469993   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIPushF_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.969986   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIPushB_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.519524   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIPushB_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.929686   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANIKickBoxIdle_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_KICKCHARGEVO2_LP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANICrankPushL_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANICrankPushL_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.599466   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANICrankPullL_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                       0.0499886   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANICrankPullL_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.499992   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANICrankPushR_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANICrankPushR_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.273457   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANICrankPushR_ACT0/002/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.599466   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANICrankPushR_ACT0/003/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.849454   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANICrankPullR_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/Bank 1/ANICrankPullR_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.499992   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWalk_ACT0/001/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                                 1   ; [real] f32
+  @hash(0x72f8629c)                                 1   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWalk_ACT3/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.499992   ; [real] f32
+  Off                                        0.598795   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWalk_ACT3/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.949203   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWalk_ACT4/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                        0.0999924   ; [real] f32
+  Off                                             0.2   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWalk_ACT4/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                          0.59881   ; [real] f32
+  Off                                        0.699214   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWalk_ACT5/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                        0.0999924   ; [real] f32
+  Off                                             0.2   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWalk_ACT5/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                          0.59881   ; [real] f32
+  Off                                        0.699214   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c004745564f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallHangCatch_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f434c4946464a554d505f4c41…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallHangCatch_ACT0/001/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f424f445946414c4c5f4c4947…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallHangR_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.532998   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTWALK"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallHangR_ACT0/001/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.964828   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTWALK"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallHangL_ACT0/001/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.532998   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTWALK"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallHangL_ACT0/002/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.964828   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTWALK"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIHighLand_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_HERO_GETHITVOC_A"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT0/000/
+  Type                                     0x00000005   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                              0.2   ; [real] f32
+  Off                                        0.299321   ; [real] f32
+  @hash(0x8ba3a091)                          0.299316   ; [real] f32
+  @hash(0x72f8629c)                          0.299316   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT0/001/
+  Type                                     0x00000005   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.699321   ; [real] f32
+  Off                                             0.8   ; [real] f32
+  @hash(0x8ba3a091)                          0.799988   ; [real] f32
+  @hash(0x72f8629c)                          0.799988   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT0/002/
+  Type                                     0x00000006   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                              0.2   ; [real] f32
+  Off                                        0.299321   ; [real] f32
+  @hash(0x8ba3a091)                          0.299316   ; [real] f32
+  @hash(0x72f8629c)                          0.299316   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT0/003/
+  Type                                     0x00000006   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.699321   ; [real] f32
+  Off                                             0.8   ; [real] f32
+  @hash(0x8ba3a091)                          0.799988   ; [real] f32
+  @hash(0x72f8629c)                          0.799988   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT0/004/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.332998   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_GRAB"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT0/005/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.832013   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_GRAB"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT0/006/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.332998   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_STEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT0/007/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.832013   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_STEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT1/000/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.499992   ; [real] f32
+  Off                                         0.59881   ; [real] f32
+  @hash(0x8ba3a091)                          0.598801   ; [real] f32
+  @hash(0x72f8629c)                          0.598801   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT1/001/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.899992   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                                 1   ; [real] f32
+  @hash(0x72f8629c)                                 1   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT1/002/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.379995   ; [real] f32
+  Off                                        0.499992   ; [real] f32
+  @hash(0x8ba3a091)                          0.499992   ; [real] f32
+  @hash(0x72f8629c)                          0.499992   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT1/003/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.899992   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                                 1   ; [real] f32
+  @hash(0x72f8629c)                                 1   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT1/004/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.332998   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_GRAB"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT1/005/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.832013   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_GRAB"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT1/006/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.332998   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_STEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT1/007/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.832013   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_STEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT2/000/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                          0.38999   ; [real] f32
+  Off                                        0.499992   ; [real] f32
+  @hash(0x8ba3a091)                          0.499992   ; [real] f32
+  @hash(0x72f8629c)                          0.499992   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT2/001/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.969986   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                                 1   ; [real] f32
+  @hash(0x72f8629c)                                 1   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT2/002/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.469993   ; [real] f32
+  Off                                         0.59881   ; [real] f32
+  @hash(0x8ba3a091)                          0.598801   ; [real] f32
+  @hash(0x72f8629c)                          0.598801   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT2/003/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                           0.9888   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                                 1   ; [real] f32
+  @hash(0x72f8629c)                                 1   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT2/004/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.332998   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_GRAB"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT2/005/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.832013   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_GRAB"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT2/006/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.332998   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_STEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT2/007/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.832013   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_STEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT3/000/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.499992   ; [real] f32
+  Off                                         0.59881   ; [real] f32
+  @hash(0x8ba3a091)                          0.598801   ; [real] f32
+  @hash(0x72f8629c)                          0.598801   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT3/001/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.899992   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                                 1   ; [real] f32
+  @hash(0x72f8629c)                                 1   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT3/002/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.379995   ; [real] f32
+  Off                                        0.499992   ; [real] f32
+  @hash(0x8ba3a091)                          0.499992   ; [real] f32
+  @hash(0x72f8629c)                          0.499992   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT3/003/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.899992   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                                 1   ; [real] f32
+  @hash(0x72f8629c)                                 1   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT3/004/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.332998   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_GRAB"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT3/005/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.832013   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_GRAB"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT3/006/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.332998   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_STEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimb_ACT3/007/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.832013   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFCLIMB_STEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimbCL_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                          0.06981   ; [real] f32
+  Off                                        0.119997   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFJUMP_LAND"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimbCL_ACT0/001/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.569986   ; [real] f32
+  Off                                        0.649989   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFJUMP_LAND"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimbCR_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                          0.06981   ; [real] f32
+  Off                                        0.149401   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFJUMP_LAND"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIClimbCR_ACT0/001/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.569986   ; [real] f32
+  Off                                        0.649989   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_CLIFFJUMP_LAND"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANISwim_ACT0/000/
+  Type                                     0x00000002   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                          0.12987   ; [real] f32
+  Off                                             0.2   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_SWIM_UW_STROKE"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANITread_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f5357494d53504c415348004f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANITreadSwim_ACT0/000/
+  Type                                     0x00000002   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.298817   ; [real] f32
+  Off                                             0.4   ; [real] f32
+  @hash(0x8ba3a091)                          0.399994   ; [real] f32
+  @hash(0x72f8629c)                          0.399994   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANITreadSwim_ACT0/001/
+  Type                                     0x00000002   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.765621   ; [real] f32
+  Off                                        0.865995   ; [real] f32
+  @hash(0x8ba3a091)                          0.865982   ; [real] f32
+  @hash(0x72f8629c)                          0.865982   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANITreadSwim_ACT0/002/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                          0.14995   ; [real] f32
+  Off                                             0.4   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f5357494d5f5354524f4b4500…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANITreadSwim_ACT0/003/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.765621   ; [real] f32
+  Off                                        0.865995   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f5357494d5f5354524f4b4500…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIDiveDash_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f5357494d44415348004b4500…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalanceWalk_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.539055   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_BEAMWALK"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalanceWalk_ACT0/001/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.949355   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_BEAMWALK"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalanceWalk_ACT1/000/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.539055   ; [real] f32
+  Off                                         0.59881   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalanceWalk_ACT1/001/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                           0.9888   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalanceWalk_ACT2/000/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.539055   ; [real] f32
+  Off                                         0.59881   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalanceWalk_ACT2/001/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                           0.9888   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalanceWalk_ACT3/000/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.539055   ; [real] f32
+  Off                                         0.59881   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalanceWalk_ACT3/001/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                           0.9888   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalanceWalk_ACT4/000/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.539055   ; [real] f32
+  Off                                         0.59881   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalanceWalk_ACT4/001/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.849348   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c005f424541…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalanceCatch_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                        0.0249943   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_BEAMRUN"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalanceCatch_ACT0/001/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f4845524f5f4c494654564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalanceCatch_ACT0/002/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f434c4946464a554d505f4c41…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalancePullupL_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.149401   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_BEAMWALK"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalancePullupL_ACT0/001/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.649989   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f4845524f5f4a554d50564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalancePullupL_ACT0/002/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.779995   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_BEAMLAND"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalancePullupR_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.149401   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_BEAMWALK"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalancePullupR_ACT0/001/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.649989   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f4845524f5f4a554d50564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBalancePullupR_ACT0/002/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.779995   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_BEAMLAND"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallCatch_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                        0.0259861   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTRUN"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallCatch_ACT0/001/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f4845524f5f4c494654564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallPullup_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.147448   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTWALK"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallPullup_ACT0/001/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                          0.51899   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f4845524f5f4a554d50564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallPullup_ACT0/002/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.666987   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c0050564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallPullup_ACT0/003/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                          0.85156   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c0050564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallFrontR_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.499992   ; [real] f32
+  Off                                         0.59881   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c0050564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallFrontR_ACT0/001/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.499992   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTSTEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallFrontR_ACT0/002/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.964828   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c005f444952…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallFrontR_ACT0/003/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.964828   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTSTEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallFrontL_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.499992   ; [real] f32
+  Off                                         0.59939   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c005f444952…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallFrontL_ACT0/001/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.499992   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTSTEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallFrontL_ACT0/002/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.964828   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c005f444952…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallFrontL_ACT0/003/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.964828   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTSTEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallBackR_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.532998   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c005f444952…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallBackR_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.964828   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c005f444952…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallBackR_ACT0/002/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.532998   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTSTEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallBackR_ACT0/003/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.964828   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTSTEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallBackL_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.532998   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c005f444952…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallBackL_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.964828   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c005f444952…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallBackL_ACT0/002/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.532998   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTSTEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIWallBackL_ACT0/003/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.964828   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTSTEP"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIRopeU_ACT0/000/
+  Type                                     0x00000008   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.440986   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c57726973740054535445505f444952…   ; [real] hex32
+  @hash(0x72f8629c)                        0x69725700   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIRopeU_ACT0/001/
+  Type                                     0x00000008   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.969986   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    7257726973740054535445505f444952…   ; [real] hex32
+  @hash(0x72f8629c)                        0x69725700   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIRopeD_ACT0/000/
+  Type                                     0x00000008   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.440986   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c57726973740054535445505f444952…   ; [real] hex32
+  @hash(0x72f8629c)                        0x69725700   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIRopeD_ACT0/001/
+  Type                                     0x00000008   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.969986   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    7257726973740054535445505f444952…   ; [real] hex32
+  @hash(0x72f8629c)                        0x69725700   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIRSlide_ACT0/000/
+  Type                                     0x00000009   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                                 1   ; [real] f32
+  @hash(0x72f8629c)                                 1   ; [real] f32
+  @hash(0xb0a2d9a0)                                10   ; [real] f32
+  Amount                                           10   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBRopeF_ACT0/000/
+  Type                                             10   ; [real] f32
+  @hash(0x175d4cf5)                                10   ; [real] f32
+  On                                         0.499992   ; [real] f32
+  Off                                         0.59881   ; [real] f32
+  @hash(0x8ba3a091)                    7257726973740054535445505f444952…   ; [real] hex32
+  @hash(0x72f8629c)                        0x69725700   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIBRopeF_ACT0/001/
+  Type                                     0x00000008   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.949203   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c57726973740054535445505f444952…   ; [real] hex32
+  @hash(0x72f8629c)                        0x69725700   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIZipLine_ACT0/000/
+  Type                                     0x00000009   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                                 1   ; [real] f32
+  @hash(0x72f8629c)                                 1   ; [real] f32
+  @hash(0xb0a2d9a0)                                20   ; [real] f32
+  Amount                                           20   ; [real] f32
+
+/Animation/goHero/Navigation/ANILadderU_ACT0/000/
+  Type                                             20   ; [real] f32
+  @hash(0x175d4cf5)                                20   ; [real] f32
+  On                                         0.449989   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f48414e44475241425f4c4144…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILadderU_ACT0/001/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f48414e44475241425f4c4144…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILadderU_ACT0/002/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                              0.4   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f464f4f54535445505f4c4144…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILadderU_ACT0/003/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f464f4f54535445505f4c4144…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILadderU_ACT0/004/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.964828   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f48414e44475241425f4c4144…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILadderU_ACT0/005/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.964828   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f464f4f54535445505f4c4144…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILadderD_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                        0.429679   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f48414e44475241425f4c4144…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILadderD_ACT0/001/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f48414e44475241425f4c4144…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILadderD_ACT0/002/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                             0.4   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f464f4f54535445505f4c4144…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILadderD_ACT0/003/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f464f4f54535445505f4c4144…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILadderD_ACT0/004/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                        0.964828   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f48414e44475241425f4c4144…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILadderD_ACT0/005/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                        0.964828   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f464f4f54535445505f4c4144…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILDis1_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTLAND"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILDis1_ACT0/001/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.309987   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f4845524f5f4a554d50564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILDis1_ACT0/002/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                                 1   ; [real] f32
+  @hash(0x72f8629c)                                 1   ; [real] f32
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILDis1_ACT0/003/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.116686   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTWALK"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILDis1_ACT0/004/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.216785   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    "SND_FOOTSTEP_DIRTWALK"   ; [real] str32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILDis2_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                              0.2   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c005f444952…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANILSlide_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f4c4144444552534c4944455f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e01   ; [real] raw
+  @hash(0xb0a2d9a0)                                20   ; [real] f32
+  Amount                                           20   ; [real] f32
+
+/Animation/goHero/Navigation/ANIPushL_ACT0/000/
+  Type                                             20   ; [real] f32
+  @hash(0x175d4cf5)                                20   ; [real] f32
+  On                                         0.449989   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c004944455f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIPushL_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.965805   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c004944455f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIPushR_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.450996   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c004944455f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIPushR_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.933806   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c004944455f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIPushF_ACT0/000/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.165988   ; [real] f32
+  Off                                        0.172839   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c004944455f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIPushF_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.465995   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c004944455f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIPushF_ACT0/002/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.964828   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c004944455f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIPushB_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.515618   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c004944455f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIPushB_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.933806   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c004944455f…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANIKickBox_ACT0/000/
+  Type                                     0x00000003   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    534e445f4845524f5f4c494654564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x5f444e00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANICrankPushL_ACT0/000/
+  Type                                              0   ; [real] f32
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.615991   ; [real] f32
+  Off                                        0.624994   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c0054564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANICrankPushL_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c0054564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANICrankPushL_ACT0/002/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.599405   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c0054564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANICrankPullL_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                       0.0499886   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c0054564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANICrankPullL_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.499992   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c0054564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANICrankPushR_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c0054564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANICrankPushR_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.274998   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c0054564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANICrankPushR_ACT0/002/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.599405   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c0054564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANICrankPushR_ACT0/003/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.849393   ; [real] f32
+  Off                                               1   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c0054564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANICrankPullR_ACT0/000/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                                0   ; [real] f32
+  Off                                       0.0499886   ; [real] f32
+  @hash(0x8ba3a091)                    6c4d65746174617273616c0054564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32
+
+/Animation/goHero/Navigation/ANICrankPullR_ACT0/001/
+  Type                                     0x00000001   ; [real] raw
+  @hash(0x175d4cf5)                                 0   ; [real] f32
+  On                                         0.499992   ; [real] f32
+  Off                                        0.549996   ; [real] f32
+  @hash(0x8ba3a091)                    724d65746174617273616c0054564f43…   ; [real] hex32
+  @hash(0x72f8629c)                        0x74654d00   ; [real] raw
+  @hash(0xb0a2d9a0)                                 0   ; [real] f32
+  Amount                                            0   ; [real] f32

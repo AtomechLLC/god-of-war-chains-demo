@@ -1,0 +1,31 @@
+; =====================================================================
+; TweakTemplates_PlayFX_017.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x339de0, TWK instance uid 3 (magic 0xfedcba98)
+; Key names cracked vs SCUS_973.99 strings + %d forms + suffix-extension
+; (structurally vetted: consecutive-hash families, XYZ/RGB triples).
+; ALL VALUES [real]. @hash(...) = name unrecovered. God Mode = Rage.
+; =====================================================================
+
+/TweakTemplates/PlayFX/017/
+  Instance Name                         "FirePath BF"   ; [real] str32
+  Effect Name                          "goFXfirePath"   ; [real] str32
+  @hash(0x51f0e2e1)                    73796e63684a6f696e74006800000000…   ; [real] hex32
+  @hash(0x8eab20cb)                        0x636e7900   ; [real] raw
+  @hash(0x65118923)                        0x636e7900   ; [real] raw
+  @hash(0x71bfa948)                        0x636e7900   ; [real] raw
+  @hash(0xc6dd46a4)                        0x636e7901   ; [real] raw
+  @hash(0xa6de59b7)                        0x636e7900   ; [real] raw
+  @hash(0x989c9115)                        0x636e7900   ; [real] raw
+  @hash(0xe4b883e0)                        0x636e7900   ; [real] raw
+  @hash(0xf134f284)                        0x636e7900   ; [real] raw
+  @hash(0xc5bb9615)                        0x636e7900   ; [real] raw
+  Scale X                                           1   ; [real] f32
+  Scale Y                                           1   ; [real] f32
+  Scale Z                                           1   ; [real] f32
+  @hash(0xa4e61bc3)                                 1   ; [real] f32
+  Offset X                                      -5.25   ; [real] f32
+  Offset Y                                          0   ; [real] f32
+  Offset Z                                          0   ; [real] f32
+  @hash(0x05245f0f)                                 0   ; [real] f32
+  @hash(0x05245f10)                                90   ; [real] f32
+  @hash(0x05245f11)                                 0   ; [real] f32

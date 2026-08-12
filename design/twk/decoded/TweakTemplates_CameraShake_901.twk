@@ -1,0 +1,14 @@
+; =====================================================================
+; TweakTemplates_CameraShake_901.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x33a2a0, TWK instance uid 1 (magic 0xfedcba98)
+; Key names cracked vs SCUS_973.99 strings + %d forms + suffix-extension
+; (structurally vetted: consecutive-hash families, XYZ/RGB triples).
+; ALL VALUES [real]. @hash(...) = name unrecovered. God Mode = Rage.
+; =====================================================================
+
+/TweakTemplates/CameraShake/901/
+  Instance Name                        617468656e61206d656469756d004849…   ; [real] hex32
+  Duration                                       0.55   ; [real] f32
+  @hash(0x97f053d6)                                 1   ; [real] f32
+  @hash(0x0ee2a477)                             0.015   ; [real] f32
+  @hash(0xfc12d3dc)                                12   ; [real] f32

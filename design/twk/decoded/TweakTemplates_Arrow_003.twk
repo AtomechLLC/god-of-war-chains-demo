@@ -1,14 +1,13 @@
 ; =====================================================================
 ; TweakTemplates_Arrow_003.twk — decoded designer tweak data (God of War 1)
 ; Source: part1.pak @0x369370, TWK instance uid 44 (magic 0xfedcba98)
-; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
-; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
-; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
-; "God Mode" = Rage of the Gods.
+; Key names cracked vs SCUS_973.99 strings + %d forms + suffix-extension
+; (structurally vetted: consecutive-hash families, XYZ/RGB triples).
+; ALL VALUES [real]. @hash(...) = name unrecovered. God Mode = Rage.
 ; =====================================================================
 
 /TweakTemplates/Arrow/003/
-  @hash(0x55b00cf6)                    7468756e646572626f6c742063683100…   ; [real] hex32
+  Instance Name                        7468756e646572626f6c742063683100…   ; [real] hex32
   @hash(0x117c872e)                                 5   ; [real] f32
   @hash(0x126eecd1)                                 0   ; [real] f32
   Impulse                                         100   ; [real] f32
@@ -25,7 +24,7 @@
   @hash(0x886ca383)                        0x74536f00   ; [real] raw
   @hash(0x5ea85bfe)                    676f426f6c7448697400742063683100…   ; [real] hex32
   @hash(0x0b404e79)                        0x6f426f01   ; [real] raw
-  @hash(0x8aa28c7c)                        0x6f426f00   ; [real] raw
+  Block Sound                              0x6f426f00   ; [real] raw
   @hash(0x11f28939)                        0x6f426f00   ; [real] raw
   Hit Sound 1                              0x6f426f00   ; [real] raw
   Hit Sound 2                              0x6f426f00   ; [real] raw

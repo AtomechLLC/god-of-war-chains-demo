@@ -1,14 +1,13 @@
 ; =====================================================================
 ; TweakTemplates_CombatFileSet_000.twk — decoded designer tweak data (God of War 1)
 ; Source: part1.pak @0x3684c0, TWK instance uid 5 (magic 0xfedcba98)
-; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
-; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
-; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
-; "God Mode" = Rage of the Gods.
+; Key names cracked vs SCUS_973.99 strings + %d forms + suffix-extension
+; (structurally vetted: consecutive-hash families, XYZ/RGB triples).
+; ALL VALUES [real]. @hash(...) = name unrecovered. God Mode = Rage.
 ; =====================================================================
 
 /TweakTemplates/CombatFileSet/000/
-  @hash(0x55b00cf6)                            "Hero"   ; [real] str32
+  Instance Name                                "Hero"   ; [real] str32
   @hash(0x0000247b)                        0x6f720000   ; [real] raw
   Circle Health Threshold                  0x6f72ffff   ; [real] raw
   @hash(0x5cb5773a)                                 1   ; [real] f32
@@ -16,9 +15,9 @@
   @hash(0x2bb626fe)                                 1   ; [real] f32
   @hash(0xa58b9446)                                 0   ; [real] f32
   Target Weight                                   0.5   ; [real] f32
-  @hash(0xdf4375e3)                                 1   ; [real] f32
-  @hash(0x7a4a8930)                                 1   ; [real] f32
-  @hash(0x35f40b1b)                                 1   ; [real] f32
+  Impulse Away Scale                                1   ; [real] f32
+  Impulse Up Scale                                  1   ; [real] f32
+  Impulse Right Scale                               1   ; [real] f32
   @hash(0x4e16ee9c)                                 1   ; [real] f32
   @hash(0x595ad8ad)                                 1   ; [real] f32
   @hash(0x35199881)                                 1   ; [real] f32

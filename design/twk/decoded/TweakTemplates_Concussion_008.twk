@@ -1,0 +1,39 @@
+; =====================================================================
+; TweakTemplates_Concussion_008.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x33a0f0, TWK instance uid 15 (magic 0xfedcba98)
+; Key names cracked vs SCUS_973.99 strings + %d forms + suffix-extension
+; (structurally vetted: consecutive-hash families, XYZ/RGB triples).
+; ALL VALUES [real]. @hash(...) = name unrecovered. God Mode = Rage.
+; =====================================================================
+
+/TweakTemplates/Concussion/008/
+  Instance Name                        424620506c756d652046004554484954…   ; [real] hex32
+  Effect Name                          676f52756e4475737400004554484954…   ; [real] hex32
+  @hash(0x51f0e2e1)                    73796e63684a6f696e74004554484954…   ; [real] hex32
+  Type                                     0x636e0002   ; [real] raw
+  Freeze                                   0x636e0000   ; [real] raw
+  Freeze Factor                            0x636e2710   ; [real] raw
+  @hash(0xdc649970)                               4.5   ; [real] f32
+  @hash(0x0914aef7)                                 2   ; [real] f32
+  Angle                                             0   ; [real] f32
+  Angle Offset                                      0   ; [real] f32
+  Duration                                        0.1   ; [real] f32
+  Context                                  0x00000009   ; [real] raw
+  @hash(0x0000247b)                        0xffffffff   ; [real] raw
+  Scale X                                  0xffffff00   ; [real] raw
+  Scale Y                                  0xffffff00   ; [real] raw
+  Scale Z                                  0xffffff00   ; [real] raw
+  @hash(0x8a837da4)                        0xffffff00   ; [real] raw
+  @hash(0xef5e5b9a)                        0xffffff00   ; [real] raw
+  @hash(0xa0cdb24e)                        0xffffff00   ; [real] raw
+  Damage                                   0xffffff01   ; [real] raw
+  @hash(0x22bb37bb)                        0xffff0000   ; [real] raw
+  Ground Impulse Away                               0   ; [real] f32
+  Ground Impulse Up                                 0   ; [real] f32
+  Ground Impulse Right                              0   ; [real] f32
+  Air Impulse Away                                  0   ; [real] f32
+  Air Impulse Up                                    0   ; [real] f32
+  Air Impulse Right                                 0   ; [real] f32
+  @hash(0xd0d4210c)                              1000   ; [real] f32
+  @hash(0x131b6e59)                                 0   ; [real] f32
+  @hash(0x9f21a01e)                                 0   ; [real] f32

@@ -1,13 +1,12 @@
 ; =====================================================================
 ; TweakTemplates_Bonus_010.twk — decoded designer tweak data (God of War 1)
 ; Source: part1.pak @0x36cd60, TWK instance uid 1 (magic 0xfedcba98)
-; Format: mogaika twk.go command nibbles; node hash h = h*127+c (mod 2^32)
-; Key names cracked against SCUS_973.99 strings (incl. %d-numbered forms).
-; ALL VALUES [real] (decoded bytes). @hash(...) = name unrecovered.
-; "God Mode" = Rage of the Gods.
+; Key names cracked vs SCUS_973.99 strings + %d forms + suffix-extension
+; (structurally vetted: consecutive-hash families, XYZ/RGB triples).
+; ALL VALUES [real]. @hash(...) = name unrecovered. God Mode = Rage.
 ; =====================================================================
 
 /TweakTemplates/Bonus/010/
-  @hash(0x55b00cf6)                    4d696c6573746f6e653130006c6c0000…   ; [real] hex32
+  Instance Name                        4d696c6573746f6e653130006c6c0000…   ; [real] hex32
   @hash(0xeed31206)                                40   ; [real] f32
   @hash(0x2af48b79)                        0x00000014   ; [real] raw

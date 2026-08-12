@@ -1,0 +1,23 @@
+; =====================================================================
+; TweakTemplates_Attachment_000.twk — decoded designer tweak data (God of War 1)
+; Source: part1.pak @0x339160, TWK instance uid 1 (magic 0xfedcba98)
+; Key names cracked vs SCUS_973.99 strings + %d forms + suffix-extension
+; (structurally vetted: consecutive-hash families, XYZ/RGB triples).
+; ALL VALUES [real]. @hash(...) = name unrecovered. God Mode = Rage.
+; =====================================================================
+
+/TweakTemplates/Attachment/000/
+  Instance Name                                     0   ; [real] f32
+  @hash(0x4c441610)                      "goMAIblade"   ; [real] str32
+  @hash(0x4a975b51)                      "goMAIblade"   ; [real] str32
+  @hash(0x7a364bbb)                    6c576561704948006465000000000000…   ; [real] hex32
+  @hash(0xfd625f70)                    72576561704948006465000000000000…   ; [real] hex32
+  @hash(0x23a6eb84)                    6c576561704f48006465000000000000…   ; [real] hex32
+  @hash(0x3684b24f)                    72576561704f48006465000000000000…   ; [real] hex32
+  @hash(0x08937ad3)                    6c436861696e00006465000000000000…   ; [real] hex32
+  @hash(0xaf5d369e)                    72436861696e00006465000000000000…   ; [real] hex32
+  @hash(0x8ff2d78a)                    6c436861696e57006465000000000000…   ; [real] hex32
+  @hash(0x4e07013f)                    72436861696e57006465000000000000…   ; [real] hex32
+  @hash(0x5153e5ca)                    "leftBladeBack"   ; [real] str32
+  @hash(0x9c3ac295)                    "rightBladeBack"   ; [real] str32
+  @hash(0x7e026978)                        0x68670001   ; [real] raw
