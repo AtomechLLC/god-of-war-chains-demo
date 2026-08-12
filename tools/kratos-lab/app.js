@@ -1971,6 +1971,19 @@
     lastMove: "", lastT: 0, // move-instance change detection (name or t reset)
   };
 
+  // simulate the entered sequence through the combo graph (mirrors comboTick's
+  // resolution: branch from the current move; no branch → resolve from stance)
+  function comboEndState(seq) {
+    let cur = "idleCombat";
+    for (const k of seq) {
+      const node = Combat.GRAPH[cur];
+      let b = node && (node.branches || []).find((x) => x.input === k && !x.mod);
+      if (!b) b = (Combat.GRAPH.idleCombat.branches || []).find((x) => x.input === k && !x.mod);
+      if (b && Combat.GRAPH[b.to]) cur = b.to;
+    }
+    return cur;
+  }
+
   function renderComboSeq() {
     const box = $("csGlyphs");
     box.innerHTML = "";
@@ -1988,6 +2001,34 @@
       box.append(s);
     });
     $("csPlay").disabled = !combo.seq.length;
+    // branch preview: where the sequence ends + the branches available from there,
+    // as clickable chips that append that input (decide the next step by sight)
+    const nextBox = $("csNext");
+    nextBox.innerHTML = "";
+    const end = comboEndState(combo.seq);
+    const endNode = Combat.GRAPH[end] || Combat.GRAPH.idleCombat;
+    let brs = (endNode.branches || []).filter((b) => !b.mod);
+    let fromLabel = end;
+    if (!brs.length) { // ender → recovers to stance; show stance options
+      brs = (Combat.GRAPH.idleCombat.branches || []).filter((b) => !b.mod);
+      fromLabel = `${end} → stance`;
+    }
+    const head = document.createElement("span");
+    head.className = "cs-next-label";
+    head.textContent = `next from ${fromLabel}:`;
+    nextBox.append(head);
+    for (const b of brs) {
+      const g = Combat.GLYPH[b.input];
+      if (!g) continue;
+      const chip = document.createElement("button");
+      chip.className = "cs-next-chip";
+      chip.innerHTML = `<span style="color:${g.color}">${g.txt}</span> → ${b.to}`;
+      chip.title = `append ${g.txt} (branches to ${b.to}${DUR[b.to] ? `, ${DUR[b.to].toFixed(2)}s` : ""})`;
+      chip.addEventListener("click", () => {
+        if (combo.seq.length < COMBO_MAX) { combo.seq.push(b.input); renderComboSeq(); }
+      });
+      nextBox.append(chip);
+    }
   }
 
   function setComboPlay(on) {

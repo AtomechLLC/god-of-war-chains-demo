@@ -132,6 +132,13 @@ kbd { border: 1px solid var(--edge); border-radius: 3px; padding: 0 4px; backgro
 .cs-empty { font-family: var(--mono); font-size: 10px; color: var(--dim); }
 .cs-note { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--dim); }
 .btn:disabled { opacity: .35; cursor: default; }
+.cs-next { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 22px; }
+.cs-next-label { font-family: var(--mono); font-size: 10px; color: var(--dim); margin-right: 2px; }
+.cs-next-chip {
+  font-family: var(--mono); font-size: 11px; padding: 2px 9px; border-radius: 10px;
+  background: var(--panel2); border: 1px solid var(--edge); color: #cfc9bd; cursor: pointer;
+}
+.cs-next-chip:hover { border-color: var(--gold); color: var(--gold); }
 
 /* branch panel */
 .branches { margin-top: 10px; }
