@@ -284,8 +284,14 @@ const GowAnim = (() => {
   // the REAL per-attack movement (combo3A -24.3 units = 1.74 m ... combo3F
   // -73.7 = 5.26 m, comboLR3/Plume -40.7 = 2.9 m). Locomotion blends
   // (walk/run) are 0 here — they use engine speed. Sampled at the act's
-  // 30 Hz with linear interp. Only raw multi-frame f32 states are decoded
-  // (a few acts pack their curves int16-additive — those return null).
+  // 30 Hz with linear interp.
+  //
+  // FULL decode (2026-08-12): reuses parseState — the SAME machinery the skin
+  // decoder runs — so raw f32, int16-ADDITIVE (comboJump, highFallLand) and
+  // multi-manager states (airImpale's 421) all decode. The bake replicates
+  // decodeAct's game-verified accumulator EXACTLY: per frame, in stream
+  // order, raw streams SET the component, additive streams ADD their delta
+  // (frame-over-frame; the last delta keeps applying through hold frames).
   function decodeRootTrack(b, dv, act, dataTypes) {
     if (act.rootTrack !== undefined) return act.rootTrack;
     act.rootTrack = null;
@@ -295,36 +301,35 @@ const GowAnim = (() => {
     const cnt = dv.getUint16(sdo + 2, true);
     const statesOff = act.off + dv.getUint32(sdo + 8, true);
     const frameTime = dv.getFloat32(sdo + 0xc, true) || 1 / 30;
-    let fZ = null, fY = null, fX = null;
-    for (let i = 0; i < cnt; i++) {
-      const so = statesOff + i * 0xc;
-      const base = dv.getUint16(so, true);
-      const flags = b[so + 2], skip = b[so + 3];
-      const mCount = dv.getUint16(so + 4, true);
-      const mOffData = dv.getUint16(so + 10, true);
-      if (mCount < 3 || (flags & 1)) continue;      // want the raw multi-frame state
-      const stateData = so + (skip << 16) + mOffData;
-      const bm = readBitmap(b, dv, stateData, flags);
-      const step = bm.paired * 4;
-      let iter = 0;
-      for (let w = 0; w < bm.words.length; w++) {
-        let mask = bm.words[w];
-        while (mask) {
-          const bit = 31 - Math.clz32(mask & -mask);
-          mask = mask ^ (mask & -mask);
-          const comp = base + w * 16 + bit;
-          if (comp === 420 || comp === 421 || comp === 422) {
-            const frames = new Float32Array(mCount);
-            for (let f = 0; f < mCount; f++) frames[f] = dv.getFloat32(stateData + bm.dataOff + step * f + iter * 4, true);
-            if (comp === 422 && !fZ) fZ = frames;
-            if (comp === 421 && !fY) fY = frames;
-            if (comp === 420 && !fX) fX = frames;
-          }
-          iter++;
-        }
-      }
+    const streams = [];
+    try {
+      for (let i = 0; i < cnt; i++) parseState(b, dv, statesOff + i * 0xc, false, streams);
+    } catch (e) {
+      return null; // malformed state — no controller track
     }
-    if (fZ || fY || fX) act.rootTrack = { frames: fZ, framesY: fY, framesX: fX, frameTime };
+    const want = streams.filter((s) => s.comp >= 420 && s.comp <= 422);
+    if (!want.length) return null;
+    const frames = Math.max(1, Math.round(act.duration / frameTime) + 1);
+    const fx = new Float32Array(frames), fy = new Float32Array(frames), fz = new Float32Array(frames);
+    const acc = { 420: 0, 421: 0, 422: 0 };
+    const seen = { 420: false, 421: false, 422: false };
+    for (let f = 0; f < frames; f++) {
+      for (const st of want) {
+        let si = f - st.fStart;
+        if (si < 0 || si >= st.frames.length + st.hold) continue;
+        if (si >= st.frames.length) si = st.frames.length - 1;
+        if (st.additive) acc[st.comp] += st.frames[si];
+        else acc[st.comp] = st.frames[si];
+        seen[st.comp] = true;
+      }
+      fx[f] = acc[420]; fy[f] = acc[421]; fz[f] = acc[422];
+    }
+    act.rootTrack = {
+      frames: seen[422] ? fz : null,
+      framesY: seen[421] ? fy : null,
+      framesX: seen[420] ? fx : null,
+      frameTime,
+    };
     return act.rootTrack;
   }
 

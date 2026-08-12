@@ -862,7 +862,7 @@
   // style. Texture: canvas-generated 8 m tile (POT 1024px, REPEAT), thin 1 m
   // lines, heavy 4 m lines, two-tone 4 m panels.
   const ARENA_M = Chain.METERS_TO_WORLD;   // mesh units per meter (bridge)
-  const ARENA_HALF = 14 * ARENA_M;         // ±14 m floor — full-extension whips stay inside
+  const ARENA_HALF = 28 * ARENA_M;         // ±28 m floor (user-doubled) — long root-motion runs stay inside
   const ARENA_WALL_H = 7 * ARENA_M;        // 7 m walls — jump/aerial arcs stay inside
   const ARENA_TILE = 8 * ARENA_M;          // texture tile = 8 m
   const arenaTex = (() => {
@@ -2075,12 +2075,17 @@
   // peak) — both constants INFERRED; the track being differenced is real. The
   // solid block is the AUTHORED concussion window [trigger, trigger+0.1s].
   const HITWIN_CACHE = {};
+  // traversal/recovery moves carry NO melee test — the blades whip from body
+  // motion during jumps/landings/evades, which fooled the tip-speed gate into
+  // painting hit windows that don't exist (user-corrected). airImpaleLand is
+  // NOT excluded: it is an attack (authored concussion).
+  const NO_MELEE = /^(jump|comboJump$|land$|runLand$|combatLand|highFallLand$|fall|combatFall$|evade|dash$|ber(Jump|Land|FallN|serkEnter|serkExit))/;
   function hitWindows(move) {
     if (HITWIN_CACHE[move]) return HITWIN_CACHE[move];
     const out = { segs: [], conc: null };
     const dur = DUR[move];
     const node = Combat.GRAPH[move];
-    if (!dur || !rig || (node && node.loop)) return (HITWIN_CACHE[move] = out); // stances: no strike
+    if (!dur || !rig || (node && node.loop) || NO_MELEE.test(move)) return (HITWIN_CACHE[move] = out); // stances/traversal: no strike
     const n = Math.max(2, Math.round(dur * 60));
     const speeds = [0];
     let prev = null, maxS = 0;
@@ -2759,9 +2764,9 @@
             rootMotion.y = 0; rootMotion.vy = 0;
           } // air state without channel: hover — keep y as-is
         }
-        // Teleport home once Kratos strays past 2 BIG grid squares (2 x 4 m = 8 m)
-        // from center — instant, no easing (keeps looping combos on the arena).
-        const RESET_R = 2 * 4 * ARENA_M;
+        // Teleport home once Kratos strays past 4 BIG grid squares (4 x 4 m = 16 m,
+        // user-doubled) from center — instant, no easing (keeps loops on the arena).
+        const RESET_R = 4 * 4 * ARENA_M;
         if (rootMotion.x * rootMotion.x + rootMotion.z * rootMotion.z > RESET_R * RESET_R) {
           rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0;
         }
