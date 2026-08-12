@@ -1803,7 +1803,8 @@
     // screenshot alone is diagnostic — camera distance, draw gating.
     if (dbgHud) dbgHud.textContent =
       `move ${machine.st.current}   dist ${dist.toFixed(1)}\n` +
-      `hero ${window.__fxOnly ? "HIDDEN (FX-only)" : "drawn"}   native ${nativeRes ? "ON" : "off"}   pool ${fxPool.count}`;
+      `hero ${window.__fxOnly ? "HIDDEN (FX-only)" : "drawn"}   native ${nativeRes ? "ON" : "off"}   pool ${fxPool.count}` +
+      (padDbg ? `\n${padDbg}` : "");
     const rot = M.mul(M.rotX(pitch), M.rotY(yaw));
     // follow target: Kratos' pelvis in display space ((mesh − ctr) × scale);
     // eased so the camera glides after him rather than hard-locking
@@ -2439,38 +2440,63 @@
   // frame with edge detection (Chrome exposes pads after the first press).
   const padPrev = [];
   let padSeen = false;
-  window.addEventListener("gamepadconnected", (e) =>
-    status(`🎮 ${String(e.gamepad.id).slice(0, 44)} — ✕○□△ mapped · L1 block · L3+R3 rage`));
+  let padDbg = ""; // raw state line for the debug HUD (press D)
+  const padStatusEl = () => $("padStatus");
+  window.addEventListener("gamepadconnected", (e) => {
+    status(`🎮 ${String(e.gamepad.id).slice(0, 44)} — ✕○□△ mapped · L1 block · L3+R3 rage`);
+    const el = padStatusEl();
+    if (el) el.textContent = `🎮 ${String(e.gamepad.id).slice(0, 34)} (${e.gamepad.mapping === "standard" ? "standard" : "non-standard → Sony remap"})`;
+  });
+  window.addEventListener("gamepaddisconnected", () => {
+    const el = padStatusEl();
+    if (el) el.textContent = "";
+    padSeen = false;
+    padPrev.length = 0;
+  });
+  // Button-index map. Chrome/Edge expose DS4/DualSense/Xbox as "standard":
+  // ✕=0 ○=1 □=2 △=3. Firefox exposes Sony pads NON-standard, in DirectInput
+  // order: □=0 ✕=1 ○=2 △=3 (shoulders/sticks match; right-stick Y is axis 5).
+  function padMap(gp) {
+    if (gp.mapping === "standard") return { S: 2, C: 1, X: 0, T: 3, L1: 4, L2: 6, R2: 7, SEL: 8, ST: 9, L3: 10, R3: 11, AX: 2, AY: 3 };
+    return { S: 0, C: 2, X: 1, T: 3, L1: 4, L2: 6, R2: 7, SEL: 8, ST: 9, L3: 10, R3: 11, AX: 2, AY: 5 };
+  }
   function pollGamepad(wallDt) {
     const gps = navigator.getGamepads ? navigator.getGamepads() : [];
     let gp = null;
     for (const g of gps) if (g && g.connected) { gp = g; break; }
-    if (!gp) return;
+    if (!gp) { padDbg = ""; return; }
+    const M = padMap(gp);
     const down = (i) => !!(gp.buttons[i] && gp.buttons[i].pressed);
     const edge = (i) => down(i) && !padPrev[i];
     if (!padSeen) {
       padSeen = true;
-      log("🎮 controller active — ✕○□△ · △ hold launcher · L1 block · L3+R3 rage · Select hand-to-hand · Start pause · R-stick orbit · L2/R2 zoom");
+      log(`🎮 controller active (${gp.mapping === "standard" ? "standard" : "non-standard → Sony remap"}) — ✕○□△ · △ hold launcher · L1 block · L3+R3 rage · Select hand-to-hand · Start pause · R-stick orbit · L2/R2 zoom`);
+      const el = padStatusEl();
+      if (el) el.textContent = `🎮 ${String(gp.id).slice(0, 34)} (${gp.mapping === "standard" ? "standard" : "remapped"})`;
     }
-    if (edge(2)) input("S");
-    if (edge(1)) input("C");
-    if (edge(0)) input("X");
-    if (edge(3)) triDown();
-    if (!down(3) && padPrev[3]) triUp();
-    if (edge(4)) { machine.st.l1 = true; $("btnL1").classList.add("latched"); machine.press("L1"); }
-    if (!down(4) && padPrev[4]) { machine.st.l1 = false; $("btnL1").classList.remove("latched"); }
-    if ((edge(10) && down(11)) || (edge(11) && down(10))) $("btnRage").click(); // L3+R3 — the real activation
-    if (edge(8)) $("btnBrawl").click();
-    if (edge(9)) $("btnPause").click();
+    // raw diagnostic for the debug HUD: pressed indices + axes
+    const pressedIdx = [];
+    for (let i = 0; i < gp.buttons.length; i++) if (down(i)) pressedIdx.push(i);
+    padDbg = `pad[${gp.mapping || "raw"}] btns:${pressedIdx.join(",") || "-"} ax:${Array.from(gp.axes).map((a) => a.toFixed(1)).join(",")}`;
+    if (edge(M.S)) input("S");
+    if (edge(M.C)) input("C");
+    if (edge(M.X)) input("X");
+    if (edge(M.T)) triDown();
+    if (!down(M.T) && padPrev[M.T]) triUp();
+    if (edge(M.L1)) { machine.st.l1 = true; $("btnL1").classList.add("latched"); machine.press("L1"); }
+    if (!down(M.L1) && padPrev[M.L1]) { machine.st.l1 = false; $("btnL1").classList.remove("latched"); }
+    if ((edge(M.L3) && down(M.R3)) || (edge(M.R3) && down(M.L3))) $("btnRage").click(); // L3+R3 — the real activation
+    if (edge(M.SEL)) $("btnBrawl").click();
+    if (edge(M.ST)) $("btnPause").click();
     // right stick orbit + analog trigger zoom (mirrors drag/wheel)
     const dz = (v) => (Math.abs(v) > 0.18 ? v : 0);
-    const rx = dz(gp.axes[2] || 0), ry = dz(gp.axes[3] || 0);
+    const rx = dz(gp.axes[M.AX] || 0), ry = dz(gp.axes[M.AY] || 0);
     if (rx || ry) {
       autoSpin = false;
       yaw += rx * wallDt * 2.6;
       pitch = Math.max(-1.4, Math.min(1.5, pitch + ry * wallDt * 2.0));
     }
-    const zoom = (gp.buttons[6] ? gp.buttons[6].value : 0) - (gp.buttons[7] ? gp.buttons[7].value : 0);
+    const zoom = (gp.buttons[M.L2] ? gp.buttons[M.L2].value : 0) - (gp.buttons[M.R2] ? gp.buttons[M.R2].value : 0);
     if (zoom) userDist = Math.max(1.2, Math.min(26, userDist + zoom * wallDt * 10));
     for (let i = 0; i < gp.buttons.length; i++) padPrev[i] = down(i);
   }
