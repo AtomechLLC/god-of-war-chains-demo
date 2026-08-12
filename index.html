@@ -28,18 +28,18 @@ as a browser lab.</p>
 </div>
 
 <div class="card">
-  <h2><a href="design/twk/">Designer tweak sheets (.twk)</a></h2>
-  <p>One browsable sheet per combat animation: real clip data (id, duration,
-  blend-in, keyframe rate) + branch topology with inputs and windows,
-  provenance-tagged real vs inferred. <a href="design/twk/README.md">Index</a>.</p>
+  <h2><a href="design/twk/index.html">Designer tweak sheets (.twk)</a></h2>
+  <p>Browsable in-page viewer: the decoded-from-disc sheets (Player, weapon
+  levels, costumes, Concussion attack hit volumes, TweakTemplates — all values
+  real) plus one reconstructed sheet per combat animation with provenance-tagged
+  real vs inferred data.</p>
 </div>
 
-<p class="note"><strong>About game assets:</strong> this public build contains
-code and documentation only. The extracted game data (models, textures,
-animations) is copyrighted and is not distributed — the viewer will tell you
-so if you open it here. To see it live, clone the repo, extract assets from
-your own disc (see the repo docs), and run
-<code>node tools/kratos-lab/server.js</code>.</p>
+<p class="note"><strong>About game assets:</strong> the viewer runs live here on
+a small curated subset of extracted data (~10&nbsp;MB — the hero model, textures,
+animations, and weapon FX records) for research/preservation purposes. The full
+extracted set is not distributed; to regenerate everything from your own disc,
+see the repo docs.</p>
 
 <p><a href="https://github.com/AtomechLLC/god-of-war-chains-demo">Source on GitHub</a></p>
 </body>

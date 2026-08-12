@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GoW1 designer tweak sheets (.twk)</title>
+<style>
+  body { margin:0; display:flex; min-height:100vh; font:13px/1.5 Consolas,monospace; background:#141312; color:#cfc9bd; }
+  nav { width:300px; padding:18px; border-right:1px solid #2c2a26; overflow-y:auto; max-height:100vh; box-sizing:border-box; }
+  nav h1 { font-size:14px; color:#c9a24b; letter-spacing:2px; }
+  nav h2 { font-size:11px; color:#8d8778; text-transform:uppercase; letter-spacing:2px; margin:16px 0 6px; }
+  nav ul { list-style:none; padding:0; margin:0; }
+  nav a { color:#9fb7c9; text-decoration:none; }
+  nav a:hover { color:#c9a24b; }
+  main { flex:1; padding:18px 24px; overflow:auto; max-height:100vh; box-sizing:border-box; }
+  pre { white-space:pre; font:12px/1.45 Consolas,monospace; color:#cfc9bd; }
+  .hint { color:#8d8778; }
+  a.back { color:#8d8778; font-size:11px; }
+</style>
+</head>
+<body>
+<nav>
+  <h1>.twk sheets</h1>
+  <p><a class="back" href="../../">&larr; back to the demo</a></p>
+  <h2>Decoded from disc (all values real)</h2>
+  <ul>
+      <li><a href="#" data-f="decoded/Concussions_AttackHitVolumes.twk">Concussions_AttackHitVolumes.twk</a></li>
+      <li><a href="#" data-f="decoded/GlobGame.twk">GlobGame.twk</a></li>
+      <li><a href="#" data-f="decoded/Player.twk">Player.twk</a></li>
+      <li><a href="#" data-f="decoded/System_Flash.twk">System_Flash.twk</a></li>
+      <li><a href="#" data-f="decoded/System_Sound.twk">System_Sound.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_ArrowEmitter_002.twk">TweakTemplates_ArrowEmitter_002.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_ArrowEmitter_003.twk">TweakTemplates_ArrowEmitter_003.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_ArrowEmitter_005.twk">TweakTemplates_ArrowEmitter_005.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Arrow_002.twk">TweakTemplates_Arrow_002.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Arrow_003.twk">TweakTemplates_Arrow_003.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Arrow_004.twk">TweakTemplates_Arrow_004.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_000.twk">TweakTemplates_Bonus_000.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_001.twk">TweakTemplates_Bonus_001.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_002.twk">TweakTemplates_Bonus_002.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_003.twk">TweakTemplates_Bonus_003.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_004.twk">TweakTemplates_Bonus_004.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_005.twk">TweakTemplates_Bonus_005.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_006.twk">TweakTemplates_Bonus_006.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_007.twk">TweakTemplates_Bonus_007.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_008.twk">TweakTemplates_Bonus_008.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_009.twk">TweakTemplates_Bonus_009.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_010.twk">TweakTemplates_Bonus_010.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_011.twk">TweakTemplates_Bonus_011.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_012.twk">TweakTemplates_Bonus_012.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_013.twk">TweakTemplates_Bonus_013.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_014.twk">TweakTemplates_Bonus_014.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_015.twk">TweakTemplates_Bonus_015.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_016.twk">TweakTemplates_Bonus_016.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_017.twk">TweakTemplates_Bonus_017.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_018.twk">TweakTemplates_Bonus_018.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Bonus_019.twk">TweakTemplates_Bonus_019.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_CameraFilter_008.twk">TweakTemplates_CameraFilter_008.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_CameraFilter_009.twk">TweakTemplates_CameraFilter_009.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_CombatFileSet_000.twk">TweakTemplates_CombatFileSet_000.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Concussion_000.twk">TweakTemplates_Concussion_000.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Concussion_001.twk">TweakTemplates_Concussion_001.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Concussion_003.twk">TweakTemplates_Concussion_003.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Concussion_004.twk">TweakTemplates_Concussion_004.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Concussion_005.twk">TweakTemplates_Concussion_005.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Concussion_006.twk">TweakTemplates_Concussion_006.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Fog_000.twk">TweakTemplates_Fog_000.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_MFX_500.twk">TweakTemplates_MFX_500.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Mix_000.twk">TweakTemplates_Mix_000.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Mix_001.twk">TweakTemplates_Mix_001.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_OrbEmitter_007.twk">TweakTemplates_OrbEmitter_007.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_OrbEmitter_015.twk">TweakTemplates_OrbEmitter_015.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Orb_000.twk">TweakTemplates_Orb_000.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Orb_001.twk">TweakTemplates_Orb_001.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Orb_002.twk">TweakTemplates_Orb_002.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Orb_011.twk">TweakTemplates_Orb_011.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_Orb_014.twk">TweakTemplates_Orb_014.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_PlayFX_311.twk">TweakTemplates_PlayFX_311.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_PlayFX_312.twk">TweakTemplates_PlayFX_312.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_PlayFX_313.twk">TweakTemplates_PlayFX_313.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_TimeWarpBlur_999.twk">TweakTemplates_TimeWarpBlur_999.twk</a></li>
+      <li><a href="#" data-f="decoded/TweakTemplates_WadInfoGroup_000.twk">TweakTemplates_WadInfoGroup_000.twk</a></li>
+  </ul>
+  <h2>Reconstructed per-move sheets</h2>
+  <ul>
+      <li><a href="#" data-f="airH1.twk">airH1.twk</a></li>
+      <li><a href="#" data-f="airH2.twk">airH2.twk</a></li>
+      <li><a href="#" data-f="airH3.twk">airH3.twk</a></li>
+      <li><a href="#" data-f="airImpale.twk">airImpale.twk</a></li>
+      <li><a href="#" data-f="airImpaleLand.twk">airImpaleLand.twk</a></li>
+      <li><a href="#" data-f="airV1.twk">airV1.twk</a></li>
+      <li><a href="#" data-f="berAirH1.twk">berAirH1.twk</a></li>
+      <li><a href="#" data-f="berAirH2.twk">berAirH2.twk</a></li>
+      <li><a href="#" data-f="berAirV2.twk">berAirV2.twk</a></li>
+      <li><a href="#" data-f="berAirV2Land.twk">berAirV2Land.twk</a></li>
+      <li><a href="#" data-f="berComboH1.twk">berComboH1.twk</a></li>
+      <li><a href="#" data-f="berComboH2.twk">berComboH2.twk</a></li>
+      <li><a href="#" data-f="berComboH3.twk">berComboH3.twk</a></li>
+      <li><a href="#" data-f="berComboH4.twk">berComboH4.twk</a></li>
+      <li><a href="#" data-f="berComboStab.twk">berComboStab.twk</a></li>
+      <li><a href="#" data-f="berComboV1.twk">berComboV1.twk</a></li>
+      <li><a href="#" data-f="berComboV2.twk">berComboV2.twk</a></li>
+      <li><a href="#" data-f="berComboV3.twk">berComboV3.twk</a></li>
+      <li><a href="#" data-f="berComboV4.twk">berComboV4.twk</a></li>
+      <li><a href="#" data-f="berJumpAir.twk">berJumpAir.twk</a></li>
+      <li><a href="#" data-f="berLand.twk">berLand.twk</a></li>
+      <li><a href="#" data-f="berserkEnter.twk">berserkEnter.twk</a></li>
+      <li><a href="#" data-f="berserkExit.twk">berserkExit.twk</a></li>
+      <li><a href="#" data-f="berserkIdle.twk">berserkIdle.twk</a></li>
+      <li><a href="#" data-f="blockLauncher.twk">blockLauncher.twk</a></li>
+      <li><a href="#" data-f="blockSlam.twk">blockSlam.twk</a></li>
+      <li><a href="#" data-f="combatLand2.twk">combatLand2.twk</a></li>
+      <li><a href="#" data-f="combo3A.twk">combo3A.twk</a></li>
+      <li><a href="#" data-f="combo3B.twk">combo3B.twk</a></li>
+      <li><a href="#" data-f="combo3C.twk">combo3C.twk</a></li>
+      <li><a href="#" data-f="combo3D.twk">combo3D.twk</a></li>
+      <li><a href="#" data-f="combo3E.twk">combo3E.twk</a></li>
+      <li><a href="#" data-f="combo3F.twk">combo3F.twk</a></li>
+      <li><a href="#" data-f="combo4A.twk">combo4A.twk</a></li>
+      <li><a href="#" data-f="combo4B.twk">combo4B.twk</a></li>
+      <li><a href="#" data-f="combo4C.twk">combo4C.twk</a></li>
+      <li><a href="#" data-f="combo4D.twk">combo4D.twk</a></li>
+      <li><a href="#" data-f="combo5A.twk">combo5A.twk</a></li>
+      <li><a href="#" data-f="combo5B.twk">combo5B.twk</a></li>
+      <li><a href="#" data-f="combo6A.twk">combo6A.twk</a></li>
+      <li><a href="#" data-f="combo7A.twk">combo7A.twk</a></li>
+      <li><a href="#" data-f="comboJump.twk">comboJump.twk</a></li>
+      <li><a href="#" data-f="comboLR2.twk">comboLR2.twk</a></li>
+      <li><a href="#" data-f="comboLR3.twk">comboLR3.twk</a></li>
+      <li><a href="#" data-f="comboLR4.twk">comboLR4.twk</a></li>
+      <li><a href="#" data-f="dashMultiStab.twk">dashMultiStab.twk</a></li>
+      <li><a href="#" data-f="grab.twk">grab.twk</a></li>
+      <li><a href="#" data-f="idleCombat.twk">idleCombat.twk</a></li>
+      <li><a href="#" data-f="jumpAir.twk">jumpAir.twk</a></li>
+      <li><a href="#" data-f="jumpDoubleAir.twk">jumpDoubleAir.twk</a></li>
+      <li><a href="#" data-f="jumpUp.twk">jumpUp.twk</a></li>
+      <li><a href="#" data-f="land.twk">land.twk</a></li>
+  </ul>
+</nav>
+<main><pre id="view" class="hint">select a sheet on the left</pre></main>
+<script>
+  const view = document.getElementById("view");
+  document.querySelectorAll("nav a[data-f]").forEach(a => a.addEventListener("click", async (e) => {
+    e.preventDefault();
+    view.textContent = "loading " + a.dataset.f + " ...";
+    try {
+      const r = await fetch(a.dataset.f);
+      view.textContent = r.ok ? await r.text() : ("failed to load: HTTP " + r.status);
+    } catch (err) { view.textContent = "failed to load: " + err; }
+    view.classList.remove("hint");
+    location.hash = a.dataset.f;
+  }));
+  if (location.hash.length > 1) {
+    const f = decodeURIComponent(location.hash.slice(1));
+    const a = [...document.querySelectorAll("nav a[data-f]")].find(x => x.dataset.f === f);
+    if (a) a.click();
+  }
+</script>
+</body>
+</html>
