@@ -918,6 +918,10 @@
   const JID = {};
   if (rig) for (const j of rig.obj.joints) JID[j.name] = j.id;
   const trailHist = { l: [], r: [] };
+  // hitbox linger (btnHitbox): per-tick snapshots of each blade's hilt/tip so the
+  // capsule overlay shows the SWEPT hit shape, fading over HITBOX_LINGER frames.
+  const hitboxHist = [];
+  const HITBOX_LINGER = 20;
   // Segment tracking: a push gap (attacking paused between combo moves) starts a NEW
   // segment — each swing gets its OWN swoosh decal + ribbon strip. Connecting across
   // gaps stretched quads between disjoint arcs (hard radial cuts) and spread one
@@ -1426,24 +1430,22 @@
     // meters — the radius interpretation is INFERRED). Additive red, depth-write
     // OFF via Fx.applyMaterial (DEC-01). Shown only while attacking (the frames
     // whose blade sweep the game tests for hits).
-    if (window.__hitbox && !machine.isIdle()) {
+    if (window.__hitbox && hitboxHist.length) {
       const hitV = [];
       const rx = view[0], ry = view[4], rz = view[8];
       const ux = view[1], uy = view[5], uz = view[9];
       const R = 0.5 * Chain.METERS_TO_WORLD;
-      for (const key of ["l", "r"]) {
-        if (!bladeSim[key].pos) continue;
-        const m = bladeSim[key].mat;
-        const ha = xformM(m, blade.hilt), tb = xformM(m, blade.tip);
+      for (const e of hitboxHist) {
+        const fade = Math.max(0, 1 - e.age / HITBOX_LINGER); // per-vertex alpha → soft decay
         for (let h = 0; h <= 3; h++) {
-          const c = lerp3(ha, tb, h / 3);
+          const c = lerp3(e.a, e.b, h / 3);
           for (let s = 0; s < 8; s++) {
             const a0 = (s / 8) * Math.PI * 2, a1 = ((s + 1) / 8) * Math.PI * 2;
             const c0 = Math.cos(a0) * R, s0 = Math.sin(a0) * R, c1 = Math.cos(a1) * R, s1 = Math.sin(a1) * R;
             hitV.push(
-              c[0], c[1], c[2], 0.5, 0.5, 1,
-              c[0] + rx * c0 + ux * s0, c[1] + ry * c0 + uy * s0, c[2] + rz * c0 + uz * s0, 0, 0, 1,
-              c[0] + rx * c1 + ux * s1, c[1] + ry * c1 + uy * s1, c[2] + rz * c1 + uz * s1, 1, 0, 1,
+              c[0], c[1], c[2], 0.5, 0.5, fade,
+              c[0] + rx * c0 + ux * s0, c[1] + ry * c0 + uy * s0, c[2] + rz * c0 + uz * s0, 0, 0, fade,
+              c[0] + rx * c1 + ux * s1, c[1] + ry * c1 + uy * s1, c[2] + rz * c1 + uz * s1, 1, 0, fade,
             );
           }
         }
@@ -1455,7 +1457,7 @@
         gl.uniform1f(fxLocs.uGlowGain, 0);
         gl.uniform1f(fxLocs.uCutoff, 0);
         gl.uniform3fv(fxLocs.uMaterialColor, [1, 1, 1]);
-        gl.uniform4fv(fxLocs.uLayerColor, [1, 0.15, 0.1, 0.35]);
+        gl.uniform4fv(fxLocs.uLayerColor, [1, 0.15, 0.1, 0.12]); // low per-hoop alpha — ~20 lingering snapshots stack additively
         gl.bindTexture(gl.TEXTURE_2D, whiteTex);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(hitV), gl.DYNAMIC_DRAW);
         gl.drawArrays(gl.TRIANGLES, 0, hitV.length / 6);
@@ -2078,6 +2080,9 @@
       // trail history being sampled at exactly 60Hz.
       if (blade) {
         const attacking = !machine.isIdle();
+        // age + expire the lingering hitbox snapshots (drawn in drawFx)
+        for (const e of hitboxHist) e.age++;
+        while (hitboxHist.length && hitboxHist[0].age > HITBOX_LINGER) hitboxHist.shift();
         // FIRE-02: edge-detect the landed-hit counter ONCE per tick (combat.js start()
         // increments st.hits on each non-idle move, combat.js:172). A change since last
         // tick is a new hit → burst impact sparks off the blade (below). prevHits advances
@@ -2134,6 +2139,7 @@
           }
           if (attacking) {
             const tip = xformM(bm, blade.tip);
+            hitboxHist.push({ a: xformM(bm, blade.hilt), b: tip, age: 0 }); // hitbox linger snapshot
             // hand = the grip/chain anchor at this sample — the trail sheet is swept by
             // the WHOLE chain+blade assembly (footage: at full extension the trail
             // extends down the chain), so rows span hand→tip, not hilt→tip.
