@@ -2448,7 +2448,7 @@
   window.addEventListener("gamepadconnected", (e) => {
     status(`🎮 ${String(e.gamepad.id).slice(0, 44)} — ✕○□△ mapped · L1 block · L3+R3 rage`);
     const el = padStatusEl();
-    if (el) el.textContent = `🎮 ${String(e.gamepad.id).slice(0, 34)} (${e.gamepad.mapping === "standard" ? "standard" : "non-standard → Sony remap"})`;
+    if (el) el.textContent = `🎮 ${String(e.gamepad.id).slice(0, 34)} (${padLabel(e.gamepad)})`;
   });
   window.addEventListener("gamepaddisconnected", () => {
     const el = padStatusEl();
@@ -2456,13 +2456,21 @@
     padSeen = false;
     padPrev.length = 0;
   });
-  // Button-index map. Chrome/Edge expose DS4/DualSense/Xbox as "standard":
-  // ✕=0 ○=1 □=2 △=3. Firefox exposes Sony pads NON-standard, in DirectInput
-  // order: □=0 ✕=1 ○=2 △=3 (shoulders/sticks match; right-stick Y is axis 5).
+  // Button-index map. Xbox, DualShock/DualSense, and most modern/generic pads
+  // report mapping "standard" in Chrome/Edge/Firefox: bottom=0 right=1 left=2
+  // top=3 (✕○□△ positions). Firefox exposes SONY pads NON-standard in
+  // DirectInput order (□=0 ✕=1 ○=2 △=3; right-stick Y on axis 5) — detected
+  // by id. Unknown non-standard pads get standard-order indices (the majority
+  // convention); the D debug HUD's raw line is the remap aid for exotics.
+  const PAD_STD = { S: 2, C: 1, X: 0, T: 3, L1: 4, L2: 6, R2: 7, SEL: 8, ST: 9, L3: 10, R3: 11, AX: 2, AY: 3 };
+  const PAD_SONY_DINPUT = { S: 0, C: 2, X: 1, T: 3, L1: 4, L2: 6, R2: 7, SEL: 8, ST: 9, L3: 10, R3: 11, AX: 2, AY: 5 };
+  const isSonyId = (gp) => /054c|sony|dualshock|dualsense|wireless controller/i.test(gp.id || "");
   function padMap(gp) {
-    if (gp.mapping === "standard") return { S: 2, C: 1, X: 0, T: 3, L1: 4, L2: 6, R2: 7, SEL: 8, ST: 9, L3: 10, R3: 11, AX: 2, AY: 3 };
-    return { S: 0, C: 2, X: 1, T: 3, L1: 4, L2: 6, R2: 7, SEL: 8, ST: 9, L3: 10, R3: 11, AX: 2, AY: 5 };
+    if (gp.mapping === "standard") return PAD_STD;
+    return isSonyId(gp) ? PAD_SONY_DINPUT : PAD_STD;
   }
+  const padLabel = (gp) =>
+    gp.mapping === "standard" ? "standard" : isSonyId(gp) ? "Sony remap" : "generic — standard order assumed";
   function pollGamepad(wallDt) {
     const gps = navigator.getGamepads ? navigator.getGamepads() : [];
     let gp = null;
@@ -2473,9 +2481,9 @@
     const edge = (i) => down(i) && !padPrev[i];
     if (!padSeen) {
       padSeen = true;
-      log(`🎮 controller active (${gp.mapping === "standard" ? "standard" : "non-standard → Sony remap"}) — ✕○□△ · △ hold launcher · L1 block · L3+R3 rage · Select hand-to-hand · Start pause · R-stick orbit · L2/R2 zoom`);
+      log(`🎮 controller active (${padLabel(gp)}) — ✕○□△ · △ hold launcher · L1 block · L3+R3 rage · Select hand-to-hand · Start pause · R-stick orbit · L2/R2 zoom`);
       const el = padStatusEl();
-      if (el) el.textContent = `🎮 ${String(gp.id).slice(0, 34)} (${gp.mapping === "standard" ? "standard" : "remapped"})`;
+      if (el) el.textContent = `🎮 ${String(gp.id).slice(0, 34)} (${padLabel(gp)})`;
     }
     // raw diagnostic for the debug HUD: pressed indices + axes
     const pressedIdx = [];
