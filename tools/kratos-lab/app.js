@@ -476,6 +476,20 @@
       wadBuf.subarray(p.dataOff, p.dataOff + p.size));
     return makeTex(img, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE, filter: true });
   })();
+  // WEAPON LEVEL 5 blade skin (REAL WAD assets GFX/PAL_stage5Btx) + the decoded
+  // per-level Rage rule: God Mode Trail Tint = (1,1,1,1) at L1-3 but RED
+  // (1,0,0,1) at L4-5 (/Player/ Weapon Level tree). The Weapon Lv button swaps
+  // the blade texture and, during Rage, applies the level's REAL trail tint.
+  const blade5Tex = (() => {
+    const g = wadRecords.find((r) => r.name === "GFX_stage5Btx");
+    const p = wadRecords.find((r) => r.name === "PAL_stage5Btx");
+    if (!g || !p) return null;
+    const img = Parsers.decodeTexture(
+      wadBuf.subarray(g.dataOff, g.dataOff + g.size),
+      wadBuf.subarray(p.dataOff, p.dataOff + p.size));
+    return makeTex(img);
+  })();
+  let weaponLevel = 1; // 1 or 5
 
   // FIRE-01 fire billboard sprite (WARNING-4 resolution): attempt the decoded
   // MAT_pticleMat texture FIRST. MAT_pticleMat has layerCount 1 but exposes NO layer
@@ -527,6 +541,7 @@
     // additive blend). vT.z is the per-row age fade (1 fresh -> 0 old).
     uniform float uTrailRamp;
     uniform float uTrailAlpha; // REAL Trail Tint A (0.8) / God Mode Trail Tint A (1.0, Rage)
+    uniform vec3 uTrailTint;   // REAL Trail Tint RGB (1,1,1) / God Mode L4-5 RED (1,0,0)
     // CHAIN-03 combat-gated glow brightness (D-05, A2). When uGlowGain > 0 this is
     // the alpha-over-1.0 chainglow premult branch (CLAUDE.md Part 1): output the
     // DECODED glow texel rgb premultiplied by (alpha128 * uGlowGain) with alpha 0,
@@ -574,7 +589,7 @@
         // on the ramp's peak, smoothstep fades the past-tip overhang fringe),
         // texture V = sweep (vT.x, tail->live edge, stretched into the band so the
         // veil persists across the whole sweep). All colors remain real texels.
-        vec3 tex = texture2D(uTex, vec2(min(vT.y / 0.87, 1.0), mix(0.75, 1.0, vT.x))).rgb;
+        vec3 tex = uTrailTint * texture2D(uTex, vec2(min(vT.y / 0.87, 1.0), mix(0.75, 1.0, vT.x))).rgb;
         float edgeFade = 1.0 - smoothstep(0.87, 1.0, vT.y);
         // Alpha holds the REAL Trail Tint A through the sweep (uTrailAlpha: 0.8
         // normal / 1.0 Rage — both decoded); the age term only DISSOLVES rows
@@ -597,6 +612,7 @@
     uCutoff: gl.getUniformLocation(fxProg, "uCutoff"),
     uTrailRamp: gl.getUniformLocation(fxProg, "uTrailRamp"),
     uTrailAlpha: gl.getUniformLocation(fxProg, "uTrailAlpha"),
+    uTrailTint: gl.getUniformLocation(fxProg, "uTrailTint"),
     uGlowGain: gl.getUniformLocation(fxProg, "uGlowGain"),
   };
   const fxBuf = gl.createBuffer();
@@ -1483,6 +1499,8 @@
       gl.uniform1f(fxLocs.uTrailRamp, 1.0);
       gl.uniform1f(fxLocs.uGlowGain, 0.0); // glow premult OFF for the trail (no bleed, T-06-07-01)
       gl.uniform1f(fxLocs.uTrailAlpha, rageT ? 1.0 : 0.8); // REAL Trail Tint A / God Mode Trail Tint A
+      // REAL per-level Rage tint: God Mode Trail Tint RGB is white at L1-3, RED at L4-5
+      gl.uniform3fv(fxLocs.uTrailTint, rageT && weaponLevel >= 4 ? [1, 0, 0] : [1, 1, 1]);
       gl.bindTexture(gl.TEXTURE_2D, rageT ? godTrailTex : trailTex);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(trailV), gl.DYNAMIC_DRAW);
       gl.drawArrays(gl.TRIANGLES, 0, trailV.length / 6);
@@ -1762,7 +1780,7 @@
     // Blades of Chaos: chain-simulated (gripped when slow, flung when whipped)
     if (bladeSet && skin && skin.lastWorld) {
       gl.uniform1f(uPages, 1);
-      gl.bindTexture(gl.TEXTURE_2D, bladeTex);
+      gl.bindTexture(gl.TEXTURE_2D, weaponLevel >= 5 && blade5Tex ? blade5Tex : bladeTex); // REAL stage1/stage5 skins
       bindMeshSet(bladeSet);
       if (!window.__fxOnly) for (const key of ["l", "r"]) {
         if (!bladeSim[key].pos) continue;
@@ -2033,6 +2051,11 @@
   $("btnHitbox").addEventListener("click", () => {
     window.__hitbox = !window.__hitbox;
     $("btnHitbox").classList.toggle("latched", !!window.__hitbox);
+  });
+  $("btnWpnLv").addEventListener("click", () => {
+    weaponLevel = weaponLevel >= 5 ? 1 : 5;
+    $("btnWpnLv").textContent = `Weapon Lv ${weaponLevel}`;
+    $("btnWpnLv").classList.toggle("latched", weaponLevel >= 5);
   });
   $("btnRootMo").addEventListener("click", () => {
     rootMotion.on = !rootMotion.on;
