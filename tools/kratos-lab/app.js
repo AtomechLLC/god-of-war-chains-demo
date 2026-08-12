@@ -918,9 +918,12 @@
   const JID = {};
   if (rig) for (const j of rig.obj.joints) JID[j.name] = j.id;
   const trailHist = { l: [], r: [] };
-  // hitbox linger (btnHitbox): per-tick snapshots of each blade's hilt/tip so the
-  // capsule overlay shows the SWEPT hit shape, fading over HITBOX_LINGER frames.
-  const hitboxHist = [];
+  // hitbox linger (btnHitbox): CHARACTER-ANCHORED display (the decoded Concussion
+  // data proved GoW1 hit volumes anchor at the character, not the weapon). Each
+  // attacking tick records Kratos' position + the live blade-tip reach (REAL
+  // track); the overlay draws the reach envelope as ground circles around HIM,
+  // fading over HITBOX_LINGER frames — plus the authored concussion rings.
+  const hitboxHist = []; // {cx, cz, r, age} — character-centered reach samples
   const HITBOX_LINGER = 20;
   // REAL decoded CONCUSSION hit volumes (part1.pak /TweakTemplates/Concussion/NNN,
   // instances NAMED per attack — "BF Plume C", "3F Plume C", "7A Plume C", "Hero
@@ -935,6 +938,26 @@
     airImpaleLand: { s: 4.0, e: 2.0, dur: 0.1, imp: 1000 }, // 013 "Hero Impale1"
   };
   const ringHist = []; // live concussion rings {cx,cz, s,e,durTicks, age}
+  // Concussion TRIGGER TIME (derived from REAL data): the slam is where the move's
+  // comp-422 controller displacement completes — first t reaching 90% of the clip's
+  // net travel. (The hit-counter edge fires at move START, spawning the ring where
+  // Kratos WAS before the leap — the reported mis-placement.) Fallback 0.7×dur.
+  function concussionTime(move) {
+    const cd = CONCUSSION[move];
+    if (!cd) return null;
+    if (cd.tStar === undefined) {
+      const dur = DUR[move] || 1;
+      cd.tStar = 0.7 * dur; // INFERRED fallback
+      const d0 = rig.rootDisp(move, 0), d1 = rig.rootDisp(move, dur);
+      if (d0 !== null && d1 !== null && Math.abs(d1 - d0) > 1) {
+        for (let k = 0; k <= Math.round(dur * 30); k++) {
+          const t = k / 30;
+          if (Math.abs(rig.rootDisp(move, t) - d0) >= 0.9 * Math.abs(d1 - d0)) { cd.tStar = t; break; }
+        }
+      }
+    }
+    return cd.tStar;
+  }
   // Segment tracking: a push gap (attacking paused between combo moves) starts a NEW
   // segment — each swing gets its OWN swoosh decal + ribbon strip. Connecting across
   // gaps stretched quads between disjoint arcs (hard radial cuts) and spread one
@@ -1445,27 +1468,20 @@
     // whose blade sweep the game tests for hits).
     if (window.__hitbox && (hitboxHist.length || ringHist.length)) {
       const hitV = [];
-      const rx = view[0], ry = view[4], rz = view[8];
-      const ux = view[1], uy = view[5], uz = view[9];
-      const R = 0.5 * Chain.METERS_TO_WORLD;
-      // WIREFRAME capsules (user): camera-facing octagon RINGS at 4 stations along
-      // hilt→tip + 4 longitudinal spars — gl.LINES through the same FX program.
+      // CHARACTER-ANCHORED reach envelope: one ground circle per sample, centered
+      // on Kratos, radius = the live blade-tip distance (REAL track). The union
+      // over a swing shows the melee reach around the CHARACTER — the anchoring
+      // the decoded Concussion data proved (never weapon-attached shapes).
       for (const e of hitboxHist) {
         const fade = Math.max(0, 1 - e.age / HITBOX_LINGER); // per-vertex alpha → soft decay
-        const pts = [];
-        for (let h = 0; h <= 3; h++) {
-          const c = lerp3(e.a, e.b, h / 3);
-          const ring = [];
-          for (let s = 0; s < 8; s++) {
-            const a0 = (s / 8) * Math.PI * 2;
-            const c0 = Math.cos(a0) * R, s0 = Math.sin(a0) * R;
-            ring.push([c[0] + rx * c0 + ux * s0, c[1] + ry * c0 + uy * s0, c[2] + rz * c0 + uz * s0]);
-          }
-          pts.push(ring);
+        const N = 32, y = 0.3;
+        for (let s = 0; s < N; s++) {
+          const a0 = (s / N) * Math.PI * 2, a1 = ((s + 1) / N) * Math.PI * 2;
+          hitV.push(
+            e.cx + Math.cos(a0) * e.r, y, e.cz + Math.sin(a0) * e.r, 0.5, 0.5, fade,
+            e.cx + Math.cos(a1) * e.r, y, e.cz + Math.sin(a1) * e.r, 0.5, 0.5, fade,
+          );
         }
-        const line = (p, q) => hitV.push(p[0], p[1], p[2], 0.5, 0.5, fade, q[0], q[1], q[2], 0.5, 0.5, fade);
-        for (let h = 0; h <= 3; h++) for (let s = 0; s < 8; s++) line(pts[h][s], pts[h][(s + 1) % 8]);
-        for (const s of [0, 2, 4, 6]) for (let h = 0; h < 3; h++) line(pts[h][s], pts[h + 1][s]);
       }
       // concussion rings: flat ground circles at the AUTHORED radius (meters × the
       // bridge), interpolating Start→End Radius over the authored duration, then
@@ -1487,13 +1503,16 @@
         }
       }
       if (hitV.length) {
-        Fx.applyMaterial(gl, { name: "hitboxOverlay", mode: "additive", disableDepthWrite: true });
-        fxLog.push({ name: "hitboxOverlay", mode: "additive", depthWrite: false });
+        // "usual" alpha blend (not additive): additive red over the BRIGHT arena
+        // floor washed out to invisible pink — alpha-blended solid red reads on
+        // any background. Depth-write stays off (overlay).
+        Fx.applyMaterial(gl, { name: "hitboxOverlay", mode: "usual", disableDepthWrite: true });
+        fxLog.push({ name: "hitboxOverlay", mode: "usual", depthWrite: false });
         gl.uniform1f(fxLocs.uTrailRamp, 0);
         gl.uniform1f(fxLocs.uGlowGain, 0);
         gl.uniform1f(fxLocs.uCutoff, 0);
-        gl.uniform3fv(fxLocs.uMaterialColor, [1, 1, 1]);
-        gl.uniform4fv(fxLocs.uLayerColor, [1, 0.2, 0.15, 0.5]); // thin lines — higher alpha than the old filled fans
+        gl.uniform3fv(fxLocs.uMaterialColor, [1, 0.1, 0.1]);
+        gl.uniform4fv(fxLocs.uLayerColor, [1, 1, 1, 0.85]);
         gl.bindTexture(gl.TEXTURE_2D, whiteTex);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(hitV), gl.DYNAMIC_DRAW);
         gl.drawArrays(gl.LINES, 0, hitV.length / 6);
@@ -2128,12 +2147,16 @@
         // per hit), NEVER per attacking frame (Pitfall 5 — a discrete event, not a rate).
         const hitEdge = machine.st.hits !== prevHits;
         // REAL concussion AoE on mapped impact moves: spawn the authored ring at
-        // the character's current position on the hit frame (drawn when Hitboxes on)
-        if (hitEdge && CONCUSSION[machine.st.current]) {
+        // the character's position AT THE SLAM — the tick the move's real motion
+        // channel completes (concussionTime), so the ring lands where he lands.
+        if (CONCUSSION[machine.st.current]) {
           const cd = CONCUSSION[machine.st.current];
-          const pj = (JID.pelvis !== undefined ? JID.pelvis : 0) * 16;
-          ringHist.push({ cx: skin.lastWorld[pj + 12], cz: skin.lastWorld[pj + 14],
-            s: cd.s, e: cd.e, durTicks: Math.max(1, Math.round(cd.dur * 60)), age: 0 });
+          const tStar = concussionTime(machine.st.current);
+          if (machine.st.t >= tStar && machine.st.t - STEP < tStar) {
+            const pj = (JID.pelvis !== undefined ? JID.pelvis : 0) * 16;
+            ringHist.push({ cx: skin.lastWorld[pj + 12], cz: skin.lastWorld[pj + 14],
+              s: cd.s, e: cd.e, durTicks: Math.max(1, Math.round(cd.dur * 60)), age: 0 });
+          }
         }
         // copy before offsetting — bladePos may return a shared internal buffer
         const track0 = rig.bladePos(machine.st.current, machine.st.t);
@@ -2185,7 +2208,14 @@
           }
           if (attacking) {
             const tip = xformM(bm, blade.tip);
-            hitboxHist.push({ a: xformM(bm, blade.hilt), b: tip, age: 0 }); // hitbox linger snapshot
+            // character-anchored reach sample: Kratos' position + this blade's live
+            // horizontal tip distance (REAL track) — the swing paints its reach
+            // envelope around the CHARACTER, matching how the game anchors hits
+            {
+              const pj = (JID.pelvis !== undefined ? JID.pelvis : 0) * 16;
+              const pcx = skin.lastWorld[pj + 12], pcz = skin.lastWorld[pj + 14];
+              hitboxHist.push({ cx: pcx, cz: pcz, r: Math.hypot(tip[0] - pcx, tip[2] - pcz), age: 0 });
+            }
             // hand = the grip/chain anchor at this sample — the trail sheet is swept by
             // the WHOLE chain+blade assembly (footage: at full extension the trail
             // extends down the chain), so rows span hand→tip, not hilt→tip.
