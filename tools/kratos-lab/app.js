@@ -1999,6 +1999,12 @@
           rootMotion.z += (rv - rootMotion.prevTrack); // advance along -Z (user-corrected axis; channel decreases forward)
         }
         rootMotion.prevTrack = rv;
+        // Teleport home once Kratos strays past 2 BIG grid squares (2 x 4 m = 8 m)
+        // from center — instant, no easing (keeps looping combos on the arena).
+        const RESET_R = 2 * 4 * ARENA_M;
+        if (rootMotion.x * rootMotion.x + rootMotion.z * rootMotion.z > RESET_R * RESET_R) {
+          rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0;
+        }
         rootMotion.px = rootMotion.x; rootMotion.pz = rootMotion.z;
         if (rootMotion.x || rootMotion.z) {
           for (let j = 0; j < world.length; j += 16) { world[j + 12] += rootMotion.x; world[j + 14] += rootMotion.z; }
