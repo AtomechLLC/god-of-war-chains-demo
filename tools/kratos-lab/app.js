@@ -873,6 +873,13 @@
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v), gl.STATIC_DRAW);
   }
   let arenaOn = true;
+  // 1×1 white texture — solid-color overlay draws through the FX program (hitboxes)
+  const whiteTex = (() => {
+    const t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 255]));
+    return t;
+  })();
   function drawArena(mvpModel) {
     gl.useProgram(arenaProg);
     gl.uniformMatrix4fv(arenaLocs.uMVP, false, mvpModel);
@@ -1413,6 +1420,47 @@
     // swordtrail texel (real bytes, INFERRED assignment). Per-particle rgb (the
     // BFT/BGT variant tint) is kept as-is (no tint override). Empty pool → drawPool
     // no-ops; fxState() stays clean.
+    // HITBOX overlay (btnHitbox): the game's weapon collision = the blade capsule
+    // swept along the REAL type-10 track. Drawn as camera-facing octagon hoops
+    // along hilt→tip; radius = Blade Collision Tolerance (REAL 0.5, read as
+    // meters — the radius interpretation is INFERRED). Additive red, depth-write
+    // OFF via Fx.applyMaterial (DEC-01). Shown only while attacking (the frames
+    // whose blade sweep the game tests for hits).
+    if (window.__hitbox && !machine.isIdle()) {
+      const hitV = [];
+      const rx = view[0], ry = view[4], rz = view[8];
+      const ux = view[1], uy = view[5], uz = view[9];
+      const R = 0.5 * Chain.METERS_TO_WORLD;
+      for (const key of ["l", "r"]) {
+        if (!bladeSim[key].pos) continue;
+        const m = bladeSim[key].mat;
+        const ha = xformM(m, blade.hilt), tb = xformM(m, blade.tip);
+        for (let h = 0; h <= 3; h++) {
+          const c = lerp3(ha, tb, h / 3);
+          for (let s = 0; s < 8; s++) {
+            const a0 = (s / 8) * Math.PI * 2, a1 = ((s + 1) / 8) * Math.PI * 2;
+            const c0 = Math.cos(a0) * R, s0 = Math.sin(a0) * R, c1 = Math.cos(a1) * R, s1 = Math.sin(a1) * R;
+            hitV.push(
+              c[0], c[1], c[2], 0.5, 0.5, 1,
+              c[0] + rx * c0 + ux * s0, c[1] + ry * c0 + uy * s0, c[2] + rz * c0 + uz * s0, 0, 0, 1,
+              c[0] + rx * c1 + ux * s1, c[1] + ry * c1 + uy * s1, c[2] + rz * c1 + uz * s1, 1, 0, 1,
+            );
+          }
+        }
+      }
+      if (hitV.length) {
+        Fx.applyMaterial(gl, { name: "hitboxOverlay", mode: "additive", disableDepthWrite: true });
+        fxLog.push({ name: "hitboxOverlay", mode: "additive", depthWrite: false });
+        gl.uniform1f(fxLocs.uTrailRamp, 0);
+        gl.uniform1f(fxLocs.uGlowGain, 0);
+        gl.uniform1f(fxLocs.uCutoff, 0);
+        gl.uniform3fv(fxLocs.uMaterialColor, [1, 1, 1]);
+        gl.uniform4fv(fxLocs.uLayerColor, [1, 0.15, 0.1, 0.35]);
+        gl.bindTexture(gl.TEXTURE_2D, whiteTex);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(hitV), gl.DYNAMIC_DRAW);
+        gl.drawArrays(gl.TRIANGLES, 0, hitV.length / 6);
+      }
+    }
     // EMBER_UV: the bright gold corner of the swoosh decal — sparks sample ONLY this
     // sub-rect so each billboard reads as an ember dot, not a stamped mini-swoosh
     // (which visually REPEATED the swoosh detail along the arc). Real texels.
@@ -1784,6 +1832,10 @@
   $("btnArena").addEventListener("click", () => {
     arenaOn = !arenaOn;
     $("btnArena").classList.toggle("latched", arenaOn);
+  });
+  $("btnHitbox").addEventListener("click", () => {
+    window.__hitbox = !window.__hitbox;
+    $("btnHitbox").classList.toggle("latched", !!window.__hitbox);
   });
   $("btnRootMo").addEventListener("click", () => {
     rootMotion.on = !rootMotion.on;
