@@ -158,6 +158,46 @@
   console.table(matTuples);
   console.log(`weapon WAD: ${wadRecords.length} records, ${matDb.list.length} MATs, ${matTuples.length} blend tuples`);
 
+  // ---------- goCombo3fExplode: the Plume impact explosion (R_PERM.WAD) ----
+  // REAL PlayFX bindings put this composite at the SLAM ("synchJoint") of
+  // exactly three moves, with authored per-move scale: "Hero Plume BF"
+  // (comboLR3) 2/1.5/2, "Hero Plume 3F" (combo3F) 1.5/1/1.5, "Hero Plume
+  // 7A" (combo7A) 1/0.5/1. Chain: 5 emitter/particle pairs (flash, fire
+  // cloud, sparks, glow, DEBRIS) + a −20 gravity field + the 128×128
+  // GREYSCALE cloud sprite (color at draw = the decoded fire color, same
+  // as the blades). The explosion MESH (MDL_combo3fExplode + its anm) and
+  // the goFXfirePath scrolling-fire strip are NOT yet built (noted).
+  // Failure-tolerant: the lab runs without the records.
+  let plumeFx = null;
+  try {
+    const [xGfx, xPal, pFlash, pCloud, pSpark, pGlow, pDeb, gFld] = await Promise.all([
+      Parsers.fetchBuf("../../assets/perm/GFX_explosioncloud.bin"),
+      Parsers.fetchBuf("../../assets/perm/PAL_explosioncloud.bin"),
+      Parsers.fetchBuf("../../assets/perm/PTC_Flashpart.bin"),
+      Parsers.fetchBuf("../../assets/perm/PTC_Fcloudpart.bin"),
+      Parsers.fetchBuf("../../assets/perm/PTC_sparkspart.bin"),
+      Parsers.fetchBuf("../../assets/perm/PTC_fglowpart.bin"),
+      Parsers.fetchBuf("../../assets/perm/PTC_Debpart.bin"),
+      Parsers.fetchBuf("../../assets/perm/FXC_gravityField1.bin"),
+    ]);
+    const slot = (buf, name) =>
+      FxParse.parsePtc(buf, { dataOff: 0, size: buf.byteLength, name }).params[3]; // +0x70 size slot (meters)
+    const debP = FxParse.parsePtc(pDeb, { dataOff: 0, size: pDeb.byteLength, name: "PTC_Debpart" });
+    const dvG = new DataView(gFld.buffer, gFld.byteOffset, gFld.byteLength);
+    plumeFx = {
+      img: Parsers.decodeTexture(xGfx, xPal),
+      // per-system billboard half-sizes, REAL +0x70 slots read as METERS
+      flash: slot(pFlash, "Flash"), cloud: slot(pCloud, "Fcloud"),
+      spark: slot(pSpark, "sparks"), glow: slot(pGlow, "fglow"), deb: slot(pDeb, "Deb"),
+      debAccel: debP.params[73],            // −300.86 @+0x188 (candidate — debris falls hard)
+      fieldAccel: dvG.getFloat32(0x58, true), // −20.0 (the explosion's own gravity field)
+    };
+    console.log("plumeFx:", { flash: plumeFx.flash, cloud: plumeFx.cloud, spark: plumeFx.spark,
+      glow: plumeFx.glow, deb: plumeFx.deb, debAccel: plumeFx.debAccel, fieldAccel: plumeFx.fieldAccel });
+  } catch (e) { console.warn("plume explosion load", e); }
+  // REAL per-move explosion scale (the PlayFX instances above)
+  const PLUME_SCALE = { comboLR3: [2, 1.5, 2], combo3F: [1.5, 1, 1.5], combo7A: [1, 0.5, 1] };
+
   // FIRE-01: resolve the two level-1 blade-fire emitters from the runtime `db` ONCE
   // at load by shapeRef NAME (D-08 / Pitfall 6 — the fire family uses PLACEHOLDER
   // slot 0x0 and is NOT a db.refs slot pair, so the emitter->particle join is on the
@@ -184,6 +224,8 @@
   const SPARK_KINDS = new Set(["spark"]);   // FIRE-02 impact sparks — their own stretched batch
   const HITFLASH_KINDS = new Set(["hitFlash"]); // GFX_flasher03 on-hit radial burst
   const BLOOD_KINDS = new Set(["blood"]);       // goSklBlood — the legionnaire's REAL impact effect
+  const CLOUD_KINDS = new Set(["cloud"]);       // goCombo3fExplode fire cloud/glow (explosioncloud sprite)
+  const DEBRIS_KINDS = new Set(["debris"]);     // goCombo3fExplode debris chunks (usual blend, dark)
   // FIRE-02: the impact-spark emitter IS the SAME already-real FXC_BDEsparkemit family as
   // blade fire (A6 — continuous fire and on-hit sparks are one emitter family, differing
   // ONLY by trigger; NO new emitter decode, D-09a). Its decoded blade-local placement
@@ -563,6 +605,8 @@
       wadBuf.subarray(p.dataOff, p.dataOff + p.size));
     return makeTex(img, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE, filter: true });
   })();
+  // goCombo3fExplode cloud sprite (REAL 128×128 GFX_explosioncloud, R_PERM.WAD)
+  if (plumeFx) plumeFx.tex = makeTex(plumeFx.img, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE, filter: true });
   // WEAPON LEVEL 5 blade skin (REAL WAD assets GFX/PAL_stage5Btx) + the decoded
   // per-level Rage rule: God Mode Trail Tint = (1,1,1,1) at L1-3 but RED
   // (1,0,0,1) at L4-5 (/Player/ Weapon Level tree). The Weapon Lv button swaps
@@ -2256,6 +2300,14 @@
     // bleed dark). Per-particle color carries it; no batch tint.
     if (dummy && dummy.blood && dummy.blood.tex)
       drawPool(mvp, view, dummy.blood.tex, { name: "fxBlood", kinds: BLOOD_KINDS, mode: dummy.blood.mode });
+    // PASS — Plume explosion cloud/glow: REAL greyscale explosioncloud sprite
+    // × the decoded fire color (same source as the blade fire) — additive.
+    if (plumeFx && plumeFx.tex)
+      drawPool(mvp, view, plumeFx.tex, { name: "fxPlumeCloud", kinds: CLOUD_KINDS, tint: db.meta.colorSource.value });
+    // PASS — Plume debris: dark chunks, "usual" blend (tint INFERRED — no
+    // debris material record; the sprite doubles as the chunk texture).
+    if (plumeFx && plumeFx.tex)
+      drawPool(mvp, view, plumeFx.tex, { name: "fxPlumeDebris", kinds: DEBRIS_KINDS, mode: "usual" });
     Fx.restoreFxState(gl);
     gl.useProgram(prog);
   }
@@ -3708,6 +3760,52 @@
             const pj = (JID.pelvis !== undefined ? JID.pelvis : 0) * 16;
             const cx = skin.lastWorld[pj + 12], cz = skin.lastWorld[pj + 14];
             ringHist.push({ cx, cz, s: cd.s, e: cd.e, durTicks: Math.max(1, Math.round(cd.dur * 60)), age: 0 });
+            // goCombo3fExplode at the SLAM (REAL PlayFX binding + scale) —
+            // the composite: flash + fire cloud + sparks + glow + debris.
+            // Sizes = the PTC +0x70 slots (METERS via the bridge) × the
+            // authored per-move scale; counts/velocities INFERRED vs footage.
+            const psc = plumeFx && PLUME_SCALE[machine.st.current];
+            if (psc && plumeFx.tex) {
+              const M2W = Chain.METERS_TO_WORLD;
+              const sxz = (psc[0] + psc[2]) / 2, sy = psc[1];
+              const cloudG = Math.abs(plumeFx.fieldAccel) / 43.64;  // −20 field → gentle settle
+              const debG = Math.abs(plumeFx.debAccel) / 43.64;      // −300 → debris slams down
+              if (flasherTex) fxPool.spawn({ pos: [cx, 6, cz], vel: [0, 0, 0],
+                size: plumeFx.flash * M2W * sxz * 2.4, life: 9 * Loop.STEP,
+                color: [1, 1, 1, 2.6], kind: "hitFlash" });
+              fxPool.spawn({ pos: [cx, 4, cz], vel: [0, 3, 0],   // the big soft glow
+                size: plumeFx.glow * M2W * sxz, life: 32 * Loop.STEP,
+                color: [1, 1, 1, 0.7], kind: "cloud", gscale: cloudG });
+              for (let i = 0; i < 9; i++) {                        // billowing fire cloud
+                const a = (i / 9) * Math.PI * 2 + Math.random();
+                const rr = (2 + Math.random() * 3) * sxz;
+                fxPool.spawn({
+                  pos: [cx + Math.cos(a) * rr, 2 + Math.random() * 4, cz + Math.sin(a) * rr],
+                  vel: [Math.cos(a) * (3 + Math.random() * 5) * sxz, (7 + Math.random() * 9) * sy, Math.sin(a) * (3 + Math.random() * 5) * sxz],
+                  size: plumeFx.cloud * M2W * sxz * (0.55 + Math.random() * 0.55),
+                  life: (30 + Math.random() * 18) * Loop.STEP,
+                  color: [1, 1, 1, 1.3], kind: "cloud", gscale: cloudG });
+              }
+              for (let i = 0; i < 16; i++) {                       // spark fountain (existing streak pass)
+                const a = Math.random() * Math.PI * 2;
+                const sp = (14 + Math.random() * 26) * sxz;
+                fxPool.spawn({
+                  pos: [cx, 3, cz],
+                  vel: [Math.cos(a) * sp, 16 + Math.random() * 22, Math.sin(a) * sp],
+                  size: plumeFx.spark * M2W * 0.12, life: (22 + Math.random() * 12) * Loop.STEP,
+                  color: [1, 1, 1, 1.8], kind: "spark" });
+              }
+              for (let i = 0; i < 7; i++) {                        // debris chunks
+                const a = Math.random() * Math.PI * 2;
+                const sp = (8 + Math.random() * 14) * sxz;
+                fxPool.spawn({
+                  pos: [cx, 3, cz],
+                  vel: [Math.cos(a) * sp, 18 + Math.random() * 14, Math.sin(a) * sp],
+                  size: plumeFx.deb * M2W * (0.35 + Math.random() * 0.4),
+                  life: (40 + Math.random() * 20) * Loop.STEP,
+                  color: [0.3, 0.24, 0.18, 1.0], kind: "debris", gscale: debG });
+              }
+            }
             if (cd.fx) fxRings.push({ cx, cz, s: cd.fx.s, e: cd.fx.e,
               durTicks: Math.max(1, Math.round(cd.fx.dur * 60)), age: 0 }); // authored shockwave visual
             // TARGET DUMMY inside the REAL concussion AoE → launch + the

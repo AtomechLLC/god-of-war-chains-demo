@@ -26,6 +26,15 @@ re-derivable from a user's own game disc via the pipeline in [`tools/`](../tools
 These stay blocked in `.gitignore`. This subset exists for study and commentary within
 the course context; do not redistribute it outside that context.
 
+## perm/ — shared attack FX (added 2026-08-14)
+
+Carved from `R_PERM.WAD`: the goCombo3fExplode Plume-impact composite —
+`GFX_explosioncloud.bin` + `PAL_explosioncloud.bin` (128x128 greyscale cloud
+sprite; color at draw = the decoded fire color) plus the five emitter/particle
+pairs (`FXC/PTC` Flash, Fcloud, sparks, fglow, Deb) and `FXC_gravityField1.bin`
+(the explosion's -20 field). Bound by the part1.pak PlayFX instances "Hero
+Plume BF/3F/7A" at authored scales 2/1.5/2, 1.5/1/1.5, 1/0.5/1.
+
 ## enemy/ — the target dummy (added 2026-08-13)
 
 Impact-VFX chain (added 2026-08-14, carved from `R_SKS.WAD`): `GFX_blood.bin` +
