@@ -376,6 +376,11 @@
     }
     return {
       j1, j2, wgt, metaBound, staticBound, fallback, invBinds,
+      // JOINT-LOCAL rigs (SKS-class): the object ships NO inverse binds
+      // (mat3count 0, no 0x80 joint flags) because the mesh is authored
+      // ENTIRELY in joint-local space — every vertex takes the static path
+      // (world · v), never world·invBind·v (which scattered the chunks).
+      allStatic: !rigX.obj.invBind || rigX.obj.invBind.length === 0,
       bindPos: meshX.pos.slice(),
       out: new Float32Array(meshX.pos.length),
       jointMats: new Float32Array(rigX.jointCount * 16),
@@ -400,9 +405,10 @@
     }
     const bp = skinX.bindPos, out = skinX.out;
     const j1 = skinX.j1, j2 = skinX.j2, wg = skinX.wgt, vs = meshX.vertStatic;
+    const allStatic = skinX.allStatic;
     for (let v = 0; v < meshX.verts; v++) {
       const x = bp[v * 3], y = bp[v * 3 + 1], z = bp[v * 3 + 2];
-      if (vs[v]) { // static: coords live in joint-local space
+      if (allStatic || vs[v]) { // static: coords live in joint-local space
         const o = j1[v] * 16;
         out[v * 3] = world[o] * x + world[o + 4] * y + world[o + 8] * z + world[o + 12];
         out[v * 3 + 1] = world[o + 1] * x + world[o + 5] * y + world[o + 9] * z + world[o + 13];
