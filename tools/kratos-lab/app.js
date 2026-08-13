@@ -821,11 +821,14 @@
   const uHitFlash = gl.getUniformLocation(prog, "uHitFlash");
   const uHitFlashColor = gl.getUniformLocation(prog, "uHitFlashColor");
   gl.uniform1f(uHitFlash, 0.0); // hero/blades never flash (yet) — pulsed only for the dummy draw
-  // INFERRED hue, footage-calibrated (user's 4 Hydra-fight frames, 2026-08-13):
-  // the struck model shifts olive-green scales → salmon/terracotta — solving
-  // mix(c, F, 0.45) against the frame pair puts the flash target at a hot
-  // salmon-red, REDDER than the swoosh gold (the earlier trail-color guess).
-  const HIT_FLASH_RGB = [1.2, 0.5, 0.45];
+  // INFERRED hue, footage-calibrated (user's 4 Hydra-fight frames, 2026-08-13).
+  // KEY (user-corrected): the Hydra's BASE scales are GREEN — the salmon seen
+  // in the struck frames is flash-over-green, NOT the flash itself. Solving
+  // F = (c' − (1−a)·c)/a with c = olive scales (0.45,0.52,0.30) and
+  // c' = struck salmon (0.78,0.55,0.50) puts the TINT at a red-pink with a
+  // trace of blue. Sanity: mixed over green it returns the footage salmon;
+  // over the legionnaire's bone it reads the classic GoW red-pink pop.
+  const HIT_FLASH_RGB = [1.3, 0.6, 0.22]; // user-tuned: ORANGE at peak (red read too red, gold too yellow)
   gl.uniform3fv(uHitFlashColor, HIT_FLASH_RGB);
 
   gl.clearColor(0, 0, 0, 1); // opaque clear — FBO-path clears must also be opaque
@@ -2285,7 +2288,7 @@
       // (see HIT_FLASH_RGB; the rage-red variant was an unsupported inference
       // from the trail-tint rule and is removed — footage shows ONE flash hue).
       gl.uniform3fv(uHitFlashColor, HIT_FLASH_RGB);
-      gl.uniform1f(uHitFlash, 0.45 * dummy.flashT * dummy.flashT); // peak 0.45 — a wash, not a whiteout (user-tuned)
+      gl.uniform1f(uHitFlash, 0.65 * dummy.flashT * dummy.flashT); // peak 0.65 — user-tuned (0.85 too much, 0.45 too subtle)
       gl.bindTexture(gl.TEXTURE_2D, dummy.tex);
       bindMeshSet(dummy.set);
       gl.drawElements(gl.TRIANGLES, dummy.set.count, gl.UNSIGNED_SHORT, 0);
