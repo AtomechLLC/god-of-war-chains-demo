@@ -1241,7 +1241,7 @@
     dummy.tauntIn = 6;
     dummy.respawnIn = 0;
     dummy.kbx = 0; dummy.kbz = 0;           // knockback velocity (units/s)
-    dummy.lastHitSeg = { l: -1, r: -1 };    // one melee hit per swing per blade
+    dummy.lastHitMove = -1;                 // one melee contact per ATTACK (see hit test)
     dummy.hits = 0;                          // session total (probes/telemetry)
     dummy.combo = 0;                         // HUD hit counter — clears 5 s after the last contact (user spec)
     dummy.hitsLife = 0;                      // per-life count for the death log
@@ -3698,13 +3698,20 @@
               // Hitboxes display paints (reach + ±15° at the strike azimuth);
               // a 20-tick per-blade cooldown ≈ one hit per swing (works for
               // blades AND the brawl fists, whose strike point is the hand)
-              if (dummy && dummy.on && simStepCount - dummy.lastHitSeg[key] > 20) {
+              // ONE contact per attack-move instance (st.hits = the move-start
+              // counter, unique per swing): the game registers one hit event per
+              // swing per enemy via its authored windows — the old 20-tick blade
+              // resample re-hit every ~18 ticks, restarting the reaction clip so
+              // fast it never left its first (near-neutral) frames — the dummy
+              // read as IDLE under every flash (user report). Multi-hit attacks
+              // (dashMultiStab etc.) undercount to 1 — no per-move data (INFERRED).
+              if (dummy && dummy.on && machine.st.hits !== dummy.lastHitMove) {
                 const ddx = dummy.x - pcx, ddz = dummy.z - pcz;
                 const dd = Math.hypot(ddx, ddz);
                 let da = Math.atan2(ddz, ddx) - reachAng;
                 da = Math.atan2(Math.sin(da), Math.cos(da));
                 if (dd <= reachR + 3 && Math.abs(da) <= Math.PI / 12) {
-                  dummy.lastHitSeg[key] = simStepCount;
+                  dummy.lastHitMove = machine.st.hits;
                   // damage = base × REAL weapon-level Dmg Mult (1→5) × REAL costume mult
                   const dmg = 8 * (weaponLevel >= 5 ? 5 : 1) * COSTUMES[costumeIdx].dmg
                     * DIFFICULTY[difficultyIdx].dmg; // REAL /GlobGame/ difficulty Damage Mult
