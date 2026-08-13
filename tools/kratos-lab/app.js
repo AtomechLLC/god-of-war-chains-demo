@@ -2283,6 +2283,7 @@
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, dummy.skin.out);
       gl.uniform1f(uPages, 1);
       gl.uniformMatrix4fv(uModel, false, modelMat);
+      gl.uniform1f(uHeat, 0); // Rage heat tint is KRATOS' — never the dummy's (leak fix)
       // impact pop: squared envelope = instant bright, fast falloff — visible
       // DURING the reaction's opening frames. Hue = footage-calibrated salmon
       // (see HIT_FLASH_RGB; the rage-red variant was an unsupported inference
