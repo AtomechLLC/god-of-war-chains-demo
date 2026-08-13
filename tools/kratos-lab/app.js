@@ -2286,7 +2286,7 @@
       gl.uniform3fv(uHitFlashColor, flashRed
         ? [SWOOSH_GOLD[0], 0, 0]
         : SWOOSH_GOLD);
-      gl.uniform1f(uHitFlash, 0.85 * dummy.flashT * dummy.flashT);
+      gl.uniform1f(uHitFlash, 0.45 * dummy.flashT * dummy.flashT); // peak 0.45 — a wash, not a whiteout (user-tuned)
       gl.bindTexture(gl.TEXTURE_2D, dummy.tex);
       bindMeshSet(dummy.set);
       gl.drawElements(gl.TRIANGLES, dummy.set.count, gl.UNSIGNED_SHORT, 0);
