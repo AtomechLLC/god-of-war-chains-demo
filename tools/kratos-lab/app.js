@@ -3190,7 +3190,14 @@
         } else {
           rootMotion.prevTrackY = null;
           if (airState) {
-            rootMotion.vy = 0; // air ATTACK hover — height holds (the GoW stall)
+            // air-attack FLOAT (user-corrected): the combo drifts DOWN slowly —
+            // it stalls the fall, it doesn't levitate. Quarter-strength gravity
+            // easing into a ~0.9 m/s terminal drift (both INFERRED, feel);
+            // a 3-hit air chain settles from the 2 m apex to the ground.
+            const FLOAT_V = -0.9 * Chain.METERS_TO_WORLD;
+            rootMotion.vy = Math.max(rootMotion.vy - JUMP_G * 0.25 * STEP, FLOAT_V);
+            rootMotion.y = Math.max(0, rootMotion.y + rootMotion.vy * STEP);
+            if (rootMotion.y === 0) rootMotion.vy = 0;
           } else if (rootMotion.y > 0) {
             // grounded state with residual height (post-touchdown): finish the
             // drop under the same real gravity
