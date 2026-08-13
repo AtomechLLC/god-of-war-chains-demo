@@ -1526,7 +1526,9 @@
   if (dummy) {
     dummy.x = 0; dummy.z = -8 * ARENA_M; dummy.hd = Math.PI; // 8 squares ahead of the starting hero, facing him
     dummy.cur = "spawn"; dummy.t = 0;
-    dummy.maxHp = 100; dummy.hp = 100;      // INFERRED
+    // REAL: TWK_Sold_020 @0x0a4 = 100 (halfword-swapped f32; the earlier
+    // INFERRED 100 was exactly right — design/twk/decoded/TweakTemplates_Sold_020.twk)
+    dummy.maxHp = 100; dummy.hp = 100;
     dummy.tauntIn = 6;
     dummy.respawnIn = 0;
     dummy.kbx = 0; dummy.kbz = 0;           // knockback velocity (units/s)
@@ -1581,7 +1583,11 @@
   // a π flip based on them caused back-turned spawns + backward walking.
   const DUMMY_FACE_OFFSET = 0;
   const DUMMY_WALK = "Front";               // his walk clip
-  const DUMMY_WALK_SPEED = 3.16 * ARENA_M;  // DERIVED: planted-foot on 'Front' × 0.76 scale
+  // REAL: TWK_Sold_020 @0x110 Walk Speed = 3.0 m/s (the clip-derived 3.16
+  // planted-foot estimate independently corroborated the field). Run Speed
+  // @0x10c = 8.0 m/s (vs clip-derived 7.98) — reserved for the aggro chase.
+  const DUMMY_WALK_SPEED = 3.0 * ARENA_M;
+  const DUMMY_RUN_SPEED = 8.0 * ARENA_M;
   const DUMMY_NEAR = 8 * ARENA_M;           // approach until 8 squares away (user)
   const KB_SCALE = 0.42; // units/s per impulse unit — INFERRED scale on the REAL impulses
   function dummyTick() {

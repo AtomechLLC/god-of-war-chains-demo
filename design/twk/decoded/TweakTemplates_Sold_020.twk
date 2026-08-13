@@ -1,0 +1,28 @@
+; =====================================================================
+; TweakTemplates_Sold_020.twk — decoded soldier stat template (GoW1)
+; Source: R_SKS.WAD TWK_Sold_020 (707 bytes) — the /TweakTemplates/Sold/020/
+; instance bound to goSKS (the undead legionnaire).
+; FORMAT (cracked 2026-08-14): NOT the 0xfedcba98 command stream — a flat
+; struct dump: [u32 1][path z-str][obj name z-str][string slots][fields].
+; FLOATS ARE HALFWORD-SWAPPED (middle-endian): value = f32(b2,b3,b0,b1).
+; Field names are INFERRED from cross-enemy comparison (SKA/HARPY/MEDUSA/
+; MINOTAUR/SIREN Sold templates, all 707 bytes, same layout); the speed
+; fields are CORROBORATED by kratos-lab's independent clip derivations
+; (SKS walk 3.16 m/s planted-foot vs field 3.0; run 7.98 vs field 8.0).
+; =====================================================================
+
+/TweakTemplates/Sold/020/  (goSKS)
+  Stoned break object                 "goSKSStonedBRK"   ; [real] str
+  Freeze object                       "goSKBFreeze"      ; [real] str
+  Death parts object                  "goDeathParts"     ; [real] str (tail)
+  @0x0a4  Max Hit Points                     100         ; [real value; name inferred — SKS 100, harpy variant 1000]
+  @0x0a8  (shared)                             3         ; [real] uniform across enemies
+  @0x10c  Run Speed (m/s)                      8         ; [real value; name corroborated vs clip-derived 7.98]
+  @0x110  Walk Speed (m/s)                     3         ; [real value; name corroborated vs clip-derived 3.16]
+  @0x114  Turn/aggro field                    80         ; [real value; meaning open — SKA 15, harpy 9, medusa 5]
+  @0x118  (varies)                          80.4         ; [real value; meaning open]
+  @0x254  Body radius? (m)                   0.7         ; [real value; name inferred — harpy 1.24 widest]
+  @0x258  Reach/height? (m)                 2.81         ; [real value; name inferred]
+  ; + a large uniform block (0xe0-0x24c) of shared combat defaults
+  ; (identical across all six enemies compared) — knockback/timer/threshold
+  ; family; individual names unrecovered (no hashes in the struct form).
