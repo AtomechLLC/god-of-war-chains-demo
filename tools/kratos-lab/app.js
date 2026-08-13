@@ -1242,12 +1242,28 @@
     dummy.respawnIn = 0;
     dummy.kbx = 0; dummy.kbz = 0;           // knockback velocity (units/s)
     dummy.lastHitSeg = { l: -1, r: -1 };    // one melee hit per swing per blade
-    dummy.hits = 0;
+    dummy.hits = 0;                          // session total (probes/telemetry)
+    dummy.combo = 0;                         // HUD hit counter — clears 5 s after the last contact (user spec)
+    dummy.hitsLife = 0;                      // per-life count for the death log
+    dummy.lastHitTick = -1;                  // sim tick of the last landed hit
     dummy.lastWorld = null;
     dummy.dur = (n) => { const a = dummy.rig.anm.acts.get(n); return a ? a.duration : 1; };
     dummy.play = (n) => { if (dummy.rig.anm.acts.has(n)) { dummy.cur = n; dummy.t = 0; } };
   }
   const DUMMY_TAUNTS = ["taunt02", "taunt03", "taunt04"];
+  // REAL difficulty data — the /GlobGame/<difficulty>/ tweak trees (decoded in
+  // design/twk/decoded/GlobGame.twk; menu names = the ELF's own strings).
+  // GoW1 never scales enemy HP: difficulty scales the PLAYER'S Damage Mult,
+  // so the soldier's hits-to-kill goes ×0.5 / ×1 / ×1.33 / ×2. aiDmg (damage
+  // the AI deals) and aiRecov (AI recovery-time mult) are recorded for the
+  // future fight-back feature.
+  const DIFFICULTY = [
+    { name: "Mortal (Easy)",   path: "Easy",       dmg: 2.0,  aiDmg: 0.5, aiRecov: 2.0 },
+    { name: "Hero (Normal)",   path: "Normal",     dmg: 1.0,  aiDmg: 1.0, aiRecov: 1.0 },
+    { name: "Spartan (Hard)",  path: "Hard",       dmg: 0.75, aiDmg: 2.5, aiRecov: 0.75 },
+    { name: "God (Very Hard)", path: "Impossible", dmg: 0.5,  aiDmg: 5.0, aiRecov: 0.5 },
+  ];
+  let difficultyIdx = 1; // Hero (Normal) — the game's default
   // (re)spawn placement (user): 8 squares AHEAD of wherever Kratos currently
   // stands and faces — never on top of him after he's moved — facing him.
   function placeDummyAheadOfHero() {
@@ -1276,6 +1292,9 @@
   const KB_SCALE = 0.42; // units/s per impulse unit — INFERRED scale on the REAL impulses
   function dummyTick() {
     if (!dummy || !dummy.on) return;
+    // combo drop (user spec): the HUD hit counter clears after 5 s without a
+    // landed hit — GoW-style combo decay (window length hand-set, INFERRED)
+    if (dummy.combo && simStepCount - dummy.lastHitTick > 5 * 60) dummy.combo = 0;
     const STEP = Loop.STEP;
     dummy.t += STEP;
     const d = dummy.dur(dummy.cur);
@@ -1285,7 +1304,8 @@
         dummy.respawnIn -= STEP;
         if (dummy.respawnIn <= 0) {
           dummy.hp = dummy.maxHp;
-          placeDummyAheadOfHero(); // rise 2 squares ahead of Kratos, facing him
+          dummy.hitsLife = 0;
+          placeDummyAheadOfHero(); // rise 8 squares ahead of Kratos, facing him
           dummy.play("spawn");
           log("🦴 the legionnaire rises again");
         }
@@ -1363,12 +1383,15 @@
   function dummyHit(dmg, fromX, fromZ, launch, impulse) {
     if (!dummy || !dummy.on || /^death/.test(dummy.cur) || dummy.cur === "spawn") return false;
     dummy.hp = Math.max(0, dummy.hp - dmg);
-    dummy.hits++;
+    dummy.hits++; dummy.combo++; dummy.hitsLife++;
+    dummy.lastHitTick = simStepCount;
     // impact flash + sparks ON the dummy (chest ≈ vertebrae2 height)
     const cx = dummy.lastWorld ? dummy.lastWorld[2 * 16 + 12] : dummy.x;
     const cy = dummy.lastWorld ? dummy.lastWorld[2 * 16 + 13] : 18;
     const cz = dummy.lastWorld ? dummy.lastWorld[2 * 16 + 14] : dummy.z;
     if (flasherTex) fxPool.spawn({ pos: [cx, cy, cz], vel: [0, 0, 0], size: 5.0, life: 7 * Loop.STEP, color: [1, 1, 1, 2.2], kind: "hitFlash" });
+    fxPool.burst(14, { pos: [cx, cy, cz], vel: [0, 2.2, 0], size: 0.16, life: 20 * Loop.STEP, color: [1, 1, 1, 1.8], kind: "spark" },
+      () => (Math.random() - 0.5) * 5.0); // impact sparks AT the contact, ON the contact tick
     if (launch && impulse) {
       // REAL Ground Impulse Away, scaled (KB_SCALE INFERRED) along away-vector
       const ax = dummy.x - fromX, az = dummy.z - fromZ;
@@ -1379,7 +1402,7 @@
     if (dummy.hp <= 0) {
       dummy.play(Math.random() < 0.5 ? "death01" : "death02");
       dummy.respawnIn = 2.2;
-      log("💀 legionnaire destroyed — " + dummy.hits + " hits taken");
+      log("💀 legionnaire destroyed — " + dummy.hitsLife + " hits taken");
       return true;
     }
     if (launch) { dummy.play("hitLaunch"); return true; }
@@ -2648,7 +2671,9 @@
     } else hitEl.style.display = "none";
     const fr = Math.floor((t / dur) * dur * 30), tot = Math.round(dur * 30);
     $("tlFrames").textContent = `frame ${Math.min(fr, tot)} / ${tot} @30fps`;
-    $("hitNum").textContent = machine.st.hits;
+    // hit counter (user report): st.hits counts move STARTS (combat.js start()),
+    // not landed blows — with the dummy ACTIVE show REAL contacts instead
+    $("hitNum").textContent = (dummy && dummy.on) ? dummy.combo : machine.st.hits;
   }
 
   // ---------- timeline scrubbing (usability) --------------------------------
@@ -2801,6 +2826,12 @@
     weaponLevel = weaponLevel >= 5 ? 1 : 5;
     $("btnWpnLv").textContent = `Weapon Lv ${weaponLevel}`;
     $("btnWpnLv").classList.toggle("latched", weaponLevel >= 5);
+  });
+  $("diffSlider").addEventListener("input", () => {
+    difficultyIdx = +$("diffSlider").value;
+    const d = DIFFICULTY[difficultyIdx];
+    $("diffName").textContent = d.name;
+    log(`⚖ ${d.name} — /GlobGame/${d.path}/: player dmg ×${d.dmg} → soldier takes ×${(1 / d.dmg).toFixed(2)} hits (REAL)`);
   });
   $("btnCostume").addEventListener("click", () => {
     costumeIdx = (costumeIdx + 1) % COSTUMES.length;
@@ -3309,7 +3340,9 @@
     if (dummy) {
       dummy.on = true;
       $("btnDummy").classList.add("latched");
-      dummy.kbx = dummy.kbz = 0; dummy.hp = dummy.maxHp; dummy.hits = 0;
+      dummy.kbx = dummy.kbz = 0; dummy.hp = dummy.maxHp;
+      dummy.hits = 0; dummy.combo = 0; dummy.hitsLife = 0; dummy.lastHitTick = -1;
+      difficultyIdx = 1; $("diffSlider").value = 1; $("diffName").textContent = DIFFICULTY[1].name;
       placeDummyAheadOfHero(); // 8 squares ahead of the (reset) hero
       dummy.play("spawn");
     }
@@ -3525,7 +3558,8 @@
             // TARGET DUMMY inside the REAL concussion AoE → launch + the
             // decoded Ground Impulse Away knockback (KB_SCALE inferred)
             if (dummy && dummy.on && Math.hypot(dummy.x - cx, dummy.z - cz) <= cd.s * ARENA_M) {
-              const dmg = 20 * (weaponLevel >= 5 ? 5 : 1) * COSTUMES[costumeIdx].dmg;
+              const dmg = 20 * (weaponLevel >= 5 ? 5 : 1) * COSTUMES[costumeIdx].dmg
+                * DIFFICULTY[difficultyIdx].dmg; // REAL /GlobGame/ difficulty Damage Mult
               dummyHit(dmg, cx, cz, true, cd.imp);
             }
           }
@@ -3553,7 +3587,10 @@
           // spark DRAW (Pitfall 4 — never fabricate a real effect color).
           // impact FX anchor: the blade for armed moves, the FIST for rage brawling
           const fistPos = [world[hand * 16 + 12], world[hand * 16 + 13], world[hand * 16 + 14]];
-          if (hitEdge && sparkFxc && Array.isArray(sparkFxc.matrix)) {
+          // with the target dummy ACTIVE, impact FX fire at REAL contact
+          // (dummyHit) — the hit-counter edge increments at the NEXT move's
+          // START, which pulsed the flash AFTER each impact (user report)
+          if (hitEdge && !(dummy && dummy.on) && sparkFxc && Array.isArray(sparkFxc.matrix)) {
             const SPARK_BURST_N = 14;             // INFERRED sparks per hit (A1/A6)
             const SPARK_BURST_LIFE = 20 * STEP;   // INFERRED ~0.33s short shower (A1)
             const SPARK_BURST_SIZE = 0.16;        // INFERRED billboard half-size; stretched at draw (A1)
@@ -3579,7 +3616,7 @@
           }
           // on-hit FLASH: one GFX_flasher03 radial burst at THIS blade's tip on the
           // hit frame (REAL sprite; size/life/alpha INFERRED — no flash-emitter data)
-          if (hitEdge && flasherTex) {
+          if (hitEdge && !(dummy && dummy.on) && flasherTex) {
             const ftip = fists ? fistPos : xformM(bm, blade.tip);
             fxPool.spawn({
               pos: [ftip[0], ftip[1], ftip[2]],
@@ -3622,7 +3659,8 @@
                 if (dd <= reachR + 3 && Math.abs(da) <= Math.PI / 12) {
                   dummy.lastHitSeg[key] = simStepCount;
                   // damage = base × REAL weapon-level Dmg Mult (1→5) × REAL costume mult
-                  const dmg = 8 * (weaponLevel >= 5 ? 5 : 1) * COSTUMES[costumeIdx].dmg;
+                  const dmg = 8 * (weaponLevel >= 5 ? 5 : 1) * COSTUMES[costumeIdx].dmg
+                    * DIFFICULTY[difficultyIdx].dmg; // REAL /GlobGame/ difficulty Damage Mult
                   dummyHit(dmg, pcx, pcz, false, 0);
                 }
               }

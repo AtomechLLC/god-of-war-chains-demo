@@ -247,3 +247,10 @@ footer .inf { color: #86aed0; }
   header { flex-wrap: wrap; }
   header .status { margin-left: 0; flex-basis: 100%; }
 }
+
+/* difficulty slider (REAL /GlobGame/ difficulty trees) */
+.diff-wrap { display: inline-flex; align-items: center; gap: 5px; font-size: 11px;
+  color: #c9a96a; background: #1b1610; border: 1px solid #3a2f1e; border-radius: 4px;
+  padding: 2px 7px; cursor: default; }
+.diff-wrap input[type="range"] { width: 64px; accent-color: #c9a96a; cursor: pointer; }
+#diffName { min-width: 88px; }

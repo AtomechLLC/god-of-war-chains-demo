@@ -120,6 +120,12 @@ duel</td><td>ANM type-10 tracks</td><td class="real">tracks real; context inferr
 <tr><td>Impact flash sprite (radial burst)</td><td>GFX_flasher03</td><td class="real">real</td></tr>
 <tr><td>Fire gravity −43.64 u/s² (identical across both fire systems)</td><td>PTC_BFTpart1/2</td><td class="real">value real, reading inferred</td></tr>
 <tr><td>Costume 0–5 gameplay table (reach, damage, orb mults)</td><td>/Player/</td><td class="real">real</td></tr>
+<tr><td>Difficulty never scales enemy HP — it scales the <i>player's</i> damage:
+Damage Mult ×2 / ×1 / ×0.75 / ×0.5 for Mortal&nbsp;(Easy) / Hero&nbsp;(Normal) /
+Spartan&nbsp;(Hard) / God&nbsp;(Very&nbsp;Hard) — the last one is internally named
+"Impossible". Enemy-side AI Damage Mult 0.5→5 and AI Recovery Time Mult 2→0.5
+ride along. The lab's difficulty slider applies the real player Damage Mult to
+the target dummy</td><td>/GlobGame/Easy·Normal·Hard·Impossible + ELF menu strings</td><td class="real">real</td></tr>
 <tr><td>"Nominal Particles 36" belongs to the blood emitter, not fire</td><td>/GlobGame/ ("goBloodSpot")</td><td class="dead">reassigned</td></tr>
 <tr><td>Queue/branch/cancel windows</td><td>engine code only</td><td class="dead">no data; modeled</td></tr>
 <tr><td>Hero jump physics (v0/gravity): NO named parameters anywhere — the
