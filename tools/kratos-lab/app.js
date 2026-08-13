@@ -2090,7 +2090,7 @@
   // In a ballistic arc h and T pin both parameters: v0 = 4h/T, g = 8h/T².
   // The double-jump boost keeps the REAL channel ratio (10.75/9.37 rise).
   const JUMP_T = 0.65;   // derived: comp-421 arc duration
-  const JUMP_H = 1.1;    // INFERRED: footage feet-clearance target
+  const JUMP_H = 28 / Chain.METERS_TO_WORLD; // = Kratos' MODEL HEIGHT (28 u = 2.0 m) — user spec
   const JUMP_G = (8 * JUMP_H / (JUMP_T * JUMP_T)) * Chain.METERS_TO_WORLD;  // 20.8 m/s²
   const JUMP_V0 = (4 * JUMP_H / JUMP_T) * Chain.METERS_TO_WORLD;            // 6.77 m/s
   const DJUMP_V0 = JUMP_V0 * Math.sqrt(10.75 / 9.37); // REAL boost ratio
@@ -2207,7 +2207,7 @@
         }
         if (y0 !== null && yMax - y0 > 0.5) {
           extra += `jump rise <b>${((yMax - y0) / Chain.METERS_TO_WORLD).toFixed(2)} m</b> (comp-421 vertical channel)` +
-            (PHYS_JUMP.test(name) ? ` <span style="color:#86aed0">— animation reference; the controller jump is ballistic (arc timing 0.65 s from this channel · apex 1.1 m footage-calibrated → v0 6.77 m/s, g 20.8 m/s²)</span>` : "") + `<br>`;
+            (PHYS_JUMP.test(name) ? ` <span style="color:#86aed0">— animation reference; the controller jump is ballistic (arc timing 0.65 s from this channel · apex = model height 2.0 m → v0 12.3 m/s, g 37.9 m/s²)</span>` : "") + `<br>`;
         }
       }
       const cd = CONCUSSION[name];
