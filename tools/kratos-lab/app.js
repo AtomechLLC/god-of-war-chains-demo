@@ -68,6 +68,28 @@
     console.log(`blade: ${bmesh.verts} verts ${bmesh.tris} tris, axis ${ax}, tip @ ${tip.map(v=>v.toFixed(1))}`);
   } catch (e) { console.warn("blade load", e); }
 
+  // ---------- TARGET DUMMY: the undead legionnaire (R_SKS) ------------------
+  // REAL enemy set extracted from the disc (assets/enemy): SKS_0 mesh, the
+  // sks skeleton object (29 joints incl. his sword IH/OB anchors), ANM_sks
+  // (93 acts — the full hit-reaction suite, deaths, taunts, spawn) and the
+  // GFX/PAL_SKStextNu skin. Failure-tolerant: the lab runs without it.
+  let dummy = null;
+  try {
+    status("raising the target dummy…");
+    const [dMeshBuf, dObjBuf, dAnmBuf, dGfx, dPal] = await Promise.all([
+      Parsers.fetchBuf("../../assets/enemy/SKS_0.bin"),
+      Parsers.fetchBuf("../../assets/enemy/sks.bin"),
+      Parsers.fetchBuf("../../assets/enemy/ANM_sks.bin"),
+      Parsers.fetchBuf("../../assets/enemy/GFX_SKStextNu.bin"),
+      Parsers.fetchBuf("../../assets/enemy/PAL_SKStextNu.bin"),
+    ]);
+    const dMesh = Parsers.parseMesh(dMeshBuf);
+    const dRig = GowAnim.makeRig(dObjBuf, dAnmBuf);
+    const dImg = Parsers.decodeTexture(dGfx, dPal);
+    dummy = { on: true, mesh: dMesh, rig: dRig, img: dImg };
+    console.log(`dummy: ${dMesh.verts} verts, ${dRig.jointCount} joints, ${dRig.anm.acts.size} acts`);
+  } catch (e) { console.warn("dummy load", e); }
+
   status("loading weapon WAD…");
   // DEC-01 decode stage — deliberately NOT wrapped in try/catch: decode
   // failures (bad magic, invalid flag combos) are the assert contract and
@@ -319,9 +341,10 @@
   // vertJ1/vertJ2 are the decoded per-vertex joint pair (weight w to J1, 1-w to
   // J2, from the position W word). Vertices without meta fall back to nearest
   // skinned joint in their chunk palette.
-  let skin = null;
-  if (rig) {
-    const idle = rig.computePose(null, 0);
+  // buildSkin/skinPoseFor are CHARACTER-GENERIC (rig+mesh parameterized) so the
+  // target dummy reuses the exact hero pipeline — one skinning implementation.
+  function buildSkin(rigX, meshX) {
+    const idle = rigX.computePose(null, 0);
     // rigid inverse of a rotation+translation matrix
     function rigidInverse(m, out) {
       for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) out[c * 4 + r] = m[r * 4 + c];
@@ -332,48 +355,52 @@
     }
     // inverse-bind per joint: real Matrixes3 where present, else inverse of idle FK
     const invBinds = [];
-    for (const j of rig.obj.joints) {
-      if (j.isSkinned) invBinds.push(rig.obj.invBind[j.invId]);
+    for (const j of rigX.obj.joints) {
+      if (j.isSkinned) invBinds.push(rigX.obj.invBind[j.invId]);
       else {
         const m = new Float32Array(16);
         rigidInverse(idle.subarray(j.id * 16, j.id * 16 + 16), m);
         invBinds.push(m);
       }
     }
-    const valid = (id) => id >= 0 && id < rig.jointCount;
-    const j1 = new Int16Array(mesh.verts), j2 = new Int16Array(mesh.verts);
-    const wgt = new Float32Array(mesh.verts);
+    const valid = (id) => id >= 0 && id < rigX.jointCount;
+    const j1 = new Int16Array(meshX.verts), j2 = new Int16Array(meshX.verts);
+    const wgt = new Float32Array(meshX.verts);
     let metaBound = 0, staticBound = 0, fallback = 0;
-    for (let v = 0; v < mesh.verts; v++) {
-      let a = mesh.vertJ1[v], bJ = mesh.vertJ2[v], w = mesh.vertW[v];
-      if (mesh.vertStatic[v]) staticBound++;
+    for (let v = 0; v < meshX.verts; v++) {
+      let a = meshX.vertJ1[v], bJ = meshX.vertJ2[v], w = meshX.vertW[v];
+      if (meshX.vertStatic[v]) staticBound++;
       else if (valid(a) && valid(bJ)) metaBound++;
       else { a = 1; bJ = 1; w = 1; fallback++; } // pelvis fallback (should be ~0)
       j1[v] = a; j2[v] = bJ; wgt[v] = Math.max(0, Math.min(1, w));
     }
-    console.log(`skinning: ${metaBound} two-bone, ${staticBound} static (blades), ${fallback} fallback of ${mesh.verts}`);
-    skin = {
+    return {
       j1, j2, wgt, metaBound, staticBound, fallback, invBinds,
-      bindPos: mesh.pos.slice(),
-      out: new Float32Array(mesh.pos.length),
-      jointMats: new Float32Array(rig.jointCount * 16),
+      bindPos: meshX.pos.slice(),
+      out: new Float32Array(meshX.pos.length),
+      jointMats: new Float32Array(rigX.jointCount * 16),
       prev: null, prevTime: 0, blendLeft: 0, blendDur: 0,
     };
   }
+  let skin = null;
+  if (rig) {
+    skin = buildSkin(rig, mesh);
+    console.log(`skinning: ${skin.metaBound} two-bone, ${skin.staticBound} static (blades), ${skin.fallback} fallback of ${mesh.verts}`);
+  }
 
-  function skinPose(world) {
+  function skinPoseFor(rigX, skinX, meshX, world) {
     // dynamic: joint matrix = world * inverseBind; static verts: world only
-    const jm = skin.jointMats;
-    for (const j of rig.obj.joints) {
+    const jm = skinX.jointMats;
+    for (const j of rigX.obj.joints) {
       const w = world.subarray(j.id * 16, j.id * 16 + 16);
-      const ib = skin.invBinds[j.id];
+      const ib = skinX.invBinds[j.id];
       const o = j.id * 16;
       for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++)
         jm[o + c * 4 + r] = w[r] * ib[c * 4] + w[4 + r] * ib[c * 4 + 1] + w[8 + r] * ib[c * 4 + 2] + w[12 + r] * ib[c * 4 + 3];
     }
-    const bp = skin.bindPos, out = skin.out;
-    const j1 = skin.j1, j2 = skin.j2, wg = skin.wgt, vs = mesh.vertStatic;
-    for (let v = 0; v < mesh.verts; v++) {
+    const bp = skinX.bindPos, out = skinX.out;
+    const j1 = skinX.j1, j2 = skinX.j2, wg = skinX.wgt, vs = meshX.vertStatic;
+    for (let v = 0; v < meshX.verts; v++) {
       const x = bp[v * 3], y = bp[v * 3 + 1], z = bp[v * 3 + 2];
       if (vs[v]) { // static: coords live in joint-local space
         const o = j1[v] * 16;
@@ -391,6 +418,7 @@
                        (jm[oB + 2] * x + jm[oB + 6] * y + jm[oB + 10] * z + jm[oB + 14]) * iw;
     }
   }
+  const skinPose = (world) => skinPoseFor(rig, skin, mesh, world);
   const heroSet = makeMeshSet(mesh, true);
   const posBuf = heroSet.pos;
   const bladeSet = blade ? makeMeshSet(blade.mesh, false) : null;
@@ -426,6 +454,13 @@
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
     return t;
+  }
+
+  // dummy GL resources — the generic pipeline (own buffers, skin, texture)
+  if (dummy) {
+    dummy.set = makeMeshSet(dummy.mesh, true);
+    dummy.skin = buildSkin(dummy.rig, dummy.mesh);
+    dummy.tex = makeTex(dummy.img, { wrapS: gl.CLAMP_TO_EDGE });
   }
   const bladeTex = blade ? makeTex(blade.bImg) : null;
   const trailTex = blade ? makeTex(blade.trailImg) : null;
@@ -1186,6 +1221,99 @@
         locoRun = false;
       }
     }
+  }
+  // ---------- target-dummy behavior (the undead legionnaire) ---------------
+  // Idles + taunts on a beat; melee hits route through the REAL hit-reaction
+  // suite by strike direction; concussions launch him with the DECODED impulse
+  // values; death01/02 → corpse hold → the REAL spawn act raises him again.
+  // HP 100 is INFERRED (his /TweakTemplates/Sold/020 stat template is decoded-
+  // pending); damage = base × REAL weapon-level Dmg Mult × REAL costume mult.
+  if (dummy) {
+    dummy.x = 0; dummy.z = -5 * ARENA_M; dummy.hd = Math.PI; // 5 m out, facing center
+    dummy.cur = "spawn"; dummy.t = 0;
+    dummy.maxHp = 100; dummy.hp = 100;      // INFERRED
+    dummy.tauntIn = 6;
+    dummy.respawnIn = 0;
+    dummy.kbx = 0; dummy.kbz = 0;           // knockback velocity (units/s)
+    dummy.lastHitSeg = { l: -1, r: -1 };    // one melee hit per swing per blade
+    dummy.hits = 0;
+    dummy.lastWorld = null;
+    dummy.dur = (n) => { const a = dummy.rig.anm.acts.get(n); return a ? a.duration : 1; };
+    dummy.play = (n) => { if (dummy.rig.anm.acts.has(n)) { dummy.cur = n; dummy.t = 0; } };
+  }
+  const DUMMY_TAUNTS = ["taunt02", "taunt03", "taunt04"];
+  const KB_SCALE = 0.42; // units/s per impulse unit — INFERRED scale on the REAL impulses
+  function dummyTick() {
+    if (!dummy || !dummy.on) return;
+    const STEP = Loop.STEP;
+    dummy.t += STEP;
+    const d = dummy.dur(dummy.cur);
+    if (dummy.t >= d) {
+      if (/^death/.test(dummy.cur)) {
+        dummy.t = d - 0.001; // corpse hold
+        dummy.respawnIn -= STEP;
+        if (dummy.respawnIn <= 0) { dummy.hp = dummy.maxHp; dummy.play("spawn"); log("🦴 the legionnaire rises again"); }
+      } else if (dummy.cur === "standIdle") {
+        dummy.t %= d;
+      } else if (dummy.cur === "hitLaunch" || dummy.cur === "hitBounce") {
+        dummy.play("hitGetUp"); // launched → get up off the ground, like the game
+      } else {
+        dummy.play("standIdle");
+      }
+    }
+    if (dummy.cur === "standIdle") {
+      dummy.tauntIn -= STEP;
+      if (dummy.tauntIn <= 0) {
+        dummy.play(DUMMY_TAUNTS[(Math.random() * DUMMY_TAUNTS.length) | 0]);
+        dummy.tauntIn = 5 + Math.random() * 5;
+      }
+    }
+    // knockback slide (REAL Concussion impulses, INFERRED scale) + wall clamp
+    if (dummy.kbx || dummy.kbz) {
+      dummy.x += dummy.kbx * STEP; dummy.z += dummy.kbz * STEP;
+      const k = Math.max(0, 1 - 6 * STEP);
+      dummy.kbx *= k; dummy.kbz *= k;
+      if (Math.abs(dummy.kbx) + Math.abs(dummy.kbz) < 1) dummy.kbx = dummy.kbz = 0;
+      const lim = ARENA_HALF - ARENA_M;
+      dummy.x = Math.max(-lim, Math.min(lim, dummy.x));
+      dummy.z = Math.max(-lim, Math.min(lim, dummy.z));
+    }
+    const w = dummy.rig.computePose(dummy.cur, Math.min(dummy.t, d - 0.0001));
+    applyXformTo(w, dummy.hd, dummy.x, 0, dummy.z);
+    if (!dummy.lastWorld) dummy.lastWorld = new Float32Array(w.length);
+    dummy.lastWorld.set(w);
+  }
+  // route a landed hit into the reaction suite (direction-relative clips)
+  function dummyHit(dmg, fromX, fromZ, launch, impulse) {
+    if (!dummy || !dummy.on || /^death/.test(dummy.cur) || dummy.cur === "spawn") return false;
+    dummy.hp = Math.max(0, dummy.hp - dmg);
+    dummy.hits++;
+    // impact flash + sparks ON the dummy (chest ≈ vertebrae2 height)
+    const cx = dummy.lastWorld ? dummy.lastWorld[2 * 16 + 12] : dummy.x;
+    const cy = dummy.lastWorld ? dummy.lastWorld[2 * 16 + 13] : 18;
+    const cz = dummy.lastWorld ? dummy.lastWorld[2 * 16 + 14] : dummy.z;
+    if (flasherTex) fxPool.spawn({ pos: [cx, cy, cz], vel: [0, 0, 0], size: 5.0, life: 7 * Loop.STEP, color: [1, 1, 1, 2.2], kind: "hitFlash" });
+    if (launch && impulse) {
+      // REAL Ground Impulse Away, scaled (KB_SCALE INFERRED) along away-vector
+      const ax = dummy.x - fromX, az = dummy.z - fromZ;
+      const al = Math.hypot(ax, az) || 1;
+      dummy.kbx = (ax / al) * impulse * KB_SCALE;
+      dummy.kbz = (az / al) * impulse * KB_SCALE;
+    }
+    if (dummy.hp <= 0) {
+      dummy.play(Math.random() < 0.5 ? "death01" : "death02");
+      dummy.respawnIn = 2.2;
+      log("💀 legionnaire destroyed — " + dummy.hits + " hits taken");
+      return true;
+    }
+    if (launch) { dummy.play("hitLaunch"); return true; }
+    // strike direction vs his facing picks the authored reaction clip
+    const ix = dummy.x - fromX, iz = dummy.z - fromZ; // incoming blow direction
+    const fwdx = -Math.sin(dummy.hd), fwdz = -Math.cos(dummy.hd);
+    const rgtx = Math.cos(dummy.hd), rgtz = -Math.sin(dummy.hd);
+    const df = ix * fwdx + iz * fwdz, dr = ix * rgtx + iz * rgtz;
+    dummy.play(Math.abs(df) >= Math.abs(dr) ? (df > 0 ? "hitBack" : "hitFront") : (dr > 0 ? "hitLeft" : "hitRight"));
+    return true;
   }
   const ringHist = []; // live concussion DEBUG rings {cx,cz, s,e,durTicks, age} (Hitboxes overlay)
   const fxRings = [];  // live SHOCKWAVE visuals {cx,cz, s,e,durTicks, age} — REAL "F"-template radii/timing, always shown
@@ -2012,6 +2140,37 @@
         gl.uniformMatrix4fv(uModel, false, M.mul(M.mul(modelMat, bladeSim[key].mat), BLADE_ROLL));
         gl.drawElements(gl.TRIANGLES, bladeSet.count, gl.UNSIGNED_SHORT, 0);
       }
+    }
+    // TARGET DUMMY: the same skinned pipeline, its own buffers/texture
+    if (dummy && dummy.on && dummy.lastWorld && !window.__fxOnly) {
+      skinPoseFor(dummy.rig, dummy.skin, dummy.mesh, dummy.lastWorld);
+      gl.bindBuffer(gl.ARRAY_BUFFER, dummy.set.pos);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, dummy.skin.out);
+      gl.uniform1f(uPages, 1);
+      gl.uniformMatrix4fv(uModel, false, modelMat);
+      gl.bindTexture(gl.TEXTURE_2D, dummy.tex);
+      bindMeshSet(dummy.set);
+      gl.drawElements(gl.TRIANGLES, dummy.set.count, gl.UNSIGNED_SHORT, 0);
+    }
+    // dummy HP bar: project the head joint (id 5) to screen space
+    {
+      const hpEl = $("dummyHp");
+      if (hpEl) {
+        if (dummy && dummy.on && dummy.lastWorld && !window.__fxOnly) {
+          const hx = dummy.lastWorld[5 * 16 + 12], hy = dummy.lastWorld[5 * 16 + 13] + 6, hz = dummy.lastWorld[5 * 16 + 14];
+          const mm = M.mul(mvp, modelMat);
+          const cx = mm[0] * hx + mm[4] * hy + mm[8] * hz + mm[12];
+          const cy = mm[1] * hx + mm[5] * hy + mm[9] * hz + mm[13];
+          const cw = mm[3] * hx + mm[7] * hy + mm[11] * hz + mm[15];
+          if (cw > 0.05) {
+            hpEl.style.display = "block";
+            hpEl.style.left = `${((cx / cw) * 0.5 + 0.5) * 100}%`;
+            hpEl.style.top = `${(1 - ((cy / cw) * 0.5 + 0.5)) * 100}%`;
+            const fill = hpEl.firstElementChild;
+            if (fill) fill.style.width = `${Math.max(0, (dummy.hp / dummy.maxHp) * 100)}%`;
+          } else hpEl.style.display = "none";
+        } else hpEl.style.display = "none";
+      }
       if (!window.__noFx) drawFx(mvp, view); // __noFx (debug): skip ALL FX to isolate whether the FX passes hide the hero
     }
     if (nativeRes) {
@@ -2102,8 +2261,7 @@
   // matrix by the heading about the origin, then translate by the accumulated
   // offsets. The blade track gets the identical treatment (applyRootTrack) so
   // chains/trails/hitboxes inherit facing automatically.
-  function applyRootXformTo(world, ox, oy, oz) {
-    const hd = rootMotion.hd;
+  function applyXformTo(world, hd, ox, oy, oz) {
     if (hd) {
       const c = Math.cos(hd), s = Math.sin(hd);
       for (let j = 0; j < world.length; j += 16) {
@@ -2122,6 +2280,7 @@
       }
     }
   }
+  const applyRootXformTo = (world, ox, oy, oz) => applyXformTo(world, rootMotion.hd, ox, oy, oz);
   function applyRootPose(world) {
     applyRootXformTo(world, rootMotion.x, rootMotion.y, rootMotion.z);
   }
@@ -2570,6 +2729,11 @@
     $("btnCostume").textContent = `Costume ${costumeIdx}`;
     $("btnCostume").classList.toggle("latched", costumeIdx > 0);
     log(`👕 Costume ${costumeIdx}: reach ${cs.wl} · dmg ×${cs.dmg} · orbs ×${cs.orb} (REAL /Player/ table)`);
+  });
+  $("btnDummy").addEventListener("click", () => {
+    if (!dummy) { status("no dummy assets loaded"); return; }
+    dummy.on = !dummy.on;
+    $("btnDummy").classList.toggle("latched", dummy.on);
   });
   $("btnRootMo").addEventListener("click", () => {
     rootMotion.on = !rootMotion.on;
@@ -3063,6 +3227,13 @@
     if (dbgHud) dbgHud.style.display = "none";
     combo.seq = COMBO_DEFAULT.slice();
     renderComboSeq();
+    if (dummy) {
+      dummy.on = true;
+      $("btnDummy").classList.add("latched");
+      dummy.x = 0; dummy.z = -5 * ARENA_M; dummy.hd = Math.PI;
+      dummy.kbx = dummy.kbz = 0; dummy.hp = dummy.maxHp; dummy.hits = 0;
+      dummy.play("spawn");
+    }
     log("↺ lab reset to defaults");
   });
 
@@ -3097,6 +3268,7 @@
     tickAutoplay(); // dev/QA capture aid — fires the next scripted input when active
     comboTick();    // user-authored combo playback — same input() path, queue-window timed
     locoTick();     // GoW1 stick locomotion + right-stick evades (fixed-step, like everything)
+    dummyTick();    // target dummy: idle/taunt beats, reactions, knockback, respawn
     lastState = { name: machine.st.current, t: machine.st.t };
     machine.tick(STEP);
     // touchdown: a fall clip ends the instant the controller reaches the floor
@@ -3271,6 +3443,12 @@
             ringHist.push({ cx, cz, s: cd.s, e: cd.e, durTicks: Math.max(1, Math.round(cd.dur * 60)), age: 0 });
             if (cd.fx) fxRings.push({ cx, cz, s: cd.fx.s, e: cd.fx.e,
               durTicks: Math.max(1, Math.round(cd.fx.dur * 60)), age: 0 }); // authored shockwave visual
+            // TARGET DUMMY inside the REAL concussion AoE → launch + the
+            // decoded Ground Impulse Away knockback (KB_SCALE inferred)
+            if (dummy && dummy.on && Math.hypot(dummy.x - cx, dummy.z - cz) <= cd.s * ARENA_M) {
+              const dmg = 20 * (weaponLevel >= 5 ? 5 : 1) * COSTUMES[costumeIdx].dmg;
+              dummyHit(dmg, cx, cz, true, cd.imp);
+            }
           }
         }
         // copy before offsetting — bladePos may return a shared internal buffer
@@ -3349,9 +3527,26 @@
               // reach scaled by the ACTIVE costume's REAL Weapon Length relative to
               // the default (0.7) — Tycoonius-style short/long reach trade-offs
               const reachK = COSTUMES[costumeIdx].wl / COSTUMES[0].wl;
+              const reachR = Math.hypot(rp[0] - pcx, rp[2] - pcz) * reachK;
+              const reachAng = Math.atan2(rp[2] - pcz, rp[0] - pcx);
               hitboxHist.push({ key, cx: pcx, cz: pcz, y: Math.max(0.3, rp[1]),
-                r: Math.hypot(rp[0] - pcx, rp[2] - pcz) * reachK,
-                ang: Math.atan2(rp[2] - pcz, rp[0] - pcx), age: 0 });
+                r: reachR, ang: reachAng, age: 0 });
+              // TARGET DUMMY melee test — the SAME swept-sector model the
+              // Hitboxes display paints (reach + ±15° at the strike azimuth);
+              // a 20-tick per-blade cooldown ≈ one hit per swing (works for
+              // blades AND the brawl fists, whose strike point is the hand)
+              if (dummy && dummy.on && simStepCount - dummy.lastHitSeg[key] > 20) {
+                const ddx = dummy.x - pcx, ddz = dummy.z - pcz;
+                const dd = Math.hypot(ddx, ddz);
+                let da = Math.atan2(ddz, ddx) - reachAng;
+                da = Math.atan2(Math.sin(da), Math.cos(da));
+                if (dd <= reachR + 3 && Math.abs(da) <= Math.PI / 12) {
+                  dummy.lastHitSeg[key] = simStepCount;
+                  // damage = base × REAL weapon-level Dmg Mult (1→5) × REAL costume mult
+                  const dmg = 8 * (weaponLevel >= 5 ? 5 : 1) * COSTUMES[costumeIdx].dmg;
+                  dummyHit(dmg, pcx, pcz, false, 0);
+                }
+              }
             }
             // rage brawling: no swoosh decal, no blade fire — the blades are on
             // his back; skip everything blade-borne for this tick
@@ -3472,7 +3667,7 @@
 
   // test hooks (used by automated verification; harmless in normal use)
   window.KratosLab = {
-    machine, mesh, rig, skin, camGround, rootMotion,
+    machine, mesh, rig, skin, camGround, rootMotion, get dummy() { return dummy; },
     // step(): exactly ONE fixed sim step + one render + timeline — the
     // deterministic pump for automated verification (hidden tabs get no rAF
     // ticks, so scripts drive frames through this). The old variable-dt

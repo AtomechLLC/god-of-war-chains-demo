@@ -25,3 +25,13 @@ re-derivable from a user's own game disc via the pipeline in [`tools/`](../tools
 
 These stay blocked in `.gitignore`. This subset exists for study and commentary within
 the course context; do not redistribute it outside that context.
+
+## enemy/ — the target dummy (added 2026-08-13)
+
+The undead legionnaire (R_SKS.WAD, extracted via godofwar.toc + part1.pak
+sector addressing): `SKS_0.bin` mesh (3,265 verts), `sks.bin` skeleton object
+(29 joints — note the WAD holds TWO records named `sks`; the first is the
+VAG voice bank, this is the second), `ANM_sks.bin` (93 acts: hit reactions,
+deaths, taunts, spawn, his own attacks), `GFX/PAL_SKStextNu.bin` skin, and
+the stat tweaks `TWK_goSKS.bin` (/Animation/goSKS/ action bank) +
+`TWK_Sold_020.bin` (/TweakTemplates/Sold/020 → goSKS, decode pending).
