@@ -153,6 +153,24 @@ const Combat = (() => {
     berserkExit: { branches: [] },
   };
 
+  // ---- stick locomotion + evades (GoW1 controls) ---------------------------
+  // The walkBlend clips are the authored locomotion blend tree (Navigation
+  // bank: ANIWalk="bwalk…"); ground speed is DERIVED from the clips (the
+  // planted foot backslides at exactly the authored speed): walkBlend1
+  // 1.74 m/s, walkBlend2 8.82 m/s (brawl 1.55/9.65). They share the stance
+  // branch sets so combat flows straight out of movement, like the game.
+  GRAPH.walkBlend1 = { loop: true, category: "locomotion", branches: GRAPH.idleCombat.branches };
+  GRAPH.walkBlend2 = { loop: true, category: "locomotion", branches: GRAPH.idleCombat.branches };
+  GRAPH.berWalkBlend1 = { loop: true, category: "brawl locomotion", branches: GRAPH.berserkIdle.branches };
+  GRAPH.berWalkBlend2 = { loop: true, category: "brawl locomotion", branches: GRAPH.berserkIdle.branches };
+  // Right-stick evades (GoW1's real right-stick function — there is no camera
+  // stick). Roll distances are the clips' REAL controller channels: front/back
+  // on comp 422, left/right on comp 420. Non-loop → recover to stance.
+  GRAPH.evadeFront = { branches: [] };
+  GRAPH.evadeBack = { branches: [] };
+  GRAPH.evadeLeft = { branches: [] };
+  GRAPH.evadeRight = { branches: [] };
+
   // universal cancel available inside the block-cancel window (block-canceling
   // recovery is a documented GoW mechanic; window extent is the inferred part)
   const CANCEL = { input: "L1", to: "block", fancy: "block-cancel recovery", tag: "inferred" };

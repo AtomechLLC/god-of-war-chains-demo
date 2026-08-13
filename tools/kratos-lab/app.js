@@ -1056,6 +1056,74 @@
   // fall clips (ANIFall="fallv" in the Navigation action bank): airborne but
   // DESCENDING — they take the gravity path, never the air-attack hover
   const FALL_MOVES = /^(fallV|berFallN)$/;
+  // ---- GoW1 stick locomotion + evades --------------------------------------
+  // Left stick moves Kratos camera-relative, analog walk → run. Ground speeds
+  // are DERIVED FROM THE CLIPS (the planted foot backslides at exactly the
+  // authored ground speed): walkBlend1 1.74 m/s, walkBlend2 8.82 m/s, brawl
+  // 1.55/9.65. The right stick is GoW1's EVADE (the game has no camera stick —
+  // cameras are authored): flick to roll; roll distances are the evade clips'
+  // REAL controller channels (front/back comp-422, left/right comp-420).
+  // Turn rate + deflection thresholds are INFERRED (feel-tuned).
+  const LOCO = {
+    walk: 1.74 * ARENA_M, run: 8.82 * ARENA_M,
+    bwalk: 1.55 * ARENA_M, brun: 9.65 * ARENA_M,
+    TURN: 10,               // rad/s toward the stick heading (INFERRED)
+    RUN_AT: 0.78, WALK_AT: 0.7, // deflection hysteresis (INFERRED)
+  };
+  const LOCO_STATE = /^(walkBlend[12]|berWalkBlend[12])$/;
+  const GROUND_STANCE = /^(idleCombat2?|berserkIdle|walkBlend[12]|berWalkBlend[12])$/;
+  const padStickL = { x: 0, y: 0 };
+  let padEvade = null;   // one-shot camera-relative flick vector from the right stick
+  let locoRun = false;
+  // camera basis on the ground plane: screen-up (away from camera) and
+  // screen-right in world XZ — the stick maps through these, so movement is
+  // camera-relative in ANY orbit (verified: Front preset, stick-right = -X)
+  const camBasis = () => ({
+    fx: -Math.sin(yaw), fz: -Math.cos(yaw),   // camFwd (away)
+    rx: Math.cos(yaw), rz: -Math.sin(yaw),    // camRight
+  });
+  function locoTick() {
+    const st = machine.st;
+    if (!GROUND_STANCE.test(st.current)) { padEvade = null; return; }
+    if (padEvade) {
+      const e = padEvade;
+      padEvade = null;
+      // flick → world direction, then classify vs the FACING via dot products
+      // (the four clips are authored character-local)
+      const cb = camBasis();
+      const wx = cb.rx * e.x + cb.fx * -e.y, wz = cb.rz * e.x + cb.fz * -e.y;
+      const fwdx = -Math.sin(rootMotion.hd), fwdz = -Math.cos(rootMotion.hd);
+      const rgtx = Math.cos(rootMotion.hd), rgtz = -Math.sin(rootMotion.hd);
+      const df = wx * fwdx + wz * fwdz, dr = wx * rgtx + wz * rgtz;
+      const clip = Math.abs(df) >= Math.abs(dr) ? (df > 0 ? "evadeFront" : "evadeBack") : (dr > 0 ? "evadeRight" : "evadeLeft");
+      machine.force(clip);
+      log(`🌀 ${clip} (right-stick evade — REAL roll channel)`);
+      return;
+    }
+    const mag = Math.hypot(padStickL.x, padStickL.y);
+    if (mag > 0.2) {
+      // stick → world direction → facing target (fwd(h) = (-sin h, -cos h))
+      const cb = camBasis();
+      const wx = cb.rx * padStickL.x + cb.fx * -padStickL.y;
+      const wz = cb.rz * padStickL.x + cb.fz * -padStickL.y;
+      const tgt = Math.atan2(-wx, -wz);
+      let d = tgt - rootMotion.hd;
+      d = Math.atan2(Math.sin(d), Math.cos(d));
+      const stepR = LOCO.TURN * Loop.STEP;
+      rootMotion.hd += Math.abs(d) < stepR ? d : Math.sign(d) * stepR;
+      locoRun = mag > (locoRun ? LOCO.WALK_AT : LOCO.RUN_AT);
+      const want = st.brawl ? (locoRun ? "berWalkBlend2" : "berWalkBlend1") : (locoRun ? "walkBlend2" : "walkBlend1");
+      if (st.current !== want) machine.force(want);
+      const base = locoRun ? (st.brawl ? LOCO.brun : LOCO.run) : (st.brawl ? LOCO.bwalk : LOCO.walk) * Math.min(1, mag / LOCO.RUN_AT);
+      if (rootMotion.on) {
+        rootMotion.x += -Math.sin(rootMotion.hd) * base * Loop.STEP; // along the facing
+        rootMotion.z += -Math.cos(rootMotion.hd) * base * Loop.STEP;
+      }
+    } else if (LOCO_STATE.test(st.current)) {
+      machine.force(st.idle());
+      locoRun = false;
+    }
+  }
   const ringHist = []; // live concussion DEBUG rings {cx,cz, s,e,durTicks, age} (Hitboxes overlay)
   const fxRings = [];  // live SHOCKWAVE visuals {cx,cz, s,e,durTicks, age} — REAL "F"-template radii/timing, always shown
   // Concussion TRIGGER TIME (derived from REAL data): the slam is where the move's
@@ -1929,8 +1997,51 @@
   // engine drops the controller under the decoded /GlobGame/ Gravity (50,
   // meters — REAL) and air attacks hover (engine float, INFERRED from
   // gameplay). y/vy implement exactly that model here.
-  const rootMotion = { on: true, x: 0, z: 0, y: 0, vy: 0, px: 0, pz: 0, prevTrack: null, prevTrackY: null, pendingRebase: false };
+  // hd = facing heading (radians; 0 = the clips' authored -Z forward) — stick
+  // locomotion turns it, and ALL root motion (channels + movement) advances
+  // along it; prevTrackX tracks the lateral comp-420 channel (side evades).
+  const rootMotion = { on: true, x: 0, z: 0, y: 0, vy: 0, hd: 0, px: 0, pz: 0, prevTrack: null, prevTrackY: null, prevTrackX: null, pendingRebase: false };
   const GRAV_UNITS = 50 * Chain.METERS_TO_WORLD; // REAL /GlobGame/ Gravity 50 m/s² × units bridge
+  // apply the character root transform to an in-place pose: rotate every joint
+  // matrix by the heading about the origin, then translate by the accumulated
+  // offsets. The blade track gets the identical treatment (applyRootTrack) so
+  // chains/trails/hitboxes inherit facing automatically.
+  function applyRootPose(world) {
+    const hd = rootMotion.hd;
+    if (hd) {
+      const c = Math.cos(hd), s = Math.sin(hd);
+      for (let j = 0; j < world.length; j += 16) {
+        for (const o of [0, 4, 8, 12]) {
+          const x = world[j + o], z = world[j + o + 2];
+          world[j + o] = c * x + s * z;
+          world[j + o + 2] = -s * x + c * z;
+        }
+      }
+    }
+    if (rootMotion.x || rootMotion.y || rootMotion.z) {
+      for (let j = 0; j < world.length; j += 16) {
+        world[j + 12] += rootMotion.x;
+        world[j + 13] += rootMotion.y;
+        world[j + 14] += rootMotion.z;
+      }
+    }
+  }
+  function applyRootTrack(track) {
+    const hd = rootMotion.hd;
+    if (hd) {
+      const c = Math.cos(hd), s = Math.sin(hd);
+      for (const o of [0, 3]) {
+        const x = track[o], z = track[o + 2];
+        track[o] = c * x + s * z;
+        track[o + 2] = -s * x + c * z;
+      }
+    }
+    for (const o of [0, 3]) {
+      track[o] += rootMotion.x;
+      track[o + 1] += rootMotion.y;
+      track[o + 2] += rootMotion.z;
+    }
+  }
   // JUMP GAIN — INFERRED (footage-calibrated, user bar: apex ≈ Kratos' height).
   // The pure jump clips' comp-421 channels are the authored ANIMATION rise only
   // (jumpUp+jumpAir apex = 12.2 units = 0.87 m); the engine computes the true
@@ -2115,7 +2226,7 @@
   // motion during jumps/landings/evades, which fooled the tip-speed gate into
   // painting hit windows that don't exist (user-corrected). airImpaleLand is
   // NOT excluded: it is an attack (authored concussion).
-  const NO_MELEE = /^(jump|comboJump$|land$|runLand$|combatLand|highFallLand$|fall|combatFall$|evade|dash$|ber(Jump|Land|FallN|serkEnter|serkExit))/;
+  const NO_MELEE = /^(jump|comboJump$|land$|runLand$|combatLand|highFallLand$|fall|combatFall$|evade|dash$|walkBlend|berWalkBlend|ber(Jump|Land|FallN|serkEnter|serkExit))/;
   function hitWindows(move) {
     if (HITWIN_CACHE[move]) return HITWIN_CACHE[move];
     const out = { segs: [], conc: null };
@@ -2226,22 +2337,15 @@
       // so unpausing continues the differencing from exactly here (no teleport)
       rootMotion.prevTrack = rig.rootDisp(st.current, st.t);
       rootMotion.prevTrackY = rig.rootDispY(st.current, st.t);
-      if (rootMotion.x || rootMotion.z || rootMotion.y)
-        for (let j = 0; j < world.length; j += 16) {
-          world[j + 12] += rootMotion.x;
-          world[j + 13] += rootMotion.y;
-          world[j + 14] += rootMotion.z;
-        }
+      rootMotion.prevTrackX = rig.rootDispX(st.current, st.t);
     }
+    applyRootPose(world);
     if (!skin.lastWorld) skin.lastWorld = new Float32Array(world.length);
     skin.lastWorld.set(world);
     if (blade) {
       const track0 = rig.bladePos(st.current, st.t);
       const track = track0 ? Array.from(track0) : null;
-      if (track && rootMotion.on && (rootMotion.x || rootMotion.z || rootMotion.y)) {
-        track[0] += rootMotion.x; track[1] += rootMotion.y; track[2] += rootMotion.z;
-        track[3] += rootMotion.x; track[4] += rootMotion.y; track[5] += rootMotion.z;
-      }
+      if (track) applyRootTrack(track);
       for (const [key, hand, trackOff] of [["l", JID.lWeapIH, 0], ["r", JID.rWeapIH, 3]]) {
         if (hand === undefined) continue;
         const tp = track ? [track[trackOff], track[trackOff + 1], track[trackOff + 2]] : null;
@@ -2376,8 +2480,8 @@
   $("btnRootMo").addEventListener("click", () => {
     rootMotion.on = !rootMotion.on;
     rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0; // return home on toggle
-    rootMotion.y = rootMotion.vy = 0;
-    rootMotion.prevTrack = rootMotion.prevTrackY = null;
+    rootMotion.y = rootMotion.vy = rootMotion.hd = 0;
+    rootMotion.prevTrack = rootMotion.prevTrackY = rootMotion.prevTrackX = null;
     $("btnRootMo").classList.toggle("latched", rootMotion.on);
   });
   // Replay controls: pause / frame-step / slow-mo (dev/QA capture aid).
@@ -2491,7 +2595,13 @@
     const gps = navigator.getGamepads ? navigator.getGamepads() : [];
     const pads = [];
     for (const g of gps) if (g && g.connected) pads.push(g);
-    if (!pads.length) { padDbg = ""; setPadStatus("🎮 waiting for controller — press any button on it"); return; }
+    if (!pads.length) {
+      padDbg = "";
+      padStickL.x = padStickL.y = 0; // a vanished pad must not keep walking Kratos
+      padEvade = null;
+      setPadStatus("🎮 waiting for controller — press any button on it");
+      return;
+    }
     // pick the active pad: any pad with a pressed button wins; else keep the
     // previous active; else the first exposed one (idle default)
     let gp = pads.find((g) => g.index === padActive) || null;
@@ -2533,14 +2643,21 @@
     if ((edge(M.L3) && down(M.R3)) || (edge(M.R3) && down(M.L3))) $("btnRage").click(); // L3+R3 — the real activation
     if (edge(M.SEL)) $("btnBrawl").click();
     if (edge(M.ST)) $("btnPause").click();
-    // right stick orbit + analog trigger zoom (mirrors drag/wheel)
+    // LEFT stick → locomotion (GoW1 movement) — stored for the fixed-step sim
     const dz = (v) => (Math.abs(v) > 0.18 ? v : 0);
+    padStickL.x = dz(gp.axes[0] || 0);
+    padStickL.y = dz(gp.axes[1] || 0);
+    // RIGHT stick → EVADE flick (GoW1's real right-stick role; no camera stick
+    // in the game — cameras are authored, and Follow plays that part here)
     const rx = dz(gp.axes[M.AX] || 0), ry = dz(gp.axes[M.AY] || 0);
-    if (rx || ry) {
-      autoSpin = false;
-      yaw += rx * wallDt * 2.6;
-      pitch = Math.max(-1.4, Math.min(1.5, pitch + ry * wallDt * 2.0));
-    }
+    const rmag = Math.hypot(rx, ry);
+    if (rmag > 0.6 && prev.rMag <= 0.6) padEvade = { x: rx, y: ry };
+    prev.rMag = rmag;
+    // d-pad nudges the study camera (lab aid), L2/R2 analog zoom
+    if (down(12)) pitch = Math.max(-1.4, Math.min(1.5, pitch - wallDt * 1.6));
+    if (down(13)) pitch = Math.max(-1.4, Math.min(1.5, pitch + wallDt * 1.6));
+    if (down(14)) { autoSpin = false; yaw -= wallDt * 2.2; }
+    if (down(15)) { autoSpin = false; yaw += wallDt * 2.2; }
     const zoom = (gp.buttons[M.L2] ? gp.buttons[M.L2].value : 0) - (gp.buttons[M.R2] ? gp.buttons[M.R2].value : 0);
     if (zoom) userDist = Math.max(1.2, Math.min(26, userDist + zoom * wallDt * 10));
     for (let i = 0; i < gp.buttons.length; i++) prev[i] = down(i);
@@ -2836,8 +2953,8 @@
     if (!followCam) $("btnFollow").click();
     if (!rootMotion.on) $("btnRootMo").click();
     else {
-      rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = rootMotion.y = rootMotion.vy = 0;
-      rootMotion.prevTrack = rootMotion.prevTrackY = null;
+      rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = rootMotion.y = rootMotion.vy = rootMotion.hd = 0;
+      rootMotion.prevTrack = rootMotion.prevTrackY = rootMotion.prevTrackX = null;
     }
     if (weaponLevel !== 1) $("btnWpnLv").click();
     if (costumeIdx !== 0) {
@@ -2883,6 +3000,7 @@
     const STEP = Loop.STEP;
     tickAutoplay(); // dev/QA capture aid — fires the next scripted input when active
     comboTick();    // user-authored combo playback — same input() path, queue-window timed
+    locoTick();     // GoW1 stick locomotion + right-stick evades (fixed-step, like everything)
     lastState = { name: machine.st.current, t: machine.st.t };
     machine.tick(STEP);
     // touchdown: a fall clip ends the instant the controller reaches the floor
@@ -2914,11 +3032,21 @@
       // it along is INFERRED (+Z here = the direction the authored combos lunge; the
       // channel decreases as the character advances, hence the negation).
       if (rootMotion.on) {
+        // horizontal controller channels: 422 = local forward (decreases as
+        // the character advances; user-corrected axis), 420 = local lateral
+        // (the side-evade rolls). Local diffs rotate by the facing heading.
         const rv = rig.rootDisp(machine.st.current, machine.st.t);
-        if (!rootMotion.pendingRebase && rv !== null && rootMotion.prevTrack !== null) {
-          rootMotion.z += (rv - rootMotion.prevTrack); // advance along -Z (user-corrected axis; channel decreases forward)
+        const rvX = rig.rootDispX(machine.st.current, machine.st.t);
+        let dZ = 0, dX = 0;
+        if (!rootMotion.pendingRebase && rv !== null && rootMotion.prevTrack !== null) dZ = rv - rootMotion.prevTrack;
+        if (!rootMotion.pendingRebase && rvX !== null && rootMotion.prevTrackX !== null) dX = rvX - rootMotion.prevTrackX;
+        if (dZ || dX) {
+          const c = Math.cos(rootMotion.hd), s = Math.sin(rootMotion.hd);
+          rootMotion.x += c * dX + s * dZ;
+          rootMotion.z += -s * dX + c * dZ;
         }
         rootMotion.prevTrack = rv;
+        rootMotion.prevTrackX = rvX;
         // VERTICAL — three-way model matching the engine (see rootMotion decl):
         //  1. clip has a comp-421 channel → drive the REAL authored rise
         //     (differenced within the clip like 422; blends never captured)
@@ -2952,21 +3080,22 @@
             rootMotion.y = 0; rootMotion.vy = 0;
           } // air ATTACK without channel: hover — keep y as-is; falls descend
         }
-        // Teleport home once Kratos strays past 4 BIG grid squares (4 x 4 m = 16 m,
-        // user-doubled) from center — instant, no easing (keeps loops on the arena).
-        const RESET_R = 4 * 4 * ARENA_M;
-        if (rootMotion.x * rootMotion.x + rootMotion.z * rootMotion.z > RESET_R * RESET_R) {
-          rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0;
-        }
-        rootMotion.px = rootMotion.x; rootMotion.pz = rootMotion.z;
-        if (rootMotion.x || rootMotion.z || rootMotion.y) {
-          for (let j = 0; j < world.length; j += 16) {
-            world[j + 12] += rootMotion.x;
-            world[j + 13] += rootMotion.y;
-            world[j + 14] += rootMotion.z;
+        // Free stick movement (walks/evades) CLAMPS to the arena walls; the
+        // 16 m teleport-home stays for looping combo playback only — walking
+        // into a teleport read as a bug once the stick could roam.
+        if (LOCO_STATE.test(machine.st.current) || /^evade/.test(machine.st.current)) {
+          const lim = ARENA_HALF - ARENA_M;
+          rootMotion.x = Math.max(-lim, Math.min(lim, rootMotion.x));
+          rootMotion.z = Math.max(-lim, Math.min(lim, rootMotion.z));
+        } else {
+          const RESET_R = 4 * 4 * ARENA_M; // 16 m (user-doubled), instant, no easing
+          if (rootMotion.x * rootMotion.x + rootMotion.z * rootMotion.z > RESET_R * RESET_R) {
+            rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0;
           }
         }
+        rootMotion.px = rootMotion.x; rootMotion.pz = rootMotion.z;
       }
+      applyRootPose(world); // heading rotation + accumulated offsets (always — hd persists with root motion off)
       rootMotion.pendingRebase = false;
       // CR-01: computePose fills and returns ONE internal buffer reused across
       // calls (anim.js makeRig closure). Aliasing it here let the blend-window
@@ -3014,10 +3143,7 @@
         // copy before offsetting — bladePos may return a shared internal buffer
         const track0 = rig.bladePos(machine.st.current, machine.st.t);
         const track = track0 ? Array.from(track0) : null;
-        if (track && rootMotion.on && (rootMotion.x || rootMotion.z || rootMotion.y)) {
-          track[0] += rootMotion.x; track[1] += rootMotion.y; track[2] += rootMotion.z;   // left blade xyz
-          track[3] += rootMotion.x; track[4] += rootMotion.y; track[5] += rootMotion.z;   // right blade xyz
-        }
+        if (track) applyRootTrack(track); // heading + offsets, matching the pose
         for (const [key, hand, trackOff] of [["l", JID.lWeapIH, 0], ["r", JID.rWeapIH, 3]]) {
           const hst = trailHist[key];
           for (const e of hst) e.age += STEP;

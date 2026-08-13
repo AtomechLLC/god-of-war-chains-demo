@@ -435,7 +435,17 @@ const GowAnim = (() => {
       return sampleTrack(tr.framesY, tr.frameTime, t);
     }
 
-    return { obj, anm, computePose, bladePos, rootDisp, rootDispY, jointCount: n };
+    // sample the REAL lateral controller channel (comp 420) — the side-evade
+    // rolls live here (evadeLeft/Right move ±10 units on X, zero on Z).
+    function rootDispX(actName, t) {
+      const act = anm.acts.get(actName);
+      if (!act) return null;
+      const tr = decodeRootTrack(anmBuf, dv, act, anm.dataTypes);
+      if (!tr) return null;
+      return sampleTrack(tr.framesX, tr.frameTime, t);
+    }
+
+    return { obj, anm, computePose, bladePos, rootDisp, rootDispY, rootDispX, jointCount: n };
   }
 
   return { makeRig };
