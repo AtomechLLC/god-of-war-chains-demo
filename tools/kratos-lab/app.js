@@ -257,6 +257,9 @@
     // color as a naive gamma-space add (REND-01 — no bloom, no tonemap).
     uniform vec3 uLightPosL; uniform vec3 uLightColorL; uniform float uLightIntensityL; uniform float uLightRangeL;
     uniform vec3 uLightPosR; uniform vec3 uLightColorR; uniform float uLightIntensityR; uniform float uLightRangeR;
+    // hit-flash tint: white pop on a struck model (GoW1 enemies flash when
+    // hit — footage-anchored; curve/intensity INFERRED, no decoded data)
+    uniform float uHitFlash;
     vec3 bladeLight(vec3 lp, vec3 lcol, float lint, float lrange, vec3 nrm, vec3 world) {
       vec3 Lp = lp - world;
       float d = length(Lp);
@@ -281,6 +284,7 @@
       // term is additive — REND-01 naive add, the two blade lights are summed).
       c += bladeLight(uLightPosL, uLightColorL, uLightIntensityL, uLightRangeL, n, vWorld);
       c += bladeLight(uLightPosR, uLightColorR, uLightIntensityR, uLightRangeR, n, vWorld);
+      c = mix(c, vec3(1.0), uHitFlash); // impact pop overrides lighting at full strength
       gl_FragColor = vec4(c, 1.0);
     }`;
   function shader(type, src) {
@@ -813,6 +817,8 @@
   gl.uniform1f(uLightRangeR, bladeLightR.range * s0);
   gl.uniform1f(uLightIntensityL, 0.0);              // set per frame (guarded — dark until the blade sim is live)
   gl.uniform1f(uLightIntensityR, 0.0);
+  const uHitFlash = gl.getUniformLocation(prog, "uHitFlash");
+  gl.uniform1f(uHitFlash, 0.0); // hero/blades never flash (yet) — pulsed only for the dummy draw
 
   gl.clearColor(0, 0, 0, 1); // opaque clear — FBO-path clears must also be opaque
   gl.enable(gl.DEPTH_TEST);
@@ -1246,6 +1252,7 @@
     dummy.combo = 0;                         // HUD hit counter — clears 5 s after the last contact (user spec)
     dummy.hitsLife = 0;                      // per-life count for the death log
     dummy.lastHitTick = -1;                  // sim tick of the last landed hit
+    dummy.flashT = 0;                        // hit-flash tint envelope (1 → 0 after a contact)
     dummy.lastWorld = null;
     dummy.dur = (n) => { const a = dummy.rig.anm.acts.get(n); return a ? a.duration : 1; };
     dummy.play = (n) => { if (dummy.rig.anm.acts.has(n)) { dummy.cur = n; dummy.t = 0; } };
@@ -1300,6 +1307,7 @@
     // landed hit — GoW-style combo decay (window length hand-set, INFERRED)
     if (dummy.combo && simStepCount - dummy.lastHitTick > 5 * 60) dummy.combo = 0;
     const STEP = Loop.STEP;
+    if (dummy.flashT > 0) dummy.flashT = Math.max(0, dummy.flashT - STEP / 0.18); // ~11-tick pop (INFERRED)
     dummy.t += STEP;
     const d = dummy.dur(dummy.cur);
     if (dummy.t >= d) {
@@ -1389,6 +1397,7 @@
     dummy.hp = Math.max(0, dummy.hp - dmg);
     dummy.hits++; dummy.combo++; dummy.hitsLife++;
     dummy.lastHitTick = simStepCount;
+    dummy.flashT = 1; // model hit-flash: white pop that lives through the reaction's opening frames
     // impact flash + sparks ON the dummy (chest ≈ vertebrae2 height)
     const cx = dummy.lastWorld ? dummy.lastWorld[2 * 16 + 12] : dummy.x;
     const cy = dummy.lastWorld ? dummy.lastWorld[2 * 16 + 13] : 18;
@@ -2263,9 +2272,13 @@
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, dummy.skin.out);
       gl.uniform1f(uPages, 1);
       gl.uniformMatrix4fv(uModel, false, modelMat);
+      // impact pop: squared envelope = instant bright, fast falloff — visible
+      // DURING the reaction's opening frames (the user-reported gap)
+      gl.uniform1f(uHitFlash, 0.85 * dummy.flashT * dummy.flashT);
       gl.bindTexture(gl.TEXTURE_2D, dummy.tex);
       bindMeshSet(dummy.set);
       gl.drawElements(gl.TRIANGLES, dummy.set.count, gl.UNSIGNED_SHORT, 0);
+      gl.uniform1f(uHitFlash, 0.0); // never leak the flash onto the hero/blades
     }
     // dummy HP bar: project the head joint (id 5) to screen space
     {
