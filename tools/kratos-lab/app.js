@@ -257,9 +257,10 @@
     // color as a naive gamma-space add (REND-01 — no bloom, no tonemap).
     uniform vec3 uLightPosL; uniform vec3 uLightColorL; uniform float uLightIntensityL; uniform float uLightRangeL;
     uniform vec3 uLightPosR; uniform vec3 uLightColorR; uniform float uLightIntensityR; uniform float uLightRangeR;
-    // hit-flash tint: white pop on a struck model (GoW1 enemies flash when
-    // hit — footage-anchored; curve/intensity INFERRED, no decoded data)
-    uniform float uHitFlash;
+    // hit-flash tint on a struck model (GoW1 enemies flash when hit —
+    // footage-anchored). The COLOR is the blade-trail's (user-corrected):
+    // swoosh gold × the runtime Trail Tint, fed per draw. Curve INFERRED.
+    uniform float uHitFlash; uniform vec3 uHitFlashColor;
     vec3 bladeLight(vec3 lp, vec3 lcol, float lint, float lrange, vec3 nrm, vec3 world) {
       vec3 Lp = lp - world;
       float d = length(Lp);
@@ -284,7 +285,7 @@
       // term is additive — REND-01 naive add, the two blade lights are summed).
       c += bladeLight(uLightPosL, uLightColorL, uLightIntensityL, uLightRangeL, n, vWorld);
       c += bladeLight(uLightPosR, uLightColorR, uLightIntensityR, uLightRangeR, n, vWorld);
-      c = mix(c, vec3(1.0), uHitFlash); // impact pop overrides lighting at full strength
+      c = mix(c, uHitFlashColor, uHitFlash); // impact pop overrides lighting at full strength
       gl_FragColor = vec4(c, 1.0);
     }`;
   function shader(type, src) {
@@ -818,7 +819,12 @@
   gl.uniform1f(uLightIntensityL, 0.0);              // set per frame (guarded — dark until the blade sim is live)
   gl.uniform1f(uLightIntensityR, 0.0);
   const uHitFlash = gl.getUniformLocation(prog, "uHitFlash");
+  const uHitFlashColor = gl.getUniformLocation(prog, "uHitFlashColor");
   gl.uniform1f(uHitFlash, 0.0); // hero/blades never flash (yet) — pulsed only for the dummy draw
+  // REAL hue: the GFX_swordtrail decal's bright-corner texel (243,176,18) — the
+  // trail's visible gold. ×1.45 keeps the pop hot (brightness scale INFERRED).
+  const SWOOSH_GOLD = [243 / 255 * 1.45, 176 / 255 * 1.45, 18 / 255 * 1.45];
+  gl.uniform3fv(uHitFlashColor, SWOOSH_GOLD);
 
   gl.clearColor(0, 0, 0, 1); // opaque clear — FBO-path clears must also be opaque
   gl.enable(gl.DEPTH_TEST);
@@ -2273,7 +2279,13 @@
       gl.uniform1f(uPages, 1);
       gl.uniformMatrix4fv(uModel, false, modelMat);
       // impact pop: squared envelope = instant bright, fast falloff — visible
-      // DURING the reaction's opening frames (the user-reported gap)
+      // DURING the reaction's opening frames (the user-reported gap). Color =
+      // the trail's (user): swoosh gold × the SAME tint rule as the trail pass
+      // (REAL God Mode Trail Tint goes RED at weapon L4-5 during Rage).
+      const flashRed = machine.st.rage && weaponLevel >= 4;
+      gl.uniform3fv(uHitFlashColor, flashRed
+        ? [SWOOSH_GOLD[0], 0, 0]
+        : SWOOSH_GOLD);
       gl.uniform1f(uHitFlash, 0.85 * dummy.flashT * dummy.flashT);
       gl.bindTexture(gl.TEXTURE_2D, dummy.tex);
       bindMeshSet(dummy.set);
