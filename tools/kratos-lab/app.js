@@ -1128,6 +1128,12 @@
     // back to the run; the planted landings brake hard
     if (LAND_STATE.test(cur)) {
       padEvade = null;
+      // roll-out: past the runLand plant, a held stick blends STRAIGHT into
+      // the run — no one-tick idle hop between landing and locomotion
+      if (cur === "runLand" && Math.hypot(padStickL.x, padStickL.y) > 0.2 && st.t / st.dur > 0.55) {
+        machine.force(st.brawl ? (locoRun ? "berWalkBlend2" : "berWalkBlend1") : (locoRun ? "walkBlend2" : "walkBlend1"));
+        return;
+      }
       if (rootMotion.on && (locoVel.x || locoVel.z)) {
         rootMotion.x += locoVel.x * Loop.STEP;
         rootMotion.z += locoVel.z * Loop.STEP;
@@ -1315,12 +1321,17 @@
     if (skin.blendLeft > 0 && skin.prevAct) {
       const saved = skin.out;
       skin.out = new Float32Array(saved.length);
-      const pw = rig.computePose(skin.prevAct, skin.prevTime);
-      // root-motion: the PREV clip uses its own base (px/pz) so both blend poses
-      // meet at the transition seam (the re-base was constructed for continuity).
-      if (rootMotion.on && (rootMotion.px || rootMotion.pz)) {
-        for (let j = 0; j < pw.length; j += 16) { pw[j + 12] += rootMotion.px; pw[j + 14] += rootMotion.pz; }
-      }
+      // ADVANCING cross-fade (user-reported mushy transitions): the outgoing
+      // clip keeps PLAYING through the blend window instead of freezing at the
+      // seam — a frozen prev pose dragged against the incoming motion.
+      const pt = Math.min(skin.prevTime + (skin.blendDur - skin.blendLeft), DUR[skin.prevAct] || skin.prevTime);
+      const pw = rig.computePose(skin.prevAct, pt);
+      // the PREV pose gets the FULL root transform — heading rotation, the
+      // prev horizontal base (px/pz, constructed for seam continuity) and the
+      // CURRENT vertical. Without the heading, any transition while facing
+      // != 0 blended a rotated pose against an unrotated one (the big smear).
+      if (rootMotion.on) applyRootXformTo(pw, rootMotion.px, rootMotion.y, rootMotion.pz);
+      else applyRootXformTo(pw, 0, 0, 0); // heading still applies with root motion off
       skinPose(pw);
       prevOut = skin.out;
       skin.out = saved;
@@ -2070,7 +2081,7 @@
   // matrix by the heading about the origin, then translate by the accumulated
   // offsets. The blade track gets the identical treatment (applyRootTrack) so
   // chains/trails/hitboxes inherit facing automatically.
-  function applyRootPose(world) {
+  function applyRootXformTo(world, ox, oy, oz) {
     const hd = rootMotion.hd;
     if (hd) {
       const c = Math.cos(hd), s = Math.sin(hd);
@@ -2082,13 +2093,16 @@
         }
       }
     }
-    if (rootMotion.x || rootMotion.y || rootMotion.z) {
+    if (ox || oy || oz) {
       for (let j = 0; j < world.length; j += 16) {
-        world[j + 12] += rootMotion.x;
-        world[j + 13] += rootMotion.y;
-        world[j + 14] += rootMotion.z;
+        world[j + 12] += ox;
+        world[j + 13] += oy;
+        world[j + 14] += oz;
       }
     }
+  }
+  function applyRootPose(world) {
+    applyRootXformTo(world, rootMotion.x, rootMotion.y, rootMotion.z);
   }
   function applyRootTrack(track) {
     const hd = rootMotion.hd;
@@ -2114,7 +2128,11 @@
   // the REAL curve shape/timing to a ~2.0 m apex. Scripted full-magnitude
   // channels (comboJump 6.4 m, blockLauncher launch-follow 6.2 m, airImpale)
   // are NOT gained — their channels are already the whole arc.
-  const JUMP_GAIN = 2.3;
+  // 1.7 (was 2.3): the rendered-frame trace showed the FEET clearing 2.13 m —
+  // above Kratos' own height, a superhero hop (user gif). Visual jump height
+  // is feet clearance ≈ the controller apex; 1.7 gives ~1.5 m single /
+  // ~2.8 m double — GoW1 ledge-height feel.
+  const JUMP_GAIN = 1.7;
   const JUMP_GAIN_CLIPS = /^(jumpUp|jumpAir|jumpDoubleAir|berJumpAir|berJumpDoubleAir)$/;
   const jumpGain = (move) => (JUMP_GAIN_CLIPS.test(move) ? JUMP_GAIN : 1);
   let lastState = { name: "idleCombat", t: 0 };
@@ -2127,6 +2145,9 @@
         // touchdown blends widen (INFERRED — soften ground contact): the land
         // clips ship blend 0, and a fall→land cut at 0.08 s read as a pop
         if (/^(land|runLand|combatLand2|berLand)$/.test(name)) bl = Math.max(bl, 0.16);
+        // the jump chain transitions fast (0.33-0.47 s clips) — widen so each
+        // link cross-fades through motion instead of cutting (user report)
+        if (/^(jumpUp|jumpAir|jumpDoubleAir|fallV|berJumpAir|berFallN|walkBlend|berWalkBlend)/.test(name)) bl = Math.max(bl, 0.12);
         skin.prevAct = prev;
         skin.prevTime = lastState.t;
         skin.blendDur = bl;
@@ -3077,7 +3098,12 @@
     // one-loop settle in combat.js so the fall clip still plays out).
     // Landing WITH the stick held rolls through runLand — the momentum-
     // preserving landing clip — instead of planting into the full stop.
-    if (rootMotion.on && rootMotion.y <= 0 && FALL_MOVES.test(machine.st.current)) {
+    // anticipation lead (rendered-frame trace): triggering at exactly y=0 made
+    // the landing pose kick in a beat late — the feet visibly bounced. Start
+    // the land clip ~0.1 s of fall-speed EARLY so the crouch develops through
+    // contact (gravity keeps pulling y to the floor during the land state).
+    const touchLead = Math.max(0, -rootMotion.vy * 0.1);
+    if (rootMotion.on && rootMotion.y <= touchLead && FALL_MOVES.test(machine.st.current)) {
       const moving = Math.hypot(padStickL.x, padStickL.y) > 0.2 && (locoVel.x || locoVel.z);
       machine.force(moving && !machine.st.brawl ? "runLand"
         : (Combat.GRAPH[machine.st.current].landTo || (machine.st.brawl ? "berLand" : "land")));
@@ -3416,7 +3442,7 @@
 
   // test hooks (used by automated verification; harmless in normal use)
   window.KratosLab = {
-    machine, mesh, rig, skin, camGround,
+    machine, mesh, rig, skin, camGround, rootMotion,
     // step(): exactly ONE fixed sim step + one render + timeline — the
     // deterministic pump for automated verification (hidden tabs get no rAF
     // ticks, so scripts drive frames through this). The old variable-dt
