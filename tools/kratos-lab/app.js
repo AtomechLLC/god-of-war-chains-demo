@@ -2077,10 +2077,19 @@
   // comp-421 channels are animation REFERENCE motion (what the compensation
   // compensates), not the controller. The engine model is plain ballistics:
   // instant v0 at takeoff, the REAL Gravity 50 on the way up AND down.
-  // v0 = sqrt(2·g·h) for a 1.5 m apex (ledge height) = 12.25 m/s — INFERRED
-  // calibration; the double jump re-launches at 0.85·v0 (INFERRED).
-  const JUMP_V0 = Math.sqrt(2 * 50 * 1.5) * Chain.METERS_TO_WORLD;
-  const DJUMP_V0 = 0.85 * JUMP_V0;
+  // BOTH jump parameters DERIVED from the comp-421 channel itself — the
+  // channel is a ballistic arc: its tail deceleration measures ~0.70 u/frame²
+  // at 15 Hz = 11.25 m/s² (the JUMP gravity — distinct from the world/
+  // projectile Gravity 50, which flew crazy high AND ended the hop before
+  // the double-jump branch could fire), and its apex is the intended
+  // controller rise (jumpUp 9.37 u = 0.67 m; jumpDoubleAir boost 10.75 u =
+  // 0.77 m). v0 = sqrt(2·g·apex). Airtime ≈ 0.69 s — the GoW float.
+  const JUMP_G_M = 11.25;                              // derived: channel curvature
+  const JUMP_APEX_M = 9.37 / Chain.METERS_TO_WORLD;    // REAL channel apex
+  const DJUMP_APEX_M = 10.75 / Chain.METERS_TO_WORLD;  // REAL channel net rise
+  const JUMP_G = JUMP_G_M * Chain.METERS_TO_WORLD;
+  const JUMP_V0 = Math.sqrt(2 * JUMP_G_M * JUMP_APEX_M) * Chain.METERS_TO_WORLD;   // 3.88 m/s
+  const DJUMP_V0 = Math.sqrt(2 * JUMP_G_M * DJUMP_APEX_M) * Chain.METERS_TO_WORLD; // 4.16 m/s
   const PHYS_JUMP = /^(jumpUp|jumpAir|jumpDoubleAir|berJumpAir|berJumpDoubleAir)$/;
   // apply the character root transform to an in-place pose: rotate every joint
   // matrix by the heading about the origin, then translate by the accumulated
@@ -2194,7 +2203,7 @@
         }
         if (y0 !== null && yMax - y0 > 0.5) {
           extra += `jump rise <b>${((yMax - y0) / Chain.METERS_TO_WORLD).toFixed(2)} m</b> (comp-421 vertical channel)` +
-            (PHYS_JUMP.test(name) ? ` <span style="color:#86aed0">— animation reference; the controller jump is ballistic (Gravity 50 real · v0 12.25 m/s inferred)</span>` : "") + `<br>`;
+            (PHYS_JUMP.test(name) ? ` <span style="color:#86aed0">— animation reference; the controller jump is ballistic (g 11.25 m/s² + v0 3.88 m/s — both derived from this channel’s curvature/apex)</span>` : "") + `<br>`;
         }
       }
       const cd = CONCUSSION[name];
@@ -3161,7 +3170,7 @@
           // BALLISTIC controller: the REAL Gravity 50 on the way up AND down;
           // the clips are skins over the arc
           rootMotion.prevTrackY = null;
-          rootMotion.vy -= GRAV_UNITS * STEP;
+          rootMotion.vy -= JUMP_G * STEP; // channel-derived hero gravity (11.25 m/s²)
           rootMotion.y = Math.max(0, rootMotion.y + rootMotion.vy * STEP);
           if (rootMotion.y === 0 && rootMotion.vy < 0) rootMotion.vy = 0;
         } else if (rvY !== null && (!(gn && gn.loop) || airState)) {
@@ -3181,7 +3190,7 @@
           } else if (rootMotion.y > 0) {
             // grounded state with residual height (post-touchdown): finish the
             // drop under the same real gravity
-            rootMotion.vy -= GRAV_UNITS * STEP;
+            rootMotion.vy -= JUMP_G * STEP; // channel-derived hero gravity (11.25 m/s²)
             rootMotion.y = Math.max(0, rootMotion.y + rootMotion.vy * STEP);
             if (rootMotion.y === 0) rootMotion.vy = 0;
           } else {
