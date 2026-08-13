@@ -198,6 +198,61 @@
   // REAL per-move explosion scale (the PlayFX instances above)
   const PLUME_SCALE = { comboLR3: [2, 1.5, 2], combo3F: [1.5, 1, 1.5], combo7A: [1, 0.5, 1] };
 
+  // ---------- goFXfirePath: the burning streak the Plume leaves ------------
+  // REAL chain (R_PERM.WAD): MDL_FXfirePath + FXfirePath_0 (142-vert flame
+  // strip, raw span 806×188×194) + MAT_FirePathTX (ADDITIVE bit 27, blend
+  // color 0.694/0.29/0.157, UV-anim game flag) + ANM_FirePathTX (V-scroll
+  // 0.0476/frame @30Hz + an 17-sample fade-out curve — both read from the
+  // record) + TXR_sfxlavaflow → GFX_Fire64BScrollUV (painted lava, REPEAT).
+  // PlayFX: "FirePath BF/3F/7A" @synchJoint, OffX −5.25/−5.5/−4.5 m,
+  // rotY 90 (strip axis onto the travel axis), 7A scaleX 0.75.
+  // Raw→hero-unit scale 0.1 is INFERRED (self-consistent: 806×0.1 = 80.6 u
+  // = 5.76 m strip vs the −5.25 m authored offset). Failure-tolerant.
+  let firePath = null;
+  try {
+    const [fpMeshBuf, fpMatBuf, fpAnmBuf, fpGfx, fpPal] = await Promise.all([
+      Parsers.fetchBuf("../../assets/perm/FXfirePath_0.bin"),
+      Parsers.fetchBuf("../../assets/perm/MAT_FirePathTX.bin"),
+      Parsers.fetchBuf("../../assets/perm/ANM_FirePathTX.bin"),
+      Parsers.fetchBuf("../../assets/perm/GFX_Fire64BScrollUV.bin"),
+      Parsers.fetchBuf("../../assets/perm/PAL_Fire64BScrollUV.bin"),
+    ]);
+    const fpMesh = Parsers.parseMesh(fpMeshBuf);
+    const dvA = new DataView(fpAnmBuf.buffer, fpAnmBuf.byteOffset, fpAnmBuf.byteLength);
+    // REAL curves read from ANM_FirePathTX: the fade envelope (17 f32 from
+    // +0x158: 1.0 → 0.0086) and the V-scroll step (+0x1d0 vs +0x1cc delta,
+    // 0.0476/frame at the record's 0.0333 s frame time).
+    const fade = [];
+    for (let i = 0; i < 17; i++) fade.push(dvA.getFloat32(0x158 + i * 4, true));
+    const scrollStep = dvA.getFloat32(0x1d0, true) - dvA.getFloat32(0x1cc, true);
+    const dvM = new DataView(fpMatBuf.buffer, fpMatBuf.byteOffset, fpMatBuf.byteLength);
+    const matColor = [dvM.getFloat32(8, true), dvM.getFloat32(12, true), dvM.getFloat32(16, true)];
+    const blendColor = [dvM.getFloat32(0x60, true), dvM.getFloat32(0x64, true),
+                        dvM.getFloat32(0x68, true), dvM.getFloat32(0x6c, true)];
+    const additive = (dvM.getUint32(0x38, true) & 0x08000000) !== 0; // bit 27 (REAL: set)
+    // bake the strip triangles once: (x,y,z,u,v) per corner, raw units
+    const tris = new Float32Array(fpMesh.idx.length * 5);
+    for (let i = 0; i < fpMesh.idx.length; i++) {
+      const vi = fpMesh.idx[i];
+      tris[i * 5 + 0] = fpMesh.pos[vi * 3 + 0];
+      tris[i * 5 + 1] = fpMesh.pos[vi * 3 + 1];
+      tris[i * 5 + 2] = fpMesh.pos[vi * 3 + 2];
+      tris[i * 5 + 3] = fpMesh.uv[vi * 2 + 0];
+      tris[i * 5 + 4] = fpMesh.uv[vi * 2 + 1];
+    }
+    firePath = {
+      tris, fade, scrollRate: scrollStep * 30, // per second (REAL: 0.0476 × 30 ≈ 1.43)
+      matColor, blendColor, mode: additive ? "additive" : "usual",
+      img: Parsers.decodeTexture(fpGfx, fpPal),
+      RAW_TO_UNIT: 0.1, // INFERRED (see header note)
+      live: [],          // {x, z, hd, sx, offU, born}
+    };
+    console.log("firePath:", { scrollRate: firePath.scrollRate, fade0: fade[0], fadeEnd: fade[16],
+      mode: firePath.mode, blendColor });
+  } catch (e) { console.warn("fire path load", e); }
+  // REAL FirePath PlayFX per move: OffX meters + length-axis scale
+  const FIREPATH_BIND = { comboLR3: { off: -5.25, sx: 1 }, combo3F: { off: -5.5, sx: 1 }, combo7A: { off: -4.5, sx: 0.75 } };
+
   // FIRE-01: resolve the two level-1 blade-fire emitters from the runtime `db` ONCE
   // at load by shapeRef NAME (D-08 / Pitfall 6 — the fire family uses PLACEHOLDER
   // slot 0x0 and is NOT a db.refs slot pair, so the emitter->particle join is on the
@@ -607,6 +662,9 @@
   })();
   // goCombo3fExplode cloud sprite (REAL 128×128 GFX_explosioncloud, R_PERM.WAD)
   if (plumeFx) plumeFx.tex = makeTex(plumeFx.img, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE, filter: true });
+  // goFXfirePath lava sheet (REAL GFX_Fire64BScrollUV via TXR_sfxlavaflow) — REPEAT both axes: the
+  // strip's V runs past 1 and the REAL ANM scroll pushes it further every frame
+  if (firePath) firePath.tex = makeTex(firePath.img, { wrapS: gl.REPEAT, wrapT: gl.REPEAT, filter: true });
   // WEAPON LEVEL 5 blade skin (REAL WAD assets GFX/PAL_stage5Btx) + the decoded
   // per-level Rage rule: God Mode Trail Tint = (1,1,1,1) at L1-3 but RED
   // (1,0,0,1) at L4-5 (/Player/ Weapon Level tree). The Weapon Lv button swaps
@@ -2269,6 +2327,51 @@
     // EMBER_UV: the bright gold corner of the swoosh decal — sparks sample ONLY this
     // sub-rect so each billboard reads as an ember dot, not a stamped mini-swoosh
     // (which visually REPEATED the swoosh detail along the arc). Real texels.
+    // PASS — goFXfirePath: the REAL flame-strip mesh on the traveled ground.
+    // ADDITIVE (MAT bit 27), color = REAL blendColor × matColor, V scrolled
+    // at the REAL ANM rate; hold ~1.5 s (INFERRED) then the REAL fade curve.
+    if (firePath && firePath.tex && firePath.live.length) {
+      const FP_HOLD = 90;                       // ticks (INFERRED — footage linger)
+      const FP_FADE_TICKS = firePath.fade.length * 2; // 17 anim frames @30Hz → 34 ticks
+      const fpV = [];
+      const K0 = firePath.RAW_TO_UNIT;
+      for (let li = firePath.live.length - 1; li >= 0; li--) {
+        const f = firePath.live[li];
+        const age = simStepCount - f.born;
+        if (age > FP_HOLD + FP_FADE_TICKS) { firePath.live.splice(li, 1); continue; }
+        let env = 1;
+        if (age > FP_HOLD) {
+          const ft = (age - FP_HOLD) / 2;       // 60Hz ticks → 30Hz anim frames
+          const fi = Math.min(firePath.fade.length - 1, Math.floor(ft));
+          env = firePath.fade[fi];              // REAL fade samples
+        }
+        const scroll = (age / 60) * firePath.scrollRate; // REAL V flow
+        const fwx = -Math.sin(f.hd), fwz = -Math.cos(f.hd);   // travel axis
+        const rgx = Math.cos(f.hd), rgz = -Math.sin(f.hd);    // strip width axis
+        const T = firePath.tris;
+        for (let i = 0; i < T.length; i += 5) {
+          const lx = T[i] * K0 * f.sx + f.offU; // along the travel axis (OffX applied)
+          const lz = T[i + 2] * K0;
+          fpV.push(
+            f.x + fwx * lx + rgx * lz,
+            T[i + 1] * K0,
+            f.z + fwz * lx + rgz * lz,
+            T[i + 3], T[i + 4] + scroll, env);
+        }
+      }
+      if (fpV.length) {
+        Fx.applyMaterial(gl, { name: "fxFirePath", mode: firePath.mode, disableDepthWrite: true });
+        fxLog.push({ name: "fxFirePath", mode: firePath.mode, depthWrite: false });
+        gl.uniform1f(fxLocs.uTrailRamp, 0);
+        gl.uniform1f(fxLocs.uGlowGain, 0);
+        gl.uniform1f(fxLocs.uCutoff, 0);
+        gl.uniform3fv(fxLocs.uMaterialColor, firePath.matColor);   // REAL 0.8 grey
+        gl.uniform4fv(fxLocs.uLayerColor, firePath.blendColor);    // REAL fire tint
+        gl.bindTexture(gl.TEXTURE_2D, firePath.tex);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(fpV), gl.DYNAMIC_DRAW);
+        gl.drawArrays(gl.TRIANGLES, 0, fpV.length / 6);
+      }
+    }
     const EMBER_UV = [0.75, 0.8, 0.25, 0.2];
     // (trail-spark rider batch removed with its spawner — the swoosh decal carries the arc detail)
     // PASS — blade fire (flame3 + flame6, FIRE-01): its OWN batch by texture (D-02).
@@ -3764,6 +3867,14 @@
             // the composite: flash + fire cloud + sparks + glow + debris.
             // Sizes = the PTC +0x70 slots (METERS via the bridge) × the
             // authored per-move scale; counts/velocities INFERRED vs footage.
+            // REAL FirePath binding: the burning streak covers the ground the
+            // Plume traveled — strip axis on the travel axis, start OffX m back
+            const fpb = firePath && firePath.tex && FIREPATH_BIND[machine.st.current];
+            if (fpb) {
+              firePath.live.push({ x: cx, z: cz, hd: rootMotion.hd, sx: fpb.sx,
+                offU: fpb.off * Chain.METERS_TO_WORLD, born: simStepCount });
+              if (firePath.live.length > 4) firePath.live.shift(); // cap
+            }
             const psc = plumeFx && PLUME_SCALE[machine.st.current];
             if (psc && plumeFx.tex) {
               const M2W = Chain.METERS_TO_WORLD;

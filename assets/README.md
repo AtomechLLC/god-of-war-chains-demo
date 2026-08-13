@@ -35,6 +35,13 @@ pairs (`FXC/PTC` Flash, Fcloud, sparks, fglow, Deb) and `FXC_gravityField1.bin`
 (the explosion's -20 field). Bound by the part1.pak PlayFX instances "Hero
 Plume BF/3F/7A" at authored scales 2/1.5/2, 1.5/1/1.5, 1/0.5/1.
 
+Also the goFXfirePath burning-streak chain: `MDL_FXfirePath.bin` +
+`FXfirePath_0.bin` (142-vert flame strip), `MAT_FirePathTX.bin` (additive,
+blend color 0.694/0.29/0.157, UV-anim flag), `ANM_FirePathTX.bin` (V-scroll +
+fade curves), `fxfirepath.bin`, and `GFX/PAL_Fire64BScrollUV.bin` (painted
+lava sheet, bound as TXR_sfxlavaflow). PlayFX "FirePath BF/3F/7A": OffX
+-5.25/-5.5/-4.5 m, rotY 90, 7A scaleX 0.75.
+
 ## enemy/ — the target dummy (added 2026-08-13)
 
 Impact-VFX chain (added 2026-08-14, carved from `R_SKS.WAD`): `GFX_blood.bin` +
