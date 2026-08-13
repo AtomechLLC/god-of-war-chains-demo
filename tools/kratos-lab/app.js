@@ -1235,7 +1235,7 @@
   // HP 100 is INFERRED (his /TweakTemplates/Sold/020 stat template is decoded-
   // pending); damage = base × REAL weapon-level Dmg Mult × REAL costume mult.
   if (dummy) {
-    dummy.x = 0; dummy.z = -5 * ARENA_M; dummy.hd = Math.PI; // 5 m out, facing center
+    dummy.x = 0; dummy.z = -5 * ARENA_M; dummy.hd = 0; // 5 m out; hd 0 = visual front +Z, toward center
     dummy.cur = "spawn"; dummy.t = 0;
     dummy.maxHp = 100; dummy.hp = 100;      // INFERRED
     dummy.tauntIn = 6;
@@ -1254,6 +1254,13 @@
   // 0.76 puts his posed height at ≈ Kratos' — the footage read. Tunable.
   const DUMMY_SCALE = 0.76;
   const DUMMY_MIN_SEP = 0.9 * ARENA_M; // body separation radius (INFERRED)
+  // SKS VISUAL FRONT = +Z — OPPOSITE the hero (user-verified on screen; the
+  // jaw-vector heuristic proved unreliable on the helmeted skull). Every
+  // facing computation for the dummy routes through this offset.
+  const DUMMY_FACE_OFFSET = Math.PI;
+  const DUMMY_WALK = "Front";               // his walk clip
+  const DUMMY_WALK_SPEED = 3.16 * ARENA_M;  // DERIVED: planted-foot on 'Front' × 0.76 scale
+  const DUMMY_NEAR = 8 * ARENA_M;           // approach until 8 squares away (user)
   const KB_SCALE = 0.42; // units/s per impulse unit — INFERRED scale on the REAL impulses
   function dummyTick() {
     if (!dummy || !dummy.on) return;
@@ -1265,7 +1272,7 @@
         dummy.t = d - 0.001; // corpse hold
         dummy.respawnIn -= STEP;
         if (dummy.respawnIn <= 0) { dummy.hp = dummy.maxHp; dummy.play("spawn"); log("🦴 the legionnaire rises again"); }
-      } else if (dummy.cur === "standIdle") {
+      } else if (dummy.cur === "standIdle" || dummy.cur === DUMMY_WALK) {
         dummy.t %= d;
       } else if (dummy.cur === "hitLaunch" || dummy.cur === "hitBounce") {
         dummy.play("hitGetUp"); // launched → get up off the ground, like the game
@@ -1296,12 +1303,24 @@
     // → face (tx,tz) at hd = atan2(−tx,−tz). Turn rate INFERRED.
     if (!/^(death|hit)/.test(dummy.cur)) {
       const tx = rootMotion.x - dummy.x, tz = rootMotion.z - dummy.z;
-      if (Math.hypot(tx, tz) > 0.5) {
-        const tgt = Math.atan2(-tx, -tz);
+      const dist = Math.hypot(tx, tz);
+      if (dist > 0.5) {
+        const tgt = Math.atan2(-tx, -tz) + DUMMY_FACE_OFFSET; // his visual front is +Z
         let dh = tgt - dummy.hd;
         dh = Math.atan2(Math.sin(dh), Math.cos(dh));
         const turn = 6 * STEP;
         dummy.hd += Math.abs(dh) < turn ? dh : Math.sign(dh) * turn;
+      }
+      // approach (user): walk toward Kratos until within 8 squares, using his
+      // own walk clip at its derived ground speed
+      if (!/^(spawn|taunt)/.test(dummy.cur)) {
+        if (dist > DUMMY_NEAR) {
+          if (dummy.cur !== DUMMY_WALK) dummy.play(DUMMY_WALK);
+          dummy.x += (tx / dist) * DUMMY_WALK_SPEED * STEP;
+          dummy.z += (tz / dist) * DUMMY_WALK_SPEED * STEP;
+        } else if (dummy.cur === DUMMY_WALK) {
+          dummy.play("standIdle");
+        }
       }
     }
     // body separation: Kratos walks, the dummy yields (no standing inside
@@ -1347,10 +1366,10 @@
       return true;
     }
     if (launch) { dummy.play("hitLaunch"); return true; }
-    // strike direction vs his facing picks the authored reaction clip
+    // strike direction vs his VISUAL facing (+Z model front) picks the clip
     const ix = dummy.x - fromX, iz = dummy.z - fromZ; // incoming blow direction
-    const fwdx = -Math.sin(dummy.hd), fwdz = -Math.cos(dummy.hd);
-    const rgtx = Math.cos(dummy.hd), rgtz = -Math.sin(dummy.hd);
+    const fwdx = Math.sin(dummy.hd), fwdz = Math.cos(dummy.hd);
+    const rgtx = -Math.cos(dummy.hd), rgtz = Math.sin(dummy.hd);
     const df = ix * fwdx + iz * fwdz, dr = ix * rgtx + iz * rgtz;
     dummy.play(Math.abs(df) >= Math.abs(dr) ? (df > 0 ? "hitBack" : "hitFront") : (dr > 0 ? "hitLeft" : "hitRight"));
     return true;
@@ -2713,6 +2732,9 @@
   }
   function tickAutoplay() {
     if (!autoplay) return;
+    // hold fire until the dummy finishes rising (user) — attacking a
+    // half-spawned target read wrong; skipped when the dummy is disabled
+    if (dummy && dummy.on && dummy.cur === "spawn") return;
     if (autoplay.wait > 0) { autoplay.wait--; return; }
     autoPress(autoplay.seq[autoplay.i++ % autoplay.seq.length]);
     autoplay.wait = autoplay.gap; // sim steps between inputs (26 ≈ 0.43s @60Hz)
@@ -3270,7 +3292,7 @@
     if (dummy) {
       dummy.on = true;
       $("btnDummy").classList.add("latched");
-      dummy.x = 0; dummy.z = -5 * ARENA_M; dummy.hd = Math.PI;
+      dummy.x = 0; dummy.z = -5 * ARENA_M; dummy.hd = 0;
       dummy.kbx = dummy.kbz = 0; dummy.hp = dummy.maxHp; dummy.hits = 0;
       dummy.play("spawn");
     }
