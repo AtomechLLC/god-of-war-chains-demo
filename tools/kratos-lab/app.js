@@ -1075,23 +1075,30 @@
   const padStickL = { x: 0, y: 0 };
   let padEvade = null;   // one-shot camera-relative flick vector from the right stick
   let locoRun = false;
-  // camera basis on the ground plane: screen-up (away from camera) and
-  // screen-right in world XZ — the stick maps through these, so movement is
-  // camera-relative in ANY orbit (verified: Front preset, stick-right = -X)
-  const camBasis = () => ({
-    fx: -Math.sin(yaw), fz: -Math.cos(yaw),   // camFwd (away)
-    rx: Math.cos(yaw), rz: -Math.sin(yaw),    // camRight
-  });
+  // planar movement basis THROUGH THE CAMERA (user-corrected): the stick maps
+  // through the RENDERED view matrix — its camera right/forward rows projected
+  // onto the ground plane and normalized — not through hand-derived yaw trig.
+  // Updated every rendered frame in renderFrame; near-top-down (forward
+  // projects to ~zero) falls back to the projected camera-up, so "stick up"
+  // stays "up the screen" even looking straight down.
+  const camGround = { fx: -Math.sin(0.6), fz: -Math.cos(0.6), rx: Math.cos(0.6), rz: -Math.sin(0.6) };
+  function updateCamGround(view) {
+    let rx = view[0], rz = view[8];          // row 0 = camera right (world), planar
+    let fx = -view[2], fz = -view[10];       // -row 2 = camera forward (world), planar
+    if (fx * fx + fz * fz < 1e-6) { fx = view[1]; fz = view[9]; } // top-down: projected up
+    const rl = Math.hypot(rx, rz) || 1, fl = Math.hypot(fx, fz) || 1;
+    camGround.rx = rx / rl; camGround.rz = rz / rl;
+    camGround.fx = fx / fl; camGround.fz = fz / fl;
+  }
   function locoTick() {
     const st = machine.st;
     if (!GROUND_STANCE.test(st.current)) { padEvade = null; return; }
     if (padEvade) {
       const e = padEvade;
       padEvade = null;
-      // flick → world direction, then classify vs the FACING via dot products
-      // (the four clips are authored character-local)
-      const cb = camBasis();
-      const wx = cb.rx * e.x + cb.fx * -e.y, wz = cb.rz * e.x + cb.fz * -e.y;
+      // flick → world direction through the rendered camera basis, then
+      // classify vs the FACING via dot products (the clips are character-local)
+      const wx = camGround.rx * e.x + camGround.fx * -e.y, wz = camGround.rz * e.x + camGround.fz * -e.y;
       const fwdx = -Math.sin(rootMotion.hd), fwdz = -Math.cos(rootMotion.hd);
       const rgtx = Math.cos(rootMotion.hd), rgtz = -Math.sin(rootMotion.hd);
       const df = wx * fwdx + wz * fwdz, dr = wx * rgtx + wz * rgtz;
@@ -1102,10 +1109,10 @@
     }
     const mag = Math.hypot(padStickL.x, padStickL.y);
     if (mag > 0.2) {
-      // stick → world direction → facing target (fwd(h) = (-sin h, -cos h))
-      const cb = camBasis();
-      const wx = cb.rx * padStickL.x + cb.fx * -padStickL.y;
-      const wz = cb.rz * padStickL.x + cb.fz * -padStickL.y;
+      // stick → world direction through the rendered camera basis →
+      // facing target (fwd(h) = (-sin h, -cos h))
+      const wx = camGround.rx * padStickL.x + camGround.fx * -padStickL.y;
+      const wz = camGround.rz * padStickL.x + camGround.fz * -padStickL.y;
       const tgt = Math.atan2(-wx, -wz);
       let d = tgt - rootMotion.hd;
       d = Math.atan2(Math.sin(d), Math.cos(d));
@@ -1891,6 +1898,7 @@
     // camera right/up the billboard pool needs (drawPool). Split out of the mvp
     // compose so drawFx can hand it to drawPool.
     const view = M.mul(M.mul(M.trans(0, 0, -dist), rot), M.trans(-camTgt[0], 0, -camTgt[2]));
+    updateCamGround(view); // planar stick-movement basis follows the rendered camera
     // native pass projects at the 4:3 DISPLAY aspect (non-square GS pixels) —
     // NOT the 512/448 storage aspect (02-RESEARCH A2)
     const mvp = M.mul(M.persp(0.9, nativeRes ? NATIVE.displayAspect : w / h, 0.05, CAM_FAR), view);
@@ -3339,7 +3347,7 @@
 
   // test hooks (used by automated verification; harmless in normal use)
   window.KratosLab = {
-    machine, mesh, rig, skin,
+    machine, mesh, rig, skin, camGround,
     // step(): exactly ONE fixed sim step + one render + timeline — the
     // deterministic pump for automated verification (hidden tabs get no rAF
     // ticks, so scripts drive frames through this). The old variable-dt
