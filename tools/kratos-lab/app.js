@@ -1701,7 +1701,7 @@
     // chains the REAL hitBounce, whose end chains hitGetUp (existing).
     if (dummy.y > 0 || dummy.vy > 0) {
       dummy.y += dummy.vy * STEP;
-      dummy.vy -= WORLD_G * STEP;
+      dummy.vy -= (dummy.launchG || WORLD_G) * STEP;
       if (dummy.cur === "hitLaunch") {
         dummy.t = Math.min(dummy.t, 0.5 * dummy.dur("hitLaunch")); // hold the tumble
       }
@@ -1860,7 +1860,15 @@
     // radial blasts get a small pop (INFERRED) so the tumble reads.
     if (launch) {
       const upImp = upImpulse || 0;
-      dummy.vy = upImp > 0 ? upImp * LAUNCH_V_SCALE : 6 * Chain.METERS_TO_WORLD;
+      if (upImp === -1) {
+        // LAUNCHER (user spec): the pop matches KRATOS' JUMP exactly —
+        // same v0 and gravity → same 2.0 m apex and the same hang time.
+        dummy.vy = JUMP_V0;
+        dummy.launchG = JUMP_G;
+      } else {
+        dummy.vy = upImp > 0 ? upImp * LAUNCH_V_SCALE : 6 * Chain.METERS_TO_WORLD;
+        dummy.launchG = WORLD_G; // concussion launches: the REAL world gravity
+      }
       dummy.y = Math.max(dummy.y, 0.01);
     }
     if (dummy.hp <= 0) {
@@ -1880,6 +1888,7 @@
     if (dummy.y > 0.5) {
       dummy.play("hitLaunch");
       dummy.vy = Math.max(dummy.vy, 4 * Chain.METERS_TO_WORLD);
+      dummy.launchG = JUMP_G; // juggles float at the jump gravity too
       return true;
     }
     // heavy blows (>= 20 after multipliers, INFERRED threshold) use his
@@ -4501,7 +4510,7 @@
                   // damage = base × REAL weapon-level Dmg Mult (1→5) × REAL costume mult
                   const dmg = 8 * (weaponLevel >= 5 ? 5 : 1) * COSTUMES[costumeIdx].dmg
                     * DIFFICULTY[difficultyIdx].dmg; // REAL /GlobGame/ difficulty Damage Mult
-                  dummyHit(dmg, pcx, pcz, isLauncher, isLauncher ? 300 : 0, isLauncher ? 2650 : 0);
+                  dummyHit(dmg, pcx, pcz, isLauncher, isLauncher ? 300 : 0, isLauncher ? -1 : 0); // -1 = Kratos-jump ballistics
                 }
               }
             }
