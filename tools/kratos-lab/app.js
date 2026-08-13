@@ -197,11 +197,14 @@
     // the cloud/glow/debris are SMOKE-DEBRIS sprites, NOT additive fire;
     // the fire look comes from the SHELL below. sparks → MAT_speaks
     // (usual, GFX_specks — left on the shared ember pass, INFERRED).
-    const [smGfx, smPal] = await Promise.all([
+    const [smGfx, smPal, spGfx, spPal] = await Promise.all([
       Parsers.fetchBuf("../../assets/perm/GFX_specks2.bin"),
       Parsers.fetchBuf("../../assets/perm/PAL_specks2.bin"),
+      Parsers.fetchBuf("../../assets/perm/GFX_specks.bin"),
+      Parsers.fetchBuf("../../assets/perm/PAL_specks.bin"),
     ]);
     plumeFx.smokeImg = Parsers.decodeTexture(smGfx, smPal);
+    plumeFx.sparkImg = Parsers.decodeTexture(spGfx, spPal); // MAT_speaks → GFX_specks (REAL)
     // ---- the explosion SHELL: combo3fExplode_0 — five lava pillars in a
     // ring (7 joints, NO invBinds → the joint-local static class, same as
     // the SKS). Its one act ("combo3fExplode", 0.7 s) decodes STATIC —
@@ -401,6 +404,8 @@
   const DEBRIS_KINDS = new Set(["debris"]);     // goCombo3fExplode debris chunks (usual blend, dark)
   const ROCK_KINDS = new Set(["rock"]);         // goMAISWeffect shockwave rocks (GFX_stone, usual)
   const CHUNK_KINDS = new Set(["chunk"]);       // goMAISWeffect debris (GFX_specks2, usual)
+  const ESPARK_KINDS = new Set(["espark"]);     // goCombo3fExplode sparks (REAL MAT_speaks/GFX_specks, usual)
+  const EXPFLASH_KINDS = new Set(["expflash"]); // goCombo3fExplode flash (REAL MAT_Expcloud/explosioncloud, usual)
   // FIRE-02: the impact-spark emitter IS the SAME already-real FXC_BDEsparkemit family as
   // blade fire (A6 — continuous fire and on-hit sparks are one emitter family, differing
   // ONLY by trigger; NO new emitter decode, D-09a). Its decoded blade-local placement
@@ -783,6 +788,7 @@
   // goCombo3fExplode cloud sprite (REAL 128×128 GFX_explosioncloud, R_PERM.WAD)
   if (plumeFx) plumeFx.tex = makeTex(plumeFx.img, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE, filter: true });
   if (plumeFx && plumeFx.smokeImg) plumeFx.smokeTex = makeTex(plumeFx.smokeImg, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE, filter: true });
+  if (plumeFx && plumeFx.sparkImg) plumeFx.sparkTex = makeTex(plumeFx.sparkImg, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE, filter: true });
   if (plumeFx && plumeFx.shell) plumeFx.shell.tex = makeTex(plumeFx.shell.img, { wrapS: gl.REPEAT, wrapT: gl.REPEAT, filter: true });
   // goFXfirePath lava sheet (REAL GFX_Fire64BScrollUV via TXR_sfxlavaflow) — REPEAT both axes: the
   // strip's V runs past 1 and the REAL ANM scroll pushes it further every frame
@@ -1370,11 +1376,13 @@
   // Move mapping (BF=base, 3F/7A=book enders) is INFERRED from the instance names.
   // Each attack pairs a "C" (collision — the s/e/dur here) with an "F" template
   // (fx: the authored VISUAL shockwave ring — different radii, always shown).
+  // up: the REAL GroundImpulseUp where authored (Impale1 = 3000; the
+  // Plumes are radial-only blasts — no up impulse in their templates).
   const CONCUSSION = {
-    comboLR3: { s: 2.0, e: 2.0, dur: 0.1, imp: 500, fx: { s: 4.5, e: 2.0, dur: 0.1 } },   // 007/008 "BF Plume C/F"
-    combo3F:  { s: 2.75, e: 2.0, dur: 0.1, imp: 500, fx: { s: 4.25, e: 2.0, dur: 0.1 } }, // 011/012 "3F Plume C/F"
-    combo7A:  { s: 2.5, e: 2.0, dur: 0.1, imp: 250, fx: { s: 3.5, e: 2.0, dur: 0.1 } },   // 009/010 "7A Plume C/F"
-    airImpaleLand: { s: 4.0, e: 2.0, dur: 0.1, imp: 1000, fx: { s: 0, e: 4.0, dur: 0.35 } }, // 013/015 "Hero Impale1/FX"
+    comboLR3: { s: 2.0, e: 2.0, dur: 0.1, imp: 500, up: 0, fx: { s: 4.5, e: 2.0, dur: 0.1 } },   // 007/008 "BF Plume C/F"
+    combo3F:  { s: 2.75, e: 2.0, dur: 0.1, imp: 500, up: 0, fx: { s: 4.25, e: 2.0, dur: 0.1 } }, // 011/012 "3F Plume C/F"
+    combo7A:  { s: 2.5, e: 2.0, dur: 0.1, imp: 250, up: 0, fx: { s: 3.5, e: 2.0, dur: 0.1 } },   // 009/010 "7A Plume C/F"
+    airImpaleLand: { s: 4.0, e: 2.0, dur: 0.1, imp: 1000, up: 3000, fx: { s: 0, e: 4.0, dur: 0.35 } }, // 013/015 "Hero Impale1/FX"
   };
   // RAGE BRAWLING (decoded 2026-08-12): the berCombo*/berAir* melee acts author
   // the blades SHEATHED — their type-10 tracks pin BOTH tips at the dorsal
@@ -1532,6 +1540,7 @@
     dummy.tauntIn = 6;
     dummy.respawnIn = 0;
     dummy.kbx = 0; dummy.kbz = 0;           // knockback velocity (units/s)
+    dummy.y = 0; dummy.vy = 0;              // launch ballistics (world Gravity 50, REAL)
     dummy.lastHitMove = -1;                 // one melee contact per ATTACK (see hit test)
     dummy.hits = 0;                          // session total (probes/telemetry)
     dummy.combo = 0;                         // HUD hit counter — clears 5 s after the last contact (user spec)
@@ -1599,6 +1608,10 @@
   const DUMMY_RUN_SPEED = 8.0 * ARENA_M;
   const DUMMY_NEAR = 8 * ARENA_M;           // approach until 8 squares away (user)
   const KB_SCALE = 0.42; // units/s per impulse unit — INFERRED scale on the REAL impulses
+  // launch vertical: v0 = GroundImpulseUp × this (INFERRED; 3000 → 15.8 m/s
+  // → apex 2.5 m under the REAL /GlobGame/ Gravity 50 m/s²)
+  const LAUNCH_V_SCALE = (15.8 * 14) / 3000;
+  const WORLD_G = 50 * 14; // REAL /GlobGame/ Gravity, units/s²
   function dummyTick() {
     if (!dummy || !dummy.on) return;
     // combo drop (user spec): the HUD hit counter clears after 5 s without a
@@ -1672,6 +1685,21 @@
         dummy.tauntIn = 5 + Math.random() * 5;
       }
     }
+    // launch ballistics: integrate the arc under the REAL world gravity;
+    // while airborne HOLD hitLaunch at its mid-air tumble (the clip's
+    // below-floor tail is the engine-carried fall) — ground contact
+    // chains the REAL hitBounce, whose end chains hitGetUp (existing).
+    if (dummy.y > 0 || dummy.vy > 0) {
+      dummy.y += dummy.vy * STEP;
+      dummy.vy -= WORLD_G * STEP;
+      if (dummy.cur === "hitLaunch") {
+        dummy.t = Math.min(dummy.t, 0.5 * dummy.dur("hitLaunch")); // hold the tumble
+      }
+      if (dummy.y <= 0) {
+        dummy.y = 0; dummy.vy = 0;
+        if (dummy.cur === "hitLaunch") dummy.play("hitBounce"); // the REAL ground-impact clip
+      }
+    }
     // knockback slide (REAL Concussion impulses, INFERRED scale) + wall clamp
     if (dummy.kbx || dummy.kbz) {
       dummy.x += dummy.kbx * STEP; dummy.z += dummy.kbz * STEP;
@@ -1723,12 +1751,12 @@
     for (let i = 0; i < w.length; i += 16) {
       for (let k = 0; k < 15; k++) w[i + k] *= DUMMY_SCALE; // uniform display scale
     }
-    applyXformTo(w, dummy.hd, dummy.x, 0, dummy.z);
+    applyXformTo(w, dummy.hd, dummy.x, dummy.y, dummy.z);
     if (!dummy.lastWorld) dummy.lastWorld = new Float32Array(w.length);
     dummy.lastWorld.set(w);
   }
   // route a landed hit into the reaction suite (direction-relative clips)
-  function dummyHit(dmg, fromX, fromZ, launch, impulse) {
+  function dummyHit(dmg, fromX, fromZ, launch, impulse, upImpulse) {
     if (!dummy || !dummy.on || /^death/.test(dummy.cur) || dummy.cur === "spawn") return false;
     dummy.hp = Math.max(0, dummy.hp - dmg);
     dummy.hits++; dummy.combo++; dummy.hitsLife++;
@@ -1787,6 +1815,17 @@
       const al = Math.hypot(ax, az) || 1;
       dummy.kbx = (ax / al) * impulse * KB_SCALE;
       dummy.kbz = (az / al) * impulse * KB_SCALE;
+    }
+    // launch BALLISTICS: hitLaunch is authored for an ENGINE-carried arc
+    // (its pose tail dives to −24.7 raw — below the floor if played in
+    // place; the old code did exactly that). vy from the REAL
+    // GroundImpulseUp where authored (LAUNCH_V_SCALE INFERRED — Impale's
+    // 3000 → ~16 m/s, apex ≈ 2.5 m under the REAL world Gravity 50);
+    // radial blasts get a small pop (INFERRED) so the tumble reads.
+    if (launch) {
+      const upImp = upImpulse || 0;
+      dummy.vy = upImp > 0 ? upImp * LAUNCH_V_SCALE : 6 * Chain.METERS_TO_WORLD;
+      dummy.y = Math.max(dummy.y, 0.01);
     }
     if (dummy.hp <= 0) {
       dummy.play(Math.random() < 0.5 ? "death01" : "death02");
@@ -2702,6 +2741,12 @@
     // debris material record; the sprite doubles as the chunk texture).
     if (plumeFx && plumeFx.smokeTex)
       drawPool(mvp, view, plumeFx.smokeTex, { name: "fxPlumeDebris", kinds: DEBRIS_KINDS, mode: "usual" });
+    // the composite's remaining REAL bindings: sparks (MAT_speaks) and the
+    // flash pop (MAT_Expcloud) — both "usual"-blended painted sprites
+    if (plumeFx && plumeFx.sparkTex)
+      drawPool(mvp, view, plumeFx.sparkTex, { name: "fxPlumeSparks", kinds: ESPARK_KINDS, mode: "usual", stretch: SPARK_STRETCH });
+    if (plumeFx && plumeFx.tex)
+      drawPool(mvp, view, plumeFx.tex, { name: "fxPlumeFlash", kinds: EXPFLASH_KINDS, mode: "usual" });
     // PASS — MAISW rocks + debris: REAL stone/specks textures, REAL "usual"
     // blend (MAT_MAIswrock1 / MAT_MAIchunk bit 26).
     if (mswave && mswave.stoneTex)
@@ -3960,7 +4005,7 @@
     if (dummy) {
       dummy.on = true;
       $("btnDummy").classList.add("latched");
-      dummy.kbx = dummy.kbz = 0; dummy.hp = dummy.maxHp;
+      dummy.kbx = dummy.kbz = 0; dummy.y = 0; dummy.vy = 0; dummy.hp = dummy.maxHp;
       dummy.hits = 0; dummy.combo = 0; dummy.hitsLife = 0; dummy.lastHitTick = -1;
       difficultyIdx = 1; $("diffSlider").value = 1; $("diffName").textContent = DIFFICULTY[1].name;
       for (const f of dmgFloats) f.el.remove();
@@ -4232,9 +4277,10 @@
               const sxz = (psc[0] + psc[2]) / 2, sy = psc[1];
               const cloudG = Math.abs(plumeFx.fieldAccel) / 43.64;  // −20 field → gentle settle
               const debG = Math.abs(plumeFx.debAccel) / 43.64;      // −300 → debris slams down
-              if (flasherTex) fxPool.spawn({ pos: [cx, 6, cz], vel: [0, 0, 0],
+              // flash: REAL MAT_Expcloud — a "usual"-blended explosioncloud pop
+              fxPool.spawn({ pos: [cx, 6, cz], vel: [0, 0, 0],
                 size: plumeFx.flash * M2W * sxz * 2.4, life: 9 * Loop.STEP,
-                color: [1, 1, 1, 2.6], kind: "hitFlash" });
+                color: [1, 0.95, 0.85, 0.95], kind: "expflash" });
               if (plumeFx.shell && plumeFx.shell.tex) {
                 plumeFx.shell.live.push({ x: cx, z: cz, born: simStepCount, sxz, sy });
                 if (plumeFx.shell.live.length > 4) plumeFx.shell.live.shift();
@@ -4252,14 +4298,14 @@
                   life: (30 + Math.random() * 18) * Loop.STEP,
                   color: [0.55, 0.47, 0.4, 0.85], kind: "cloud", gscale: cloudG });
               }
-              for (let i = 0; i < 16; i++) {                       // spark fountain (existing streak pass)
+              for (let i = 0; i < 16; i++) {                       // sparks: REAL MAT_speaks/GFX_specks, usual blend
                 const a = Math.random() * Math.PI * 2;
                 const sp = (14 + Math.random() * 26) * sxz;
                 fxPool.spawn({
                   pos: [cx, 3, cz],
                   vel: [Math.cos(a) * sp, 16 + Math.random() * 22, Math.sin(a) * sp],
-                  size: plumeFx.spark * M2W * 0.12, life: (22 + Math.random() * 12) * Loop.STEP,
-                  color: [1, 1, 1, 1.8], kind: "spark" });
+                  size: plumeFx.spark * M2W * 0.3, life: (22 + Math.random() * 12) * Loop.STEP,
+                  color: [1, 1, 1, 1], kind: "espark" });
               }
               for (let i = 0; i < 7; i++) {                        // debris chunks
                 const a = Math.random() * Math.PI * 2;
@@ -4272,14 +4318,19 @@
                   color: [0.3, 0.24, 0.18, 1.0], kind: "debris", gscale: debG });
               }
             }
-            if (cd.fx) fxRings.push({ cx, cz, s: cd.fx.s, e: cd.fx.e,
+            // the amber band was the F-template's stand-in VISUAL; where the
+            // REAL effect object now draws (Plume explosion / MAISW ring),
+            // the band would double the visuals — suppress it there.
+            const realFx = (PLUME_SCALE[machine.st.current] && plumeFx && plumeFx.tex)
+              || (machine.st.current === "airImpaleLand" && mswave && mswave.lavaTex);
+            if (cd.fx && !realFx) fxRings.push({ cx, cz, s: cd.fx.s, e: cd.fx.e,
               durTicks: Math.max(1, Math.round(cd.fx.dur * 60)), age: 0 }); // authored shockwave visual
             // TARGET DUMMY inside the REAL concussion AoE → launch + the
             // decoded Ground Impulse Away knockback (KB_SCALE inferred)
             if (dummy && dummy.on && Math.hypot(dummy.x - cx, dummy.z - cz) <= cd.s * ARENA_M) {
               const dmg = 20 * (weaponLevel >= 5 ? 5 : 1) * COSTUMES[costumeIdx].dmg
                 * DIFFICULTY[difficultyIdx].dmg; // REAL /GlobGame/ difficulty Damage Mult
-              dummyHit(dmg, cx, cz, true, cd.imp);
+              dummyHit(dmg, cx, cz, true, cd.imp, cd.up);
             }
           }
         }
