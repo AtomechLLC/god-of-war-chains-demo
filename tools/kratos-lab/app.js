@@ -1248,6 +1248,12 @@
     dummy.play = (n) => { if (dummy.rig.anm.acts.has(n)) { dummy.cur = n; dummy.t = 0; } };
   }
   const DUMMY_TAUNTS = ["taunt02", "taunt03", "taunt04"];
+  // INFERRED display scale: the SKS skeleton is authored ~1.4× the hero's
+  // numeric scale (rest head 45.4 u vs 34.0) with NO normalizing field found
+  // in MDL/OBJ (MDL trailing floats hero 12.0 / SKS 5.0 noted but unproven).
+  // 0.76 puts his posed height at ≈ Kratos' — the footage read. Tunable.
+  const DUMMY_SCALE = 0.76;
+  const DUMMY_MIN_SEP = 0.9 * ARENA_M; // body separation radius (INFERRED)
   const KB_SCALE = 0.42; // units/s per impulse unit — INFERRED scale on the REAL impulses
   function dummyTick() {
     if (!dummy || !dummy.on) return;
@@ -1284,7 +1290,21 @@
       dummy.x = Math.max(-lim, Math.min(lim, dummy.x));
       dummy.z = Math.max(-lim, Math.min(lim, dummy.z));
     }
+    // body separation: Kratos walks, the dummy yields (no standing inside
+    // each other — GoW pushes the enemy out of the hero's radius)
+    if (rootMotion.on) {
+      const sx = dummy.x - rootMotion.x, sz = dummy.z - rootMotion.z;
+      const sd = Math.hypot(sx, sz);
+      if (sd > 0.01 && sd < DUMMY_MIN_SEP) {
+        const push = (DUMMY_MIN_SEP - sd) * 0.35; // eased shove
+        dummy.x += (sx / sd) * push;
+        dummy.z += (sz / sd) * push;
+      }
+    }
     const w = dummy.rig.computePose(dummy.cur, Math.min(dummy.t, d - 0.0001));
+    for (let i = 0; i < w.length; i += 16) {
+      for (let k = 0; k < 15; k++) w[i + k] *= DUMMY_SCALE; // uniform display scale
+    }
     applyXformTo(w, dummy.hd, dummy.x, 0, dummy.z);
     if (!dummy.lastWorld) dummy.lastWorld = new Float32Array(w.length);
     dummy.lastWorld.set(w);
