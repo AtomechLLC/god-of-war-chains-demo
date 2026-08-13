@@ -166,6 +166,9 @@ const Combat = (() => {
   // Right-stick evades (GoW1's real right-stick function — there is no camera
   // stick). Roll distances are the clips' REAL controller channels: front/back
   // on comp 422, left/right on comp 420. Non-loop → recover to stance.
+  // momentum-preserving landing (touchdown while the stick is held) — the
+  // authored running-landing clip; recovers straight into locomotion
+  GRAPH.runLand = { branches: [] };
   GRAPH.evadeFront = { branches: [] };
   GRAPH.evadeBack = { branches: [] };
   GRAPH.evadeLeft = { branches: [] };

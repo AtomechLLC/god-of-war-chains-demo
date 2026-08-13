@@ -1075,6 +1075,15 @@
   const padStickL = { x: 0, y: 0 };
   let padEvade = null;   // one-shot camera-relative flick vector from the right stick
   let locoRun = false;
+  // horizontal momentum (units/s): set while ground-moving, CARRIED through
+  // jumps/falls (a running jump keeps its speed — INFERRED, the GoW feel; the
+  // stick gets reduced mid-air steering authority), decayed by landing
+  // friction, stalled by air attacks (the GoW hover).
+  const locoVel = { x: 0, z: 0 };
+  const AIR_CARRY = /^(jumpUp|jumpAir|jumpDoubleAir|fallV|berJumpAir|berJumpDoubleAir|berFallN)$/;
+  const LAND_STATE = /^(land|runLand|combatLand2|berLand)$/;
+  const AIR_STEER = 3.0;  // 1/s steering authority toward the stick mid-air (INFERRED)
+  const LAND_FRICTION = 5.0; // 1/s momentum decay through the landing clip (INFERRED)
   // planar movement basis THROUGH THE CAMERA (user-corrected): the stick maps
   // through the RENDERED view matrix — its camera right/forward rows projected
   // onto the ground plane and normalized — not through hand-derived yaw trig.
@@ -1092,7 +1101,43 @@
   }
   function locoTick() {
     const st = machine.st;
-    if (!GROUND_STANCE.test(st.current)) { padEvade = null; return; }
+    const cur = st.current;
+    // airborne: carry the takeoff momentum, with reduced stick steering —
+    // the running jump keeps travelling (user report: it stopped dead)
+    if (AIR_CARRY.test(cur)) {
+      padEvade = null;
+      if (rootMotion.on && (locoVel.x || locoVel.z)) {
+        const mag = Math.hypot(padStickL.x, padStickL.y);
+        if (mag > 0.2) {
+          const wx = camGround.rx * padStickL.x + camGround.fx * -padStickL.y;
+          const wz = camGround.rz * padStickL.x + camGround.fz * -padStickL.y;
+          const spd = Math.hypot(locoVel.x, locoVel.z);
+          const k = Math.min(1, AIR_STEER * Loop.STEP);
+          locoVel.x += (wx * spd - locoVel.x) * k;
+          locoVel.z += (wz * spd - locoVel.z) * k;
+        }
+        rootMotion.x += locoVel.x * Loop.STEP;
+        rootMotion.z += locoVel.z * Loop.STEP;
+        // face the travel while airborne
+        rootMotion.hd = Math.atan2(-locoVel.x, -locoVel.z);
+      }
+      return;
+    }
+    // landing: momentum bleeds off through the clip instead of cutting dead —
+    // runLand (the rolling landing) keeps nearly all of it and hands straight
+    // back to the run; the planted landings brake hard
+    if (LAND_STATE.test(cur)) {
+      padEvade = null;
+      if (rootMotion.on && (locoVel.x || locoVel.z)) {
+        rootMotion.x += locoVel.x * Loop.STEP;
+        rootMotion.z += locoVel.z * Loop.STEP;
+        const fr = cur === "runLand" ? 0.8 : LAND_FRICTION;
+        const k = Math.max(0, 1 - fr * Loop.STEP);
+        locoVel.x *= k; locoVel.z *= k;
+      }
+      return;
+    }
+    if (!GROUND_STANCE.test(st.current)) { padEvade = null; locoVel.x = locoVel.z = 0; return; }
     if (padEvade) {
       const e = padEvade;
       padEvade = null;
@@ -1122,13 +1167,18 @@
       const want = st.brawl ? (locoRun ? "berWalkBlend2" : "berWalkBlend1") : (locoRun ? "walkBlend2" : "walkBlend1");
       if (st.current !== want) machine.force(want);
       const base = locoRun ? (st.brawl ? LOCO.brun : LOCO.run) : (st.brawl ? LOCO.bwalk : LOCO.walk) * Math.min(1, mag / LOCO.RUN_AT);
+      locoVel.x = -Math.sin(rootMotion.hd) * base; // momentum, carried into jumps
+      locoVel.z = -Math.cos(rootMotion.hd) * base;
       if (rootMotion.on) {
-        rootMotion.x += -Math.sin(rootMotion.hd) * base * Loop.STEP; // along the facing
-        rootMotion.z += -Math.cos(rootMotion.hd) * base * Loop.STEP;
+        rootMotion.x += locoVel.x * Loop.STEP; // along the facing
+        rootMotion.z += locoVel.z * Loop.STEP;
       }
-    } else if (LOCO_STATE.test(st.current)) {
-      machine.force(st.idle());
-      locoRun = false;
+    } else {
+      locoVel.x = locoVel.z = 0;
+      if (LOCO_STATE.test(st.current)) {
+        machine.force(st.idle());
+        locoRun = false;
+      }
     }
   }
   const ringHist = []; // live concussion DEBUG rings {cx,cz, s,e,durTicks, age} (Hitboxes overlay)
@@ -2010,6 +2060,12 @@
   // along it; prevTrackX tracks the lateral comp-420 channel (side evades).
   const rootMotion = { on: true, x: 0, z: 0, y: 0, vy: 0, hd: 0, px: 0, pz: 0, prevTrack: null, prevTrackY: null, prevTrackX: null, pendingRebase: false };
   const GRAV_UNITS = 50 * Chain.METERS_TO_WORLD; // REAL /GlobGame/ Gravity 50 m/s² × units bridge
+  // HERO fall gravity (INFERRED, ascent-symmetric): the jumpUp channel's own
+  // deceleration is ~14-16 m/s² (1.54 m effective rise dying to zero velocity
+  // over 0.47 s) — a 16 m/s² descent mirrors the authored arc and gives the
+  // GoW float. The decoded Gravity 50 reads as world/projectile gravity; at
+  // 5 g the hero slammed down and the jump felt choppy (user report).
+  const HERO_FALL_G = 16 * Chain.METERS_TO_WORLD;
   // apply the character root transform to an in-place pose: rotate every joint
   // matrix by the heading about the origin, then translate by the accumulated
   // offsets. The blade track gets the identical treatment (applyRootTrack) so
@@ -2067,7 +2123,10 @@
       heat = machine.st.rage ? 0.75 : 0.35;
       rootMotion.pendingRebase = true; // re-base the incoming clip at the current root (chaining)
       if (skin && prev) {
-        const bl = CLIP[name] && CLIP[name].blend > 0 && CLIP[name].blend <= 0.5 ? CLIP[name].blend : 0.08;
+        let bl = CLIP[name] && CLIP[name].blend > 0 && CLIP[name].blend <= 0.5 ? CLIP[name].blend : 0.08;
+        // touchdown blends widen (INFERRED — soften ground contact): the land
+        // clips ship blend 0, and a fall→land cut at 0.08 s read as a pop
+        if (/^(land|runLand|combatLand2|berLand)$/.test(name)) bl = Math.max(bl, 0.16);
         skin.prevAct = prev;
         skin.prevTime = lastState.t;
         skin.blendDur = bl;
@@ -2489,6 +2548,7 @@
     rootMotion.on = !rootMotion.on;
     rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0; // return home on toggle
     rootMotion.y = rootMotion.vy = rootMotion.hd = 0;
+    locoVel.x = locoVel.z = 0;
     rootMotion.prevTrack = rootMotion.prevTrackY = rootMotion.prevTrackX = null;
     $("btnRootMo").classList.toggle("latched", rootMotion.on);
   });
@@ -2962,6 +3022,7 @@
     if (!rootMotion.on) $("btnRootMo").click();
     else {
       rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = rootMotion.y = rootMotion.vy = rootMotion.hd = 0;
+      locoVel.x = locoVel.z = 0;
       rootMotion.prevTrack = rootMotion.prevTrackY = rootMotion.prevTrackX = null;
     }
     if (weaponLevel !== 1) $("btnWpnLv").click();
@@ -3013,9 +3074,13 @@
     machine.tick(STEP);
     // touchdown: a fall clip ends the instant the controller reaches the floor
     // (y from last tick's integration; rootMotion OFF falls back to the
-    // one-loop settle in combat.js so the fall clip still plays out)
+    // one-loop settle in combat.js so the fall clip still plays out).
+    // Landing WITH the stick held rolls through runLand — the momentum-
+    // preserving landing clip — instead of planting into the full stop.
     if (rootMotion.on && rootMotion.y <= 0 && FALL_MOVES.test(machine.st.current)) {
-      machine.force(Combat.GRAPH[machine.st.current].landTo || (machine.st.brawl ? "berLand" : "land"));
+      const moving = Math.hypot(padStickL.x, padStickL.y) > 0.2 && (locoVel.x || locoVel.z);
+      machine.force(moving && !machine.st.brawl ? "runLand"
+        : (Combat.GRAPH[machine.st.current].landTo || (machine.st.brawl ? "berLand" : "land")));
     }
     heat = Math.max(machine.st.rage ? 0.45 : 0, heat - STEP * 0.8);
     if (rig && skin) {
@@ -3068,8 +3133,10 @@
         // ground STANCES carry a flat constant 421 (idle-bob boilerplate,
         // e.g. idleCombat = 0.032) — a channel that must NOT own the height,
         // or residual air y freezes and Kratos idles floating (caught in
-        // verification). Channel drives only non-stance moves and air loops.
-        const channelOwns = rvY !== null && (!(gn && gn.loop) || airState);
+        // verification). FALL clips carry one too, which held the altitude
+        // through the whole fall and dumped the descent into the land clip
+        // (the user's 'no ground contact blend') — falls ALWAYS take physics.
+        const channelOwns = rvY !== null && (!(gn && gn.loop) || airState) && !FALL_MOVES.test(machine.st.current);
         if (channelOwns) {
           if (!rootMotion.pendingRebase && rootMotion.prevTrackY !== null) {
             rootMotion.y += (rvY - rootMotion.prevTrackY) * jumpGain(machine.st.current);
@@ -3081,25 +3148,27 @@
           rootMotion.prevTrackY = null;
           const falling = FALL_MOVES.test(machine.st.current);
           if (rootMotion.y > 0 && (!airState || falling)) {
-            rootMotion.vy -= GRAV_UNITS * STEP;
+            rootMotion.vy -= HERO_FALL_G * STEP; // ascent-symmetric hero arc (see decl)
             rootMotion.y = Math.max(0, rootMotion.y + rootMotion.vy * STEP);
             if (rootMotion.y === 0) rootMotion.vy = 0;
           } else if (!airState) {
             rootMotion.y = 0; rootMotion.vy = 0;
           } // air ATTACK without channel: hover — keep y as-is; falls descend
         }
-        // Free stick movement (walks/evades) CLAMPS to the arena walls; the
-        // 16 m teleport-home stays for looping combo playback only — walking
-        // into a teleport read as a bug once the stick could roam.
-        if (LOCO_STATE.test(machine.st.current) || /^evade/.test(machine.st.current)) {
-          const lim = ARENA_HALF - ARENA_M;
-          rootMotion.x = Math.max(-lim, Math.min(lim, rootMotion.x));
-          rootMotion.z = Math.max(-lim, Math.min(lim, rootMotion.z));
-        } else {
+        // The 16 m teleport-home exists for SCRIPTED playback (combo loops /
+        // autoplay drifting off the arena). Free pad play always CLAMPS to the
+        // walls instead — teleporting mid-run or MID-JUMP read as a bug once
+        // the stick could roam (user report: it fired during a running jump).
+        const scripted = combo.playing || !!autoplay;
+        if (scripted) {
           const RESET_R = 4 * 4 * ARENA_M; // 16 m (user-doubled), instant, no easing
           if (rootMotion.x * rootMotion.x + rootMotion.z * rootMotion.z > RESET_R * RESET_R) {
             rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0;
           }
+        } else {
+          const lim = ARENA_HALF - ARENA_M;
+          rootMotion.x = Math.max(-lim, Math.min(lim, rootMotion.x));
+          rootMotion.z = Math.max(-lim, Math.min(lim, rootMotion.z));
         }
         rootMotion.px = rootMotion.x; rootMotion.pz = rootMotion.z;
       }
