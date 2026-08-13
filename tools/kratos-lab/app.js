@@ -1859,16 +1859,15 @@
     // 3000 → ~16 m/s, apex ≈ 2.5 m under the REAL world Gravity 50);
     // radial blasts get a small pop (INFERRED) so the tumble reads.
     if (launch) {
+      // EVERY launch pops AT LEAST as high as KRATOS' JUMP (user spec) —
+      // his v0 + gravity give the 2.0 m apex and 0.65 s hang. Stronger
+      // authored impulses (Impale GroundImpulseUp 3000 → 15.8 m/s) go
+      // higher still, floating at the same jump gravity. The old
+      // "small pop" for radial blasts read as nothing (user report) —
+      // in-game Plume victims fly.
       const upImp = upImpulse || 0;
-      if (upImp === -1) {
-        // LAUNCHER (user spec): the pop matches KRATOS' JUMP exactly —
-        // same v0 and gravity → same 2.0 m apex and the same hang time.
-        dummy.vy = JUMP_V0;
-        dummy.launchG = JUMP_G;
-      } else {
-        dummy.vy = upImp > 0 ? upImp * LAUNCH_V_SCALE : 6 * Chain.METERS_TO_WORLD;
-        dummy.launchG = WORLD_G; // concussion launches: the REAL world gravity
-      }
+      dummy.vy = Math.max(JUMP_V0, upImp > 0 ? upImp * LAUNCH_V_SCALE : 0);
+      dummy.launchG = JUMP_G;
       dummy.y = Math.max(dummy.y, 0.01);
     }
     if (dummy.hp <= 0) {
