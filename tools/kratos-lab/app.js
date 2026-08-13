@@ -1290,6 +1290,20 @@
       dummy.x = Math.max(-lim, Math.min(lim, dummy.x));
       dummy.z = Math.max(-lim, Math.min(lim, dummy.z));
     }
+    // face the hero (user: 'they are not facing each other') — enemies track
+    // their target. Eased turn, held during hit reactions/death so the
+    // direction-relative reaction clips stay coherent. fwd(hd) = (−sin,−cos)
+    // → face (tx,tz) at hd = atan2(−tx,−tz). Turn rate INFERRED.
+    if (!/^(death|hit)/.test(dummy.cur)) {
+      const tx = rootMotion.x - dummy.x, tz = rootMotion.z - dummy.z;
+      if (Math.hypot(tx, tz) > 0.5) {
+        const tgt = Math.atan2(-tx, -tz);
+        let dh = tgt - dummy.hd;
+        dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+        const turn = 6 * STEP;
+        dummy.hd += Math.abs(dh) < turn ? dh : Math.sign(dh) * turn;
+      }
+    }
     // body separation: Kratos walks, the dummy yields (no standing inside
     // each other — GoW pushes the enemy out of the hero's radius)
     if (rootMotion.on) {
