@@ -821,10 +821,12 @@
   const uHitFlash = gl.getUniformLocation(prog, "uHitFlash");
   const uHitFlashColor = gl.getUniformLocation(prog, "uHitFlashColor");
   gl.uniform1f(uHitFlash, 0.0); // hero/blades never flash (yet) — pulsed only for the dummy draw
-  // REAL hue: the GFX_swordtrail decal's bright-corner texel (243,176,18) — the
-  // trail's visible gold. ×1.45 keeps the pop hot (brightness scale INFERRED).
-  const SWOOSH_GOLD = [243 / 255 * 1.45, 176 / 255 * 1.45, 18 / 255 * 1.45];
-  gl.uniform3fv(uHitFlashColor, SWOOSH_GOLD);
+  // INFERRED hue, footage-calibrated (user's 4 Hydra-fight frames, 2026-08-13):
+  // the struck model shifts olive-green scales → salmon/terracotta — solving
+  // mix(c, F, 0.45) against the frame pair puts the flash target at a hot
+  // salmon-red, REDDER than the swoosh gold (the earlier trail-color guess).
+  const HIT_FLASH_RGB = [1.2, 0.5, 0.45];
+  gl.uniform3fv(uHitFlashColor, HIT_FLASH_RGB);
 
   gl.clearColor(0, 0, 0, 1); // opaque clear — FBO-path clears must also be opaque
   gl.enable(gl.DEPTH_TEST);
@@ -2279,13 +2281,10 @@
       gl.uniform1f(uPages, 1);
       gl.uniformMatrix4fv(uModel, false, modelMat);
       // impact pop: squared envelope = instant bright, fast falloff — visible
-      // DURING the reaction's opening frames (the user-reported gap). Color =
-      // the trail's (user): swoosh gold × the SAME tint rule as the trail pass
-      // (REAL God Mode Trail Tint goes RED at weapon L4-5 during Rage).
-      const flashRed = machine.st.rage && weaponLevel >= 4;
-      gl.uniform3fv(uHitFlashColor, flashRed
-        ? [SWOOSH_GOLD[0], 0, 0]
-        : SWOOSH_GOLD);
+      // DURING the reaction's opening frames. Hue = footage-calibrated salmon
+      // (see HIT_FLASH_RGB; the rage-red variant was an unsupported inference
+      // from the trail-tint rule and is removed — footage shows ONE flash hue).
+      gl.uniform3fv(uHitFlashColor, HIT_FLASH_RGB);
       gl.uniform1f(uHitFlash, 0.45 * dummy.flashT * dummy.flashT); // peak 0.45 — a wash, not a whiteout (user-tuned)
       gl.bindTexture(gl.TEXTURE_2D, dummy.tex);
       bindMeshSet(dummy.set);
