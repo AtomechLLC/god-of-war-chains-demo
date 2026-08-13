@@ -1235,7 +1235,7 @@
   // HP 100 is INFERRED (his /TweakTemplates/Sold/020 stat template is decoded-
   // pending); damage = base × REAL weapon-level Dmg Mult × REAL costume mult.
   if (dummy) {
-    dummy.x = 0; dummy.z = -5 * ARENA_M; dummy.hd = 0; // 5 m out; hd 0 = visual front +Z, toward center
+    dummy.x = 0; dummy.z = -5 * ARENA_M; dummy.hd = Math.PI; // 5 m out, facing the arena center (front = −Z ⇒ hd π faces +Z)
     dummy.cur = "spawn"; dummy.t = 0;
     dummy.maxHp = 100; dummy.hp = 100;      // INFERRED
     dummy.tauntIn = 6;
@@ -1254,10 +1254,11 @@
   // 0.76 puts his posed height at ≈ Kratos' — the footage read. Tunable.
   const DUMMY_SCALE = 0.76;
   const DUMMY_MIN_SEP = 0.9 * ARENA_M; // body separation radius (INFERRED)
-  // SKS VISUAL FRONT = +Z — OPPOSITE the hero (user-verified on screen; the
-  // jaw-vector heuristic proved unreliable on the helmeted skull). Every
-  // facing computation for the dummy routes through this offset.
-  const DUMMY_FACE_OFFSET = Math.PI;
+  // SKS VISUAL FRONT = −Z, same as the hero — settled by the isolated
+  // hd=0 render from the −Z camera (face toward the lens). The earlier
+  // "faces away" reads were TAUNT clips mid-spin caught in gameplay frames;
+  // a π flip based on them caused back-turned spawns + backward walking.
+  const DUMMY_FACE_OFFSET = 0;
   const DUMMY_WALK = "Front";               // his walk clip
   const DUMMY_WALK_SPEED = 3.16 * ARENA_M;  // DERIVED: planted-foot on 'Front' × 0.76 scale
   const DUMMY_NEAR = 8 * ARENA_M;           // approach until 8 squares away (user)
@@ -1366,10 +1367,10 @@
       return true;
     }
     if (launch) { dummy.play("hitLaunch"); return true; }
-    // strike direction vs his VISUAL facing (+Z model front) picks the clip
+    // strike direction vs his facing (−Z model front) picks the clip
     const ix = dummy.x - fromX, iz = dummy.z - fromZ; // incoming blow direction
-    const fwdx = Math.sin(dummy.hd), fwdz = Math.cos(dummy.hd);
-    const rgtx = -Math.cos(dummy.hd), rgtz = Math.sin(dummy.hd);
+    const fwdx = -Math.sin(dummy.hd), fwdz = -Math.cos(dummy.hd);
+    const rgtx = Math.cos(dummy.hd), rgtz = -Math.sin(dummy.hd);
     const df = ix * fwdx + iz * fwdz, dr = ix * rgtx + iz * rgtz;
     dummy.play(Math.abs(df) >= Math.abs(dr) ? (df > 0 ? "hitBack" : "hitFront") : (dr > 0 ? "hitLeft" : "hitRight"));
     return true;
@@ -3292,7 +3293,7 @@
     if (dummy) {
       dummy.on = true;
       $("btnDummy").classList.add("latched");
-      dummy.x = 0; dummy.z = -5 * ARENA_M; dummy.hd = 0;
+      dummy.x = 0; dummy.z = -5 * ARENA_M; dummy.hd = Math.PI;
       dummy.kbx = dummy.kbz = 0; dummy.hp = dummy.maxHp; dummy.hits = 0;
       dummy.play("spawn");
     }
