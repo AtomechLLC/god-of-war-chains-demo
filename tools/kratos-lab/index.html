@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kratos Lab — GoW (2005) previewer &amp; combo tester</title>
-<link rel="stylesheet" href="style.css?v=146">
+<link rel="stylesheet" href="style.css?v=147">
 </head>
 <body>
 <header>
@@ -31,6 +31,7 @@
       <div class="hint">drag&nbsp;&mdash;&nbsp;orbit &nbsp;|&nbsp; wheel&nbsp;&mdash;&nbsp;zoom<br>real hero_0.bin geometry</div>
       <div class="combo-counter"><div class="num" id="hitNum">0</div><div class="lbl">hits</div></div>
       <div id="dummyHp"><div></div></div>
+      <div id="heroHp" title="Kratos &#8212; REAL Max Hit Points L0 = 100"><div></div></div>
     </div>
 
     <div class="timeline">
@@ -81,6 +82,7 @@
         <button class="btn mod-btn" id="btnCostume" title="Cycle the REAL decoded Costume 0-5 table: reach (Weapon Length), damage &amp; orb multipliers">Costume 0</button>
         <button class="btn mod-btn latched" id="btnDummy" title="Target dummy: the REAL undead legionnaire (R_SKS) — 93-act reaction suite; melee hits use the swept-sector model, concussions launch him with the decoded impulses">&#129460; Dummy</button>
         <label class="diff-wrap" title="REAL /GlobGame/&lt;difficulty&gt;/ tweak trees: GoW1 scales the PLAYER'S Damage Mult (&#215;2 / &#215;1 / &#215;0.75 / &#215;0.5), never enemy HP &#8212; the soldier's durability follows exactly">&#9878; <input type="range" id="diffSlider" min="0" max="3" step="1" value="1"><span id="diffName">Hero (Normal)</span></label>
+        <button class="btn mod-btn" id="btnAggro" title="The legionnaire fights back: his REAL attack clips (swordStrike/Swipe/leapingStrike), REAL Sold walk/run speeds, damage = 10 x the REAL difficulty AI Damage Mult. Block with L1.">&#9876; Fight back</button>
         <button class="btn mod-btn latched" id="btnDmgNum" title="Floating damage numbers off the target on every landed hit (size scales with the value; red = concussion-class)">Dmg #</button>
       </div>
       <div class="shoulders" style="margin-top:6px">
@@ -186,14 +188,14 @@
   <span>press <kbd>N</kbd> &mdash; native-res 512&times;448 toggle</span>
 </footer>
 
-<script src="parsers.js?v=146"></script>
-<script src="fxparse.js?v=146"></script>
-<script src="fx.js?v=146"></script>
-<script src="loop.js?v=146"></script>
-<script src="chain.js?v=146"></script>
-<script src="particles.js?v=146"></script>
-<script src="anim.js?v=146"></script>
-<script src="combat.js?v=146"></script>
-<script src="app.js?v=146"></script>
+<script src="parsers.js?v=147"></script>
+<script src="fxparse.js?v=147"></script>
+<script src="fx.js?v=147"></script>
+<script src="loop.js?v=147"></script>
+<script src="chain.js?v=147"></script>
+<script src="particles.js?v=147"></script>
+<script src="anim.js?v=147"></script>
+<script src="combat.js?v=147"></script>
+<script src="app.js?v=147"></script>
 </body>
 </html>

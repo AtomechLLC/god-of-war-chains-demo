@@ -119,6 +119,17 @@ const Combat = (() => {
     airImpaleLand: { branches: [] },
     land: { branches: [] },
     combatLand2: { branches: [] },
+    // ---- hit reactions (Fight back) ----------------------------------------
+    // Forced by incoming enemy strikes (app.js hurtKratos), never by input —
+    // REAL clips from the hero ANM's hit suite; each settles to idle via the
+    // standard end-of-clip path. hitKnockdown chains its REAL getup.
+    hitFront: { branches: [] },
+    hitBack: { branches: [] },
+    hitLeft: { branches: [] },
+    hitRight: { branches: [] },
+    hitAir: { air: true, landTo: "land", branches: [] },
+    hitKnockdown: { next: "hitGetup", branches: [] },
+    hitGetup: { branches: [] },
     // ---- hand-to-hand brawl (the "berserk" set) -----------------------------
     // RE-IDENTIFIED 2026-08-12: these clips author the blades SHEATHED (their
     // type-10 blade tracks pin both tips at the dorsal sheath while the hands

@@ -263,3 +263,12 @@ footer .inf { color: #86aed0; }
   white-space: nowrap;
 }
 .dmg-float.big { color: var(--red-hot); text-shadow: 0 0 6px rgba(0,0,0,.9), 0 1px 2px #000, 0 0 16px rgba(230,48,60,.55); }
+
+/* Kratos HP bar (Fight back mode) — REAL Max Hit Points L0 = 100 */
+#heroHp {
+  display: none; position: absolute; left: 14px; top: 34px; width: 170px; height: 11px;
+  background: rgba(0,0,0,.65); border: 1px solid #5a4a28; border-radius: 3px; z-index: 15;
+}
+#heroHp div { height: 100%; width: 100%; border-radius: 2px;
+  background: linear-gradient(180deg, #7ee87e 0%, #2e9e2e 60%, #1e7a1e 100%); }
+.dmg-float.hero { color: #ff5a4a; text-shadow: 0 0 6px rgba(0,0,0,.9), 0 1px 2px #000, 0 0 14px rgba(255,60,40,.5); }

@@ -1556,6 +1556,15 @@
     { name: "God (Very Hard)", path: "Impossible", dmg: 0.5,  aiDmg: 5.0, aiRecov: 0.5 },
   ];
   let difficultyIdx = 1; // Hero (Normal) — the game's default
+  // ---------- FIGHT BACK: Kratos-side combat state ------------------------
+  // Max Hit Points Level 0 = 100 — REAL (/Player/ root, decoded). The
+  // legionnaire's aggro brain lives in dummyTick; his damage = base 10
+  // (INFERRED) × the REAL /GlobGame/<difficulty>/ AI Damage Mult.
+  const HERO_MAX_HP = 100;
+  let heroHp = HERO_MAX_HP;
+  let heroFlashT = 0;     // same hit-flash envelope as the dummy's
+  let heroDeadAt = 0;     // sim tick of death; restores after 3 s
+  let dummyAggro = false; // the Fight back toggle
   // floating damage numbers (user): one DOM element per landed hit, spawned
   // at the impact point and projected through the live camera each frame
   const dmgFloats = [];
@@ -1597,6 +1606,44 @@
     if (dummy.combo && simStepCount - dummy.lastHitTick > 5 * 60) dummy.combo = 0;
     const STEP = Loop.STEP;
     if (dummy.flashT > 0) dummy.flashT = Math.max(0, dummy.flashT - STEP / 0.18); // ~11-tick pop (INFERRED)
+    // FIGHT BACK (btnAggro): his REAL attack clips (SKSswordStrike/Swipe/
+    // leapingStrike + runAttack), the REAL Sold speeds (walk 3 / run 8 m/s)
+    // and reach candidate (@0x258 = 2.81 m); brain/cadence/apex INFERRED.
+    if (dummyAggro && dummy.cur !== "spawn" && !/^(death|hit)/.test(dummy.cur)) {
+      dummy.atkCool = Math.max(0, (dummy.atkCool || 0) - STEP);
+      const tx = rootMotion.x - dummy.x, tz = rootMotion.z - dummy.z;
+      const dist = Math.hypot(tx, tz) || 1;
+      const REACH = 2.81 * ARENA_M; // REAL-candidate Sold @0x258
+      const isAtk = /^(SKSsword|SKSleaping|runAttack)/.test(dummy.cur);
+      if (isAtk) {
+        const d = dummy.dur(dummy.cur);
+        if (!dummy.struck && dummy.t >= 0.55 * d) { // strike apex (INFERRED)
+          dummy.struck = true;
+          const fwx = -Math.sin(dummy.hd), fwz = -Math.cos(dummy.hd);
+          const dot = (tx * fwx + tz * fwz) / dist;
+          if (dist <= REACH * 1.15 && dot > 0.7 && !heroDeadAt) {
+            // base 10 INFERRED × REAL AI Damage Mult (0.5/1/2.5/5)
+            hurtKratos(10 * DIFFICULTY[difficultyIdx].aiDmg, dummy.x, dummy.z);
+          }
+        }
+      } else if (!heroDeadAt) {
+        if (dist <= REACH && dummy.atkCool <= 0) {
+          dummy.struck = false;
+          dummy.play(dist > 2 * ARENA_M ? "SKSleapingStrike"
+            : Math.random() < 0.5 ? "SKSswordStrike" : "SKSswordSwipe");
+          dummy.atkCool = 1.3 + Math.random() * 1.2; // cadence INFERRED
+        } else if (dist > REACH) {
+          const run = dist > 5 * ARENA_M;
+          const clip = run ? "runFront" : DUMMY_WALK;
+          if (dummy.cur !== clip && /^(standIdle|Front|runFront|taunt)/.test(dummy.cur)) dummy.play(clip);
+          if (dummy.cur === clip) {
+            const spd = run ? DUMMY_RUN_SPEED : DUMMY_WALK_SPEED; // REAL Sold speeds
+            dummy.x += (tx / dist) * spd * STEP;
+            dummy.z += (tz / dist) * spd * STEP;
+          }
+        } else if (/^(Front|runFront)$/.test(dummy.cur)) dummy.play("standIdle");
+      }
+    }
     dummy.t += STEP;
     const d = dummy.dur(dummy.cur);
     if (dummy.t >= d) {
@@ -1639,7 +1686,7 @@
     // their target. Eased turn, held during hit reactions/death so the
     // direction-relative reaction clips stay coherent. fwd(hd) = (−sin,−cos)
     // → face (tx,tz) at hd = atan2(−tx,−tz). Turn rate INFERRED.
-    if (!/^(death|hit)/.test(dummy.cur)) {
+    if (!/^(death|hit|SKSsword|SKSleaping|runAttack|grab)/.test(dummy.cur)) {
       const tx = rootMotion.x - dummy.x, tz = rootMotion.z - dummy.z;
       const dist = Math.hypot(tx, tz);
       if (dist > 0.5) {
@@ -1651,7 +1698,7 @@
       }
       // approach (user): walk toward Kratos until within 8 squares, using his
       // own walk clip at its derived ground speed
-      if (!/^(spawn|taunt)/.test(dummy.cur)) {
+      if (!dummyAggro && !/^(spawn|taunt)/.test(dummy.cur)) {
         if (dist > DUMMY_NEAR) {
           if (dummy.cur !== DUMMY_WALK) dummy.play(DUMMY_WALK);
           dummy.x += (tx / dist) * DUMMY_WALK_SPEED * STEP;
@@ -1755,6 +1802,38 @@
     const df = ix * fwdx + iz * fwdz, dr = ix * rgtx + iz * rgtz;
     dummy.play(Math.abs(df) >= Math.abs(dr) ? (df > 0 ? "hitBack" : "hitFront") : (dr > 0 ? "hitLeft" : "hitRight"));
     return true;
+  }
+  // a landed legionnaire strike on Kratos: block check, direction-true
+  // reaction (his REAL hit suite), flash, damage float, HP, death.
+  function hurtKratos(dmg, fromX, fromZ) {
+    if (heroDeadAt) return;
+    // L1 block stops a legionnaire strike (GoW block rule)
+    if (/^block/.test(machine.st.current)) { log("\u{1F6E1} blocked"); return; }
+    heroHp = Math.max(0, heroHp - dmg);
+    heroFlashT = 1;
+    const ix = rootMotion.x - fromX, iz = rootMotion.z - fromZ; // incoming blow dir
+    const fwx = -Math.sin(rootMotion.hd), fwz = -Math.cos(rootMotion.hd);
+    const rgx = Math.cos(rootMotion.hd), rgz = -Math.sin(rootMotion.hd);
+    const df = ix * fwx + iz * fwz, dr = ix * rgx + iz * rgz;
+    machine.force(rootMotion.y > 1 ? "hitAir"
+      : Math.abs(df) >= Math.abs(dr) ? (df > 0 ? "hitBack" : "hitFront")
+      : dr > 0 ? "hitLeft" : "hitRight");
+    if (dmgNumbersOn && skin && skin.lastWorld) {
+      // hostile damage number (crimson) off Kratos' chest
+      const cj = (JID.head !== undefined ? JID.head : 0) * 16;
+      const el = document.createElement("div");
+      el.className = "dmg-float hero";
+      el.textContent = String(Math.round(dmg * 10) / 10);
+      el.style.fontSize = `${Math.max(13, Math.min(26, 11 + dmg * 0.5))}px`;
+      $("dummyHp").parentElement.appendChild(el);
+      dmgFloats.push({ el, x: skin.lastWorld[cj + 12] + rootMotion.x, y: skin.lastWorld[cj + 13] - 4,
+                       z: skin.lastWorld[cj + 14] + rootMotion.z, born: simStepCount });
+    }
+    if (heroHp <= 0) {
+      heroDeadAt = simStepCount;
+      machine.force("hitKnockdown");
+      log("\u{1F480} KRATOS FALLS \u2014 the legionnaire prevails (revived in 3 s)");
+    }
   }
   const ringHist = []; // live concussion DEBUG rings {cx,cz, s,e,durTicks, age} (Hitboxes overlay)
   const fxRings = [];  // live SHOCKWAVE visuals {cx,cz, s,e,durTicks, age} — REAL "F"-template radii/timing, always shown
@@ -2715,7 +2794,11 @@
     gl.bindTexture(gl.TEXTURE_2D, tex);
     // __fxOnly (debug): skip the hero + blade MESHES so the FX passes render
     // alone against the black clear — isolates chain/trail visibility.
+    // Kratos' own hit flash (same envelope/hue as the dummy's)
+    gl.uniform1f(uHitFlash, 0.65 * heroFlashT * heroFlashT);
+    gl.uniform3fv(uHitFlashColor, HIT_FLASH_RGB);
     if (!window.__fxOnly) gl.drawElements(gl.TRIANGLES, heroSet.count, gl.UNSIGNED_SHORT, 0);
+    gl.uniform1f(uHitFlash, 0); // never leak onto the blades
     // Blades of Chaos: chain-simulated (gripped when slow, flung when whipped)
     if (bladeSet && skin && skin.lastWorld) {
       gl.uniform1f(uPages, 1);
@@ -2750,6 +2833,12 @@
     }
     // dummy HP bar: project the head joint (id 5) to screen space
     {
+      const hhEl = $("heroHp");
+      if (hhEl) {
+        hhEl.style.display = dummyAggro ? "block" : "none";
+        const hf = hhEl.firstElementChild;
+        if (hf) hf.style.width = `${Math.max(0, (heroHp / HERO_MAX_HP) * 100)}%`;
+      }
       const hpEl = $("dummyHp");
       if (hpEl) {
         if (dummy && dummy.on && dummy.lastWorld && !window.__fxOnly) {
@@ -3347,6 +3436,12 @@
     $("btnWpnLv").textContent = `Weapon Lv ${weaponLevel}`;
     $("btnWpnLv").classList.toggle("latched", weaponLevel >= 5);
   });
+  $("btnAggro").addEventListener("click", () => {
+    dummyAggro = !dummyAggro;
+    $("btnAggro").classList.toggle("latched", dummyAggro);
+    if (dummyAggro) log("\u2694 the legionnaire FIGHTS BACK \u2014 REAL clips, Sold speeds, AI Damage Mult \u00d7 difficulty; block with L1");
+    heroHp = HERO_MAX_HP; heroDeadAt = 0;
+  });
   $("btnDmgNum").addEventListener("click", () => {
     dmgNumbersOn = !dmgNumbersOn;
     $("btnDmgNum").classList.toggle("latched", dmgNumbersOn);
@@ -3871,6 +3966,8 @@
       for (const f of dmgFloats) f.el.remove();
       dmgFloats.length = 0;
       dmgNumbersOn = true; $("btnDmgNum").classList.add("latched");
+      dummyAggro = false; $("btnAggro").classList.remove("latched");
+      heroHp = HERO_MAX_HP; heroFlashT = 0; heroDeadAt = 0;
       placeDummyAheadOfHero(); // 8 squares ahead of the (reset) hero
       dummy.play("spawn");
     }
@@ -4372,6 +4469,11 @@
       }
       // blend-window bookkeeping: sim owns time; uploadSkinnedVerts only reads
       if (skin.blendLeft > 0) skin.blendLeft -= STEP;
+    }
+    if (heroFlashT > 0) heroFlashT = Math.max(0, heroFlashT - Loop.STEP / 0.18);
+    if (heroDeadAt && simStepCount - heroDeadAt > 180) {
+      heroHp = HERO_MAX_HP; heroDeadAt = 0;
+      log("\u2695 Kratos rises \u2014 HP restored");
     }
     simStepCount++;
   }
