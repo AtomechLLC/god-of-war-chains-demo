@@ -42,6 +42,15 @@ fade curves), `fxfirepath.bin`, and `GFX/PAL_Fire64BScrollUV.bin` (painted
 lava sheet, bound as TXR_sfxlavaflow). PlayFX "FirePath BF/3F/7A": OffX
 -5.25/-5.5/-4.5 m, rotY 90, 7A scaleX 0.75.
 
+And the goMAISWeffect Impale-slam chain: `MAIshockWave_0.bin` +
+`MDL_MAIshockWave.bin` + `maishockwave.bin` + `ANM_maishockwave.bin` (the
+319-vert expanding lava ring), `MAT_M01sfxLava2.bin` + `ANM_M01sfxLava2.bin`
+(additive scrolling lava) over `GFX/PAL_sfxLavaStream2.bin`, rock/debris
+particles `PTC_MSWpart/1/3.bin` + `PTC_MSWrockpart.bin` + `FXC_MAIgrav.bin`
+with `MAT_MAIswrock1.bin`/`MAT_MAIchunk.bin` ("usual" blend) over
+`GFX/PAL_stone.bin` and `GFX/PAL_specks2.bin`. PlayFX "Hero Impale S/L"
+at x1/x5.
+
 ## enemy/ — the target dummy (added 2026-08-13)
 
 Impact-VFX chain (added 2026-08-14, carved from `R_SKS.WAD`): `GFX_blood.bin` +

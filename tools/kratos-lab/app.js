@@ -253,6 +253,66 @@
   // REAL FirePath PlayFX per move: OffX meters + length-axis scale
   const FIREPATH_BIND = { comboLR3: { off: -5.25, sx: 1 }, combo3F: { off: -5.5, sx: 1 }, combo7A: { off: -4.5, sx: 0.75 } };
 
+  // ---------- goMAISWeffect: the air Impale's rock shockwave ---------------
+  // REAL chain (R_PERM.WAD, two grouped objects): maishockwave = a 319-vert
+  // FLAT RING mesh (raw radius 12.5→20, low wall) with MAT_M01sfxLava2
+  // (ADDITIVE, blendColor 0.6 grey, UV-anim) over the painted
+  // GFX_sfxLavaStream2 lava sheet + FXC_MSWrockemit → PTC_MSWrockpart
+  // (MAT_MAIswrock1, "usual", GFX_stone) + FXC_MAIgrav; maisweffect = 3
+  // more systems, two on MAT_MAIchunk ("usual", GFX_specks2 debris).
+  // PlayFX: "Hero Impale S" ×1 / "Hero Impale L" ×5 @synchJoint — the lab
+  // triggers the S instance on airImpaleLand (its decoded concussion).
+  // The ring RADIUS rides the REAL "Hero Impale1FX" template (0→4 m in
+  // 0.35 s) — the mesh gives the authored ring its LOOK. Failure-tolerant.
+  let mswave = null;
+  try {
+    const [rMesh, rMatL, rGfxL, rPalL, rGfxS, rPalS, rGfxC, rPalC, rPtcRock, rPtcChunk, rPtcDust, rGrav] = await Promise.all([
+      Parsers.fetchBuf("../../assets/perm/MAIshockWave_0.bin"),
+      Parsers.fetchBuf("../../assets/perm/MAT_M01sfxLava2.bin"),
+      Parsers.fetchBuf("../../assets/perm/GFX_sfxLavaStream2.bin"),
+      Parsers.fetchBuf("../../assets/perm/PAL_sfxLavaStream2.bin"),
+      Parsers.fetchBuf("../../assets/perm/GFX_stone.bin"),
+      Parsers.fetchBuf("../../assets/perm/PAL_stone.bin"),
+      Parsers.fetchBuf("../../assets/perm/GFX_specks2.bin"),
+      Parsers.fetchBuf("../../assets/perm/PAL_specks2.bin"),
+      Parsers.fetchBuf("../../assets/perm/PTC_MSWrockpart.bin"),
+      Parsers.fetchBuf("../../assets/perm/PTC_MSWpart1.bin"),
+      Parsers.fetchBuf("../../assets/perm/PTC_MSWpart.bin"),
+      Parsers.fetchBuf("../../assets/perm/FXC_MAIgrav.bin"),
+    ]);
+    const m = Parsers.parseMesh(rMesh);
+    const tris = new Float32Array(m.idx.length * 5);
+    for (let i = 0; i < m.idx.length; i++) {
+      const vi = m.idx[i];
+      tris[i * 5 + 0] = m.pos[vi * 3 + 0];
+      tris[i * 5 + 1] = m.pos[vi * 3 + 1];
+      tris[i * 5 + 2] = m.pos[vi * 3 + 2];
+      tris[i * 5 + 3] = m.uv[vi * 2 + 0];
+      tris[i * 5 + 4] = m.uv[vi * 2 + 1];
+    }
+    const dvM = new DataView(rMatL.buffer, rMatL.byteOffset, rMatL.byteLength);
+    const slot = (buf, name) =>
+      FxParse.parsePtc(buf, { dataOff: 0, size: buf.byteLength, name }).params[3];
+    const dvG = new DataView(rGrav.buffer, rGrav.byteOffset, rGrav.byteLength);
+    mswave = {
+      tris, RAW_OUTER: 20,                       // the ring's raw outer radius
+      matColor: [dvM.getFloat32(8, true), dvM.getFloat32(12, true), dvM.getFloat32(16, true)],
+      blendColor: [dvM.getFloat32(0x60, true), dvM.getFloat32(0x64, true),
+                   dvM.getFloat32(0x68, true), dvM.getFloat32(0x6c, true)],
+      mode: (dvM.getUint32(0x38, true) & 0x08000000) ? "additive" : "usual", // REAL bit 27
+      lavaImg: Parsers.decodeTexture(rGfxL, rPalL),
+      stoneImg: Parsers.decodeTexture(rGfxS, rPalS),
+      specksImg: Parsers.decodeTexture(rGfxC, rPalC),
+      rockSize: slot(rPtcRock, "MSWrock"),   // 0.5 m
+      chunkSize: slot(rPtcChunk, "MSWpart1"), // 0.325 m
+      dustSize: slot(rPtcDust, "MSWpart"),    // 0.25 m
+      grav: dvG.getFloat32(0x58, true),        // FXC_MAIgrav field accel
+      live: [],                                 // expanding ring instances
+    };
+    console.log("mswave:", { mode: mswave.mode, rock: mswave.rockSize, chunk: mswave.chunkSize,
+      dust: mswave.dustSize, grav: mswave.grav });
+  } catch (e) { console.warn("MAISW shockwave load", e); }
+
   // FIRE-01: resolve the two level-1 blade-fire emitters from the runtime `db` ONCE
   // at load by shapeRef NAME (D-08 / Pitfall 6 — the fire family uses PLACEHOLDER
   // slot 0x0 and is NOT a db.refs slot pair, so the emitter->particle join is on the
@@ -281,6 +341,8 @@
   const BLOOD_KINDS = new Set(["blood"]);       // goSklBlood — the legionnaire's REAL impact effect
   const CLOUD_KINDS = new Set(["cloud"]);       // goCombo3fExplode fire cloud/glow (explosioncloud sprite)
   const DEBRIS_KINDS = new Set(["debris"]);     // goCombo3fExplode debris chunks (usual blend, dark)
+  const ROCK_KINDS = new Set(["rock"]);         // goMAISWeffect shockwave rocks (GFX_stone, usual)
+  const CHUNK_KINDS = new Set(["chunk"]);       // goMAISWeffect debris (GFX_specks2, usual)
   // FIRE-02: the impact-spark emitter IS the SAME already-real FXC_BDEsparkemit family as
   // blade fire (A6 — continuous fire and on-hit sparks are one emitter family, differing
   // ONLY by trigger; NO new emitter decode, D-09a). Its decoded blade-local placement
@@ -665,6 +727,12 @@
   // goFXfirePath lava sheet (REAL GFX_Fire64BScrollUV via TXR_sfxlavaflow) — REPEAT both axes: the
   // strip's V runs past 1 and the REAL ANM scroll pushes it further every frame
   if (firePath) firePath.tex = makeTex(firePath.img, { wrapS: gl.REPEAT, wrapT: gl.REPEAT, filter: true });
+  // goMAISWeffect textures (REAL): scrolling lava ring sheet + stone/debris
+  if (mswave) {
+    mswave.lavaTex = makeTex(mswave.lavaImg, { wrapS: gl.REPEAT, wrapT: gl.REPEAT, filter: true });
+    mswave.stoneTex = makeTex(mswave.stoneImg, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE, filter: true });
+    mswave.specksTex = makeTex(mswave.specksImg, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE, filter: true });
+  }
   // WEAPON LEVEL 5 blade skin (REAL WAD assets GFX/PAL_stage5Btx) + the decoded
   // per-level Rage rule: God Mode Trail Tint = (1,1,1,1) at L1-3 but RED
   // (1,0,0,1) at L4-5 (/Player/ Weapon Level tree). The Weapon Lv button swaps
@@ -2372,6 +2440,43 @@
         gl.drawArrays(gl.TRIANGLES, 0, fpV.length / 6);
       }
     }
+    // PASS — goMAISWeffect shockwave ring: the REAL 319-vert lava ring mesh
+    // expanding through the REAL "Hero Impale1FX" radii (0→4 m / 0.35 s),
+    // additive lava (MAT bit 27, REAL 0.6 blendColor), V-scroll shared with
+    // the fire path's REAL rate (this MAT's own ANM rate unparsed —
+    // INFERRED equal), lingering fade after full radius (INFERRED).
+    if (mswave && mswave.lavaTex && mswave.live.length) {
+      const MW_LINGER = 26; // ticks of fade after the authored expansion
+      const mwV = [];
+      for (let li = mswave.live.length - 1; li >= 0; li--) {
+        const w = mswave.live[li];
+        const age = simStepCount - w.born;
+        if (age > w.durTicks + MW_LINGER) { mswave.live.splice(li, 1); continue; }
+        const t = Math.min(1, age / w.durTicks);
+        const radU = (w.rs + (w.re - w.rs) * t) * Chain.METERS_TO_WORLD;
+        const k = Math.max(0.05, radU / mswave.RAW_OUTER);
+        const ky = 1 + (k - 1) * 0.25; // wall height grows gently (INFERRED)
+        const env = age <= w.durTicks ? 1 : 1 - (age - w.durTicks) / MW_LINGER;
+        const scroll = (age / 60) * (firePath ? firePath.scrollRate : 1.4);
+        const T = mswave.tris;
+        for (let i = 0; i < T.length; i += 5) {
+          mwV.push(w.x + T[i] * k, T[i + 1] * ky, w.z + T[i + 2] * k,
+                   T[i + 3], T[i + 4] + scroll, env);
+        }
+      }
+      if (mwV.length) {
+        Fx.applyMaterial(gl, { name: "fxMSWring", mode: mswave.mode, disableDepthWrite: true });
+        fxLog.push({ name: "fxMSWring", mode: mswave.mode, depthWrite: false });
+        gl.uniform1f(fxLocs.uTrailRamp, 0);
+        gl.uniform1f(fxLocs.uGlowGain, 0);
+        gl.uniform1f(fxLocs.uCutoff, 0);
+        gl.uniform3fv(fxLocs.uMaterialColor, mswave.matColor);  // REAL 0.8
+        gl.uniform4fv(fxLocs.uLayerColor, mswave.blendColor);   // REAL 0.6 grey
+        gl.bindTexture(gl.TEXTURE_2D, mswave.lavaTex);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(mwV), gl.DYNAMIC_DRAW);
+        gl.drawArrays(gl.TRIANGLES, 0, mwV.length / 6);
+      }
+    }
     const EMBER_UV = [0.75, 0.8, 0.25, 0.2];
     // (trail-spark rider batch removed with its spawner — the swoosh decal carries the arc detail)
     // PASS — blade fire (flame3 + flame6, FIRE-01): its OWN batch by texture (D-02).
@@ -2411,6 +2516,12 @@
     // debris material record; the sprite doubles as the chunk texture).
     if (plumeFx && plumeFx.tex)
       drawPool(mvp, view, plumeFx.tex, { name: "fxPlumeDebris", kinds: DEBRIS_KINDS, mode: "usual" });
+    // PASS — MAISW rocks + debris: REAL stone/specks textures, REAL "usual"
+    // blend (MAT_MAIswrock1 / MAT_MAIchunk bit 26).
+    if (mswave && mswave.stoneTex)
+      drawPool(mvp, view, mswave.stoneTex, { name: "fxMSWrock", kinds: ROCK_KINDS, mode: "usual" });
+    if (mswave && mswave.specksTex)
+      drawPool(mvp, view, mswave.specksTex, { name: "fxMSWchunk", kinds: CHUNK_KINDS, mode: "usual" });
     Fx.restoreFxState(gl);
     gl.useProgram(prog);
   }
@@ -3869,6 +3980,42 @@
             // authored per-move scale; counts/velocities INFERRED vs footage.
             // REAL FirePath binding: the burning streak covers the ground the
             // Plume traveled — strip axis on the travel axis, start OffX m back
+            // goMAISWeffect on the Impale slam: expanding lava ring + rock/
+            // debris fountain ("Hero Impale S" binding; counts/vels INFERRED)
+            if (mswave && mswave.lavaTex && machine.st.current === "airImpaleLand") {
+              mswave.live.push({ x: cx, z: cz, born: simStepCount,
+                rs: cd.fx ? cd.fx.s : 0, re: cd.fx ? cd.fx.e : 4.0,
+                durTicks: Math.max(1, Math.round((cd.fx ? cd.fx.dur : 0.35) * 60)) });
+              if (mswave.live.length > 3) mswave.live.shift();
+              const M2W = Chain.METERS_TO_WORLD;
+              for (let i = 0; i < 8; i++) {          // shockwave rocks (GFX_stone)
+                const a = (i / 8) * Math.PI * 2 + Math.random() * 0.5;
+                const sp = 10 + Math.random() * 16;
+                fxPool.spawn({ pos: [cx + Math.cos(a) * 6, 2, cz + Math.sin(a) * 6],
+                  vel: [Math.cos(a) * sp, 20 + Math.random() * 16, Math.sin(a) * sp],
+                  size: mswave.rockSize * M2W * (0.35 + Math.random() * 0.4),
+                  life: (38 + Math.random() * 18) * Loop.STEP,
+                  color: [1, 1, 1, 1], kind: "rock",
+                  gscale: Math.abs(mswave.grav) > 1 ? Math.abs(mswave.grav) / 43.64 : 4 });
+              }
+              for (let i = 0; i < 12; i++) {         // debris specks (GFX_specks2)
+                const a = Math.random() * Math.PI * 2;
+                const sp = 8 + Math.random() * 20;
+                fxPool.spawn({ pos: [cx, 2, cz],
+                  vel: [Math.cos(a) * sp, 14 + Math.random() * 20, Math.sin(a) * sp],
+                  size: mswave.chunkSize * M2W * (0.3 + Math.random() * 0.4),
+                  life: (30 + Math.random() * 16) * Loop.STEP,
+                  color: [1, 1, 1, 1], kind: "chunk", gscale: 4 });
+              }
+              for (let i = 0; i < 8; i++) {          // dust (soft, on the cloud pass)
+                const a = Math.random() * Math.PI * 2;
+                fxPool.spawn({ pos: [cx + Math.cos(a) * 8, 1.5, cz + Math.sin(a) * 8],
+                  vel: [Math.cos(a) * 6, 3 + Math.random() * 4, Math.sin(a) * 6],
+                  size: mswave.dustSize * M2W * (0.8 + Math.random() * 0.8),
+                  life: (36 + Math.random() * 20) * Loop.STEP,
+                  color: [1, 1, 1, 0.55], kind: "cloud", gscale: 0.3 });
+              }
+            }
             const fpb = firePath && firePath.tex && FIREPATH_BIND[machine.st.current];
             if (fpb) {
               firePath.live.push({ x: cx, z: cz, hd: rootMotion.hd, sx: fpb.sx,
