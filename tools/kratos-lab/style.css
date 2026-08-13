@@ -254,3 +254,12 @@ footer .inf { color: #86aed0; }
   padding: 2px 7px; cursor: default; }
 .diff-wrap input[type="range"] { width: 64px; accent-color: #c9a96a; cursor: pointer; }
 #diffName { min-width: 88px; }
+
+/* floating damage numbers — projected over the impact point */
+.dmg-float {
+  position: absolute; transform: translate(-50%, -100%); pointer-events: none; z-index: 14;
+  font-family: Georgia, "Times New Roman", serif; font-weight: bold; color: #e8c264;
+  text-shadow: 0 0 6px rgba(0,0,0,.9), 0 1px 2px #000, 0 0 14px rgba(201,162,75,.45);
+  white-space: nowrap;
+}
+.dmg-float.big { color: var(--red-hot); text-shadow: 0 0 6px rgba(0,0,0,.9), 0 1px 2px #000, 0 0 16px rgba(230,48,60,.55); }

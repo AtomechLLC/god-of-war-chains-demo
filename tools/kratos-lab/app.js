@@ -1264,6 +1264,10 @@
     { name: "God (Very Hard)", path: "Impossible", dmg: 0.5,  aiDmg: 5.0, aiRecov: 0.5 },
   ];
   let difficultyIdx = 1; // Hero (Normal) — the game's default
+  // floating damage numbers (user): one DOM element per landed hit, spawned
+  // at the impact point and projected through the live camera each frame
+  const dmgFloats = [];
+  let dmgNumbersOn = true; // "Dmg #" toggle
   // (re)spawn placement (user): 8 squares AHEAD of wherever Kratos currently
   // stands and faces — never on top of him after he's moved — facing him.
   function placeDummyAheadOfHero() {
@@ -1392,6 +1396,18 @@
     if (flasherTex) fxPool.spawn({ pos: [cx, cy, cz], vel: [0, 0, 0], size: 5.0, life: 7 * Loop.STEP, color: [1, 1, 1, 2.2], kind: "hitFlash" });
     fxPool.burst(14, { pos: [cx, cy, cz], vel: [0, 2.2, 0], size: 0.16, life: 20 * Loop.STEP, color: [1, 1, 1, 1.8], kind: "spark" },
       () => (Math.random() - 0.5) * 5.0); // impact sparks AT the contact, ON the contact tick
+    if (dmgNumbersOn) {
+      // floating damage number: spawns at the impact, rises ~1 m and fades.
+      // Slight x/z jitter so rapid multi-contacts don't stack into one glyph;
+      // size grows with the value so enders read heavier than jabs.
+      const el = document.createElement("div");
+      el.className = "dmg-float" + (dmg >= 20 ? " big" : "");
+      el.textContent = String(Math.round(dmg * 10) / 10);
+      el.style.fontSize = `${Math.max(12, Math.min(26, 10 + dmg * 0.5))}px`;
+      $("dummyHp").parentElement.appendChild(el);
+      dmgFloats.push({ el, x: cx + (Math.random() - 0.5) * 6, y: cy + 4,
+                       z: cz + (Math.random() - 0.5) * 6, born: simStepCount });
+    }
     if (launch && impulse) {
       // REAL Ground Impulse Away, scaled (KB_SCALE INFERRED) along away-vector
       const ax = dummy.x - fromX, az = dummy.z - fromZ;
@@ -2270,6 +2286,29 @@
           } else hpEl.style.display = "none";
         } else hpEl.style.display = "none";
       }
+      // floating damage numbers: project each through the live camera; rise is
+      // authored in WORLD space (so zoom scales it naturally), fade in the last
+      // 45% of life. Ages advance with sim ticks, so Pause freezes them too.
+      if (dmgFloats.length) {
+        const LIFE = 55;                  // ticks ≈ 0.9 s on screen
+        const RISE = 14;                  // world units ≈ 1 m total float
+        const mm = M.mul(mvp, modelMat);
+        for (let i = dmgFloats.length - 1; i >= 0; i--) {
+          const f = dmgFloats[i];
+          const age = (simStepCount - f.born) / LIFE;
+          if (age >= 1) { f.el.remove(); dmgFloats.splice(i, 1); continue; }
+          const fy = f.y + age * RISE;
+          const px = mm[0] * f.x + mm[4] * fy + mm[8] * f.z + mm[12];
+          const py = mm[1] * f.x + mm[5] * fy + mm[9] * f.z + mm[13];
+          const pw = mm[3] * f.x + mm[7] * fy + mm[11] * f.z + mm[15];
+          if (pw > 0.05) {
+            f.el.style.display = "block";
+            f.el.style.left = `${((px / pw) * 0.5 + 0.5) * 100}%`;
+            f.el.style.top = `${(1 - ((py / pw) * 0.5 + 0.5)) * 100}%`;
+            f.el.style.opacity = age < 0.55 ? "1" : String(1 - (age - 0.55) / 0.45);
+          } else f.el.style.display = "none";
+        }
+      }
       if (!window.__noFx) drawFx(mvp, view); // __noFx (debug): skip ALL FX to isolate whether the FX passes hide the hero
     }
     if (nativeRes) {
@@ -2827,6 +2866,11 @@
     $("btnWpnLv").textContent = `Weapon Lv ${weaponLevel}`;
     $("btnWpnLv").classList.toggle("latched", weaponLevel >= 5);
   });
+  $("btnDmgNum").addEventListener("click", () => {
+    dmgNumbersOn = !dmgNumbersOn;
+    $("btnDmgNum").classList.toggle("latched", dmgNumbersOn);
+    if (!dmgNumbersOn) { for (const f of dmgFloats) f.el.remove(); dmgFloats.length = 0; }
+  });
   $("diffSlider").addEventListener("input", () => {
     difficultyIdx = +$("diffSlider").value;
     const d = DIFFICULTY[difficultyIdx];
@@ -3343,6 +3387,9 @@
       dummy.kbx = dummy.kbz = 0; dummy.hp = dummy.maxHp;
       dummy.hits = 0; dummy.combo = 0; dummy.hitsLife = 0; dummy.lastHitTick = -1;
       difficultyIdx = 1; $("diffSlider").value = 1; $("diffName").textContent = DIFFICULTY[1].name;
+      for (const f of dmgFloats) f.el.remove();
+      dmgFloats.length = 0;
+      dmgNumbersOn = true; $("btnDmgNum").classList.add("latched");
       placeDummyAheadOfHero(); // 8 squares ahead of the (reset) hero
       dummy.play("spawn");
     }
@@ -3785,6 +3832,7 @@
   // test hooks (used by automated verification; harmless in normal use)
   window.KratosLab = {
     machine, mesh, rig, skin, camGround, rootMotion, get dummy() { return dummy; },
+    get dmgFloats() { return dmgFloats; }, get simTick() { return simStepCount; },
     // step(): exactly ONE fixed sim step + one render + timeline — the
     // deterministic pump for automated verification (hidden tabs get no rAF
     // ticks, so scripts drive frames through this). The old variable-dt

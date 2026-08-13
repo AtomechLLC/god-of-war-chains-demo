@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kratos Lab — GoW (2005) previewer &amp; combo tester</title>
-<link rel="stylesheet" href="style.css?v=132">
+<link rel="stylesheet" href="style.css?v=133">
 </head>
 <body>
 <header>
@@ -81,6 +81,7 @@
         <button class="btn mod-btn" id="btnCostume" title="Cycle the REAL decoded Costume 0-5 table: reach (Weapon Length), damage &amp; orb multipliers">Costume 0</button>
         <button class="btn mod-btn latched" id="btnDummy" title="Target dummy: the REAL undead legionnaire (R_SKS) — 93-act reaction suite; melee hits use the swept-sector model, concussions launch him with the decoded impulses">&#129460; Dummy</button>
         <label class="diff-wrap" title="REAL /GlobGame/&lt;difficulty&gt;/ tweak trees: GoW1 scales the PLAYER'S Damage Mult (&#215;2 / &#215;1 / &#215;0.75 / &#215;0.5), never enemy HP &#8212; the soldier's durability follows exactly">&#9878; <input type="range" id="diffSlider" min="0" max="3" step="1" value="1"><span id="diffName">Hero (Normal)</span></label>
+        <button class="btn mod-btn latched" id="btnDmgNum" title="Floating damage numbers off the target on every landed hit (size scales with the value; red = concussion-class)">Dmg #</button>
       </div>
       <div class="shoulders" style="margin-top:6px">
         <span class="grp-label">capture</span>
@@ -185,14 +186,14 @@
   <span>press <kbd>N</kbd> &mdash; native-res 512&times;448 toggle</span>
 </footer>
 
-<script src="parsers.js?v=132"></script>
-<script src="fxparse.js?v=132"></script>
-<script src="fx.js?v=132"></script>
-<script src="loop.js?v=132"></script>
-<script src="chain.js?v=132"></script>
-<script src="particles.js?v=132"></script>
-<script src="anim.js?v=132"></script>
-<script src="combat.js?v=132"></script>
-<script src="app.js?v=132"></script>
+<script src="parsers.js?v=133"></script>
+<script src="fxparse.js?v=133"></script>
+<script src="fx.js?v=133"></script>
+<script src="loop.js?v=133"></script>
+<script src="chain.js?v=133"></script>
+<script src="particles.js?v=133"></script>
+<script src="anim.js?v=133"></script>
+<script src="combat.js?v=133"></script>
+<script src="app.js?v=133"></script>
 </body>
 </html>
