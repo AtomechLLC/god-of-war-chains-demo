@@ -1776,6 +1776,24 @@
   // route a landed hit into the reaction suite (direction-relative clips)
   function dummyHit(dmg, fromX, fromZ, launch, impulse, upImpulse) {
     if (!dummy || !dummy.on || /^death/.test(dummy.cur) || dummy.cur === "spawn") return false;
+    // BLOCK: legionnaires sword-block in GoW1 — his REAL SKSblockSword clip.
+    // Only a standing, front-facing soldier blocks a NON-launch hit; the
+    // 25% chance is INFERRED (no decoded block-rate data). A blocked hit
+    // deals nothing — flash pop, no blood, no reaction, no counter.
+    if (!launch && /^(standIdle|taunt|Front|runFront|SKSblock)/.test(dummy.cur)) {
+      const bx = fromX - dummy.x, bz = fromZ - dummy.z;
+      const bl = Math.hypot(bx, bz) || 1;
+      const facing = (bx * -Math.sin(dummy.hd) + bz * -Math.cos(dummy.hd)) / bl;
+      if (facing > 0.5 && Math.random() < 0.25) {
+        dummy.play("SKSblockSword");
+        if (flasherTex && dummy.lastWorld) {
+          const j = 2 * 16;
+          fxPool.spawn({ pos: [dummy.lastWorld[j + 12], dummy.lastWorld[j + 13], dummy.lastWorld[j + 14]],
+            vel: [0, 0, 0], size: 4.0, life: 6 * Loop.STEP, color: [1, 1, 1, 2.0], kind: "hitFlash" });
+        }
+        return false;
+      }
+    }
     dummy.hp = Math.max(0, dummy.hp - dmg);
     dummy.hits++; dummy.combo++; dummy.hitsLife++;
     dummy.lastHitTick = simStepCount;
@@ -1857,7 +1875,10 @@
     const fwdx = -Math.sin(dummy.hd), fwdz = -Math.cos(dummy.hd);
     const rgtx = Math.cos(dummy.hd), rgtz = -Math.sin(dummy.hd);
     const df = ix * fwdx + iz * fwdz, dr = ix * rgtx + iz * rgtz;
-    dummy.play(Math.abs(df) >= Math.abs(dr) ? (df > 0 ? "hitBack" : "hitFront") : (dr > 0 ? "hitLeft" : "hitRight"));
+    // heavy blows (>= 20 after multipliers, INFERRED threshold) use his
+    // REAL big-stagger clip; normal hits stay direction-relative.
+    if (dmg >= 20 && dummy.rig.anm.acts.has("hitStagger")) dummy.play("hitStagger");
+    else dummy.play(Math.abs(df) >= Math.abs(dr) ? (df > 0 ? "hitBack" : "hitFront") : (dr > 0 ? "hitLeft" : "hitRight"));
     return true;
   }
   // a landed legionnaire strike on Kratos: block check, direction-true
@@ -1865,7 +1886,16 @@
   function hurtKratos(dmg, fromX, fromZ) {
     if (heroDeadAt) return;
     // L1 block stops a legionnaire strike (GoW block rule)
-    if (/^block/.test(machine.st.current)) { log("\u{1F6E1} blocked"); return; }
+    if (/^block/.test(machine.st.current)) {
+      // GoW block visual: a flash pop at the guard (REAL flasher03 sprite)
+      if (flasherTex && skin && skin.lastWorld) {
+        const j = (JID.lWeapIH !== undefined ? JID.lWeapIH : 0) * 16;
+        fxPool.spawn({ pos: [skin.lastWorld[j + 12] + rootMotion.x, skin.lastWorld[j + 13], skin.lastWorld[j + 14] + rootMotion.z],
+          vel: [0, 0, 0], size: 4.5, life: 6 * Loop.STEP, color: [1, 1, 1, 2.2], kind: "hitFlash" });
+      }
+      log("\u{1F6E1} blocked");
+      return;
+    }
     heroHp = Math.max(0, heroHp - dmg);
     heroFlashT = 1;
     const ix = rootMotion.x - fromX, iz = rootMotion.z - fromZ; // incoming blow dir
@@ -4446,7 +4476,11 @@
               // fast it never left its first (near-neutral) frames — the dummy
               // read as IDLE under every flash (user report). Multi-hit attacks
               // (dashMultiStab etc.) undercount to 1 — no per-move data (INFERRED).
-              if (dummy && dummy.on && machine.st.hits !== dummy.lastHitMove) {
+              // impact moves (Plumes/Impale) register through their AUTHORED
+              // concussion sphere (decoded: hit volumes anchor at the
+              // character, decoupled from the blades) — the blade sweep must
+              // NOT also register for them (the old double-dip).
+              if (dummy && dummy.on && machine.st.hits !== dummy.lastHitMove && !CONCUSSION[machine.st.current]) {
                 const ddx = dummy.x - pcx, ddz = dummy.z - pcz;
                 const dd = Math.hypot(ddx, ddz);
                 let da = Math.atan2(ddz, ddx) - reachAng;
