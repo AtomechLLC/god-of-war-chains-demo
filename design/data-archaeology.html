@@ -130,6 +130,15 @@ in R_PERM.WAD. The lab's dummy now bleeds through this chain</td>
 <td>R_SKS.WAD in-WAD TWK banks + part1.pak PlayFX + R_PERM.WAD</td><td class="real">bindings real; tint + spray fan inferred</td></tr>
 <tr><td>Fire gravity −43.64 u/s² (identical across both fire systems)</td><td>PTC_BFTpart1/2</td><td class="real">value real, reading inferred</td></tr>
 <tr><td>Costume 0–5 gameplay table (reach, damage, orb mults)</td><td>/Player/</td><td class="real">real</td></tr>
+<tr><td>The Sold enemy stat template is a flat struct whose floats are
+HALFWORD-SWAPPED (middle-endian). Cross-enemy comparison identified Max Hit
+Points (SKS = 100), Run Speed (8 m/s) and Walk Speed (3 m/s) — the last two
+independently corroborated by the lab's clip-derived planted-foot estimates
+(7.98 / 3.16)</td><td>TWK_Sold_020 (R_SKS.WAD) vs SKA/harpy/medusa/minotaur/siren</td><td class="real">values real; field names inferred</td></tr>
+<tr><td>hitLaunch is authored for an ENGINE-carried arc — its pose tail dives
+below the floor; the game lifts the character ballistically (GroundImpulseUp
+3000 on the Impale) and chains hitBounce at ground contact. The lab now
+integrates the real arc under the real Gravity 50</td><td>ANM_sks pose data + Concussion templates</td><td class="real">arc real; scale inferred</td></tr>
 <tr><td>Difficulty never scales enemy HP — it scales the <i>player's</i> damage:
 Damage Mult ×2 / ×1 / ×0.75 / ×0.5 for Mortal&nbsp;(Easy) / Hero&nbsp;(Normal) /
 Spartan&nbsp;(Hard) / God&nbsp;(Very&nbsp;Hard) — the last one is internally named
