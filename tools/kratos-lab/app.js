@@ -1549,7 +1549,17 @@
     dummy.flashT = 0;                        // hit-flash tint envelope (1 → 0 after a contact)
     dummy.lastWorld = null;
     dummy.dur = (n) => { const a = dummy.rig.anm.acts.get(n); return a ? a.duration : 1; };
-    dummy.play = (n) => { if (dummy.rig.anm.acts.has(n)) { dummy.cur = n; dummy.t = 0; } };
+    // play(n): soft transitions (idle/walk/run/taunt/spawn) freeze-blend
+    // over 0.12 s (INFERRED window — the pops read wrong); hit reactions
+    // and deaths SNAP, as the game's do.
+    dummy.play = (n) => {
+      if (!dummy.rig.anm.acts.has(n)) return;
+      if (dummy.lastPose && !/^(hit|death)/.test(n)) {
+        dummy.blendFrom = dummy.lastPose.slice();
+        dummy.blendLeft = 0.12;
+      } else dummy.blendLeft = 0;
+      dummy.cur = n; dummy.t = 0;
+    };
   }
   const DUMMY_TAUNTS = ["taunt02", "taunt03", "taunt04"];
   // REAL difficulty data — the /GlobGame/<difficulty>/ tweak trees (decoded in
@@ -1748,6 +1758,14 @@
       }
     }
     const w = dummy.rig.computePose(dummy.cur, Math.min(dummy.t, d - 0.0001));
+    // keep the raw pose for the next transition's freeze-blend source
+    if (!dummy.lastPose) dummy.lastPose = new Float32Array(w.length);
+    if (dummy.blendLeft > 0) {
+      const k = 1 - dummy.blendLeft / 0.12;   // 0 → still the old pose
+      for (let i = 0; i < w.length; i++) w[i] = dummy.blendFrom[i] + (w[i] - dummy.blendFrom[i]) * k;
+      dummy.blendLeft -= STEP;
+    }
+    dummy.lastPose.set(w);
     for (let i = 0; i < w.length; i += 16) {
       for (let k = 0; k < 15; k++) w[i + k] *= DUMMY_SCALE; // uniform display scale
     }
@@ -1792,7 +1810,7 @@
           size: dummy.blood.size * Chain.METERS_TO_WORLD * (0.35 + Math.random() * 0.45), // PTC 0.6 read as METERS (units bridge) → ~3-7 u splash
           life: (28 + Math.random() * 14) * Loop.STEP,          // INFERRED ~0.5-0.7 s
           color: [0.42, 0.09, 0.05, 0.95],                       // dark undead red (INFERRED tint)
-          kind: "blood",
+          kind: "blood", floorKill: true,
           gscale: dummy.blood.gscale,                            // REAL-candidate −192 accel
         });
       }
@@ -4244,7 +4262,7 @@
                   vel: [Math.cos(a) * sp, 20 + Math.random() * 16, Math.sin(a) * sp],
                   size: mswave.rockSize * M2W * (0.35 + Math.random() * 0.4),
                   life: (38 + Math.random() * 18) * Loop.STEP,
-                  color: [1, 1, 1, 1], kind: "rock",
+                  color: [1, 1, 1, 1], kind: "rock", floorKill: true,
                   gscale: Math.abs(mswave.grav) > 1 ? Math.abs(mswave.grav) / 43.64 : 4 });
               }
               for (let i = 0; i < 12; i++) {         // debris specks (GFX_specks2)
@@ -4254,7 +4272,7 @@
                   vel: [Math.cos(a) * sp, 14 + Math.random() * 20, Math.sin(a) * sp],
                   size: mswave.chunkSize * M2W * (0.3 + Math.random() * 0.4),
                   life: (30 + Math.random() * 16) * Loop.STEP,
-                  color: [1, 1, 1, 1], kind: "chunk", gscale: 4 });
+                  color: [1, 1, 1, 1], kind: "chunk", gscale: 4, floorKill: true });
               }
               for (let i = 0; i < 8; i++) {          // dust (soft, on the cloud pass)
                 const a = Math.random() * Math.PI * 2;
@@ -4315,7 +4333,7 @@
                   vel: [Math.cos(a) * sp, 18 + Math.random() * 14, Math.sin(a) * sp],
                   size: plumeFx.deb * M2W * (0.35 + Math.random() * 0.4),
                   life: (40 + Math.random() * 20) * Loop.STEP,
-                  color: [0.3, 0.24, 0.18, 1.0], kind: "debris", gscale: debG });
+                  color: [0.3, 0.24, 0.18, 1.0], kind: "debris", gscale: debG, floorKill: true });
               }
             }
             // the amber band was the F-template's stand-in VISUAL; where the

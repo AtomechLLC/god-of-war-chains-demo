@@ -93,6 +93,8 @@ const Particles = (() => {
         // per-kind gravity scale: 1 = the decoded fire gravity G; blood's
         // PTC carries its own (stronger) accel — gscale = theirs / G
         gscale: Number.isFinite(p.gscale) ? p.gscale : 1,
+        // ground-matter (blood/debris/rocks) ends at the floor, never below
+        floorKill: !!p.floorKill,
       });
       return true;
     }
@@ -108,7 +110,7 @@ const Particles = (() => {
         q.vel[0] += G[0] * gs * dt; q.vel[1] += G[1] * gs * dt; q.vel[2] += G[2] * gs * dt;
         q.age += dt;
       }
-      particles = particles.filter((q) => q.age <= q.life);          // strict age>life cull
+      particles = particles.filter((q) => q.age <= q.life && !(q.floorKill && q.pos[1] <= 0));
     }
 
     // burst(n, template, sampler) — spawn up to n particles from `template`,
