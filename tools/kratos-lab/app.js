@@ -2084,12 +2084,16 @@
   // the double-jump branch could fire), and its apex is the intended
   // controller rise (jumpUp 9.37 u = 0.67 m; jumpDoubleAir boost 10.75 u =
   // 0.77 m). v0 = sqrt(2·g·apex). Airtime ≈ 0.69 s — the GoW float.
-  const JUMP_G_M = 11.25;                              // derived: channel curvature
-  const JUMP_APEX_M = 9.37 / Chain.METERS_TO_WORLD;    // REAL channel apex
-  const DJUMP_APEX_M = 10.75 / Chain.METERS_TO_WORLD;  // REAL channel net rise
-  const JUMP_G = JUMP_G_M * Chain.METERS_TO_WORLD;
-  const JUMP_V0 = Math.sqrt(2 * JUMP_G_M * JUMP_APEX_M) * Chain.METERS_TO_WORLD;   // 3.88 m/s
-  const DJUMP_V0 = Math.sqrt(2 * JUMP_G_M * DJUMP_APEX_M) * Chain.METERS_TO_WORLD; // 4.16 m/s
+  // TIMING is the channel's (verified right by feel): full arc T = 0.65 s.
+  // HEIGHT is decoupled (user: the channel's 0.67 m apex reads too low on
+  // screen): apex target 1.1 m feet clearance — INFERRED, footage scale.
+  // In a ballistic arc h and T pin both parameters: v0 = 4h/T, g = 8h/T².
+  // The double-jump boost keeps the REAL channel ratio (10.75/9.37 rise).
+  const JUMP_T = 0.65;   // derived: comp-421 arc duration
+  const JUMP_H = 1.1;    // INFERRED: footage feet-clearance target
+  const JUMP_G = (8 * JUMP_H / (JUMP_T * JUMP_T)) * Chain.METERS_TO_WORLD;  // 20.8 m/s²
+  const JUMP_V0 = (4 * JUMP_H / JUMP_T) * Chain.METERS_TO_WORLD;            // 6.77 m/s
+  const DJUMP_V0 = JUMP_V0 * Math.sqrt(10.75 / 9.37); // REAL boost ratio
   const PHYS_JUMP = /^(jumpUp|jumpAir|jumpDoubleAir|berJumpAir|berJumpDoubleAir)$/;
   // apply the character root transform to an in-place pose: rotate every joint
   // matrix by the heading about the origin, then translate by the accumulated
@@ -2203,7 +2207,7 @@
         }
         if (y0 !== null && yMax - y0 > 0.5) {
           extra += `jump rise <b>${((yMax - y0) / Chain.METERS_TO_WORLD).toFixed(2)} m</b> (comp-421 vertical channel)` +
-            (PHYS_JUMP.test(name) ? ` <span style="color:#86aed0">— animation reference; the controller jump is ballistic (g 11.25 m/s² + v0 3.88 m/s — both derived from this channel’s curvature/apex)</span>` : "") + `<br>`;
+            (PHYS_JUMP.test(name) ? ` <span style="color:#86aed0">— animation reference; the controller jump is ballistic (arc timing 0.65 s from this channel · apex 1.1 m footage-calibrated → v0 6.77 m/s, g 20.8 m/s²)</span>` : "") + `<br>`;
         }
       }
       const cd = CONCUSSION[name];
