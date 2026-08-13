@@ -1875,6 +1875,13 @@
     const fwdx = -Math.sin(dummy.hd), fwdz = -Math.cos(dummy.hd);
     const rgtx = Math.cos(dummy.hd), rgtz = -Math.sin(dummy.hd);
     const df = ix * fwdx + iz * fwdz, dr = ix * rgtx + iz * rgtz;
+    // JUGGLE: a hit on an AIRBORNE soldier re-pops him (GoW air combos) —
+    // stay in the launch tumble, vy floor 4 m/s (INFERRED re-pop).
+    if (dummy.y > 0.5) {
+      dummy.play("hitLaunch");
+      dummy.vy = Math.max(dummy.vy, 4 * Chain.METERS_TO_WORLD);
+      return true;
+    }
     // heavy blows (>= 20 after multipliers, INFERRED threshold) use his
     // REAL big-stagger clip; normal hits stay direction-relative.
     if (dmg >= 20 && dummy.rig.anm.acts.has("hitStagger")) dummy.play("hitStagger");
@@ -4487,10 +4494,14 @@
                 da = Math.atan2(Math.sin(da), Math.cos(da));
                 if (dd <= reachR + 3 && Math.abs(da) <= Math.PI / 12) {
                   dummy.lastHitMove = machine.st.hits;
+                  // blockLauncher IS the launcher: pop him airborne for air
+                  // combos (up impulse INFERRED at the Impale's class — the
+                  // launcher has no authored concussion; engine melee)
+                  const isLauncher = machine.st.current === "blockLauncher";
                   // damage = base × REAL weapon-level Dmg Mult (1→5) × REAL costume mult
                   const dmg = 8 * (weaponLevel >= 5 ? 5 : 1) * COSTUMES[costumeIdx].dmg
                     * DIFFICULTY[difficultyIdx].dmg; // REAL /GlobGame/ difficulty Damage Mult
-                  dummyHit(dmg, pcx, pcz, false, 0);
+                  dummyHit(dmg, pcx, pcz, isLauncher, isLauncher ? 300 : 0, isLauncher ? 2650 : 0);
                 }
               }
             }
