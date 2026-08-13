@@ -1235,7 +1235,7 @@
   // HP 100 is INFERRED (his /TweakTemplates/Sold/020 stat template is decoded-
   // pending); damage = base × REAL weapon-level Dmg Mult × REAL costume mult.
   if (dummy) {
-    dummy.x = 0; dummy.z = -5 * ARENA_M; dummy.hd = Math.PI; // 5 m out, facing the arena center (front = −Z ⇒ hd π faces +Z)
+    dummy.x = 0; dummy.z = -8 * ARENA_M; dummy.hd = Math.PI; // 8 squares ahead of the starting hero, facing him
     dummy.cur = "spawn"; dummy.t = 0;
     dummy.maxHp = 100; dummy.hp = 100;      // INFERRED
     dummy.tauntIn = 6;
@@ -1248,6 +1248,17 @@
     dummy.play = (n) => { if (dummy.rig.anm.acts.has(n)) { dummy.cur = n; dummy.t = 0; } };
   }
   const DUMMY_TAUNTS = ["taunt02", "taunt03", "taunt04"];
+  // (re)spawn placement (user): 8 squares AHEAD of wherever Kratos currently
+  // stands and faces — never on top of him after he's moved — facing him.
+  function placeDummyAheadOfHero() {
+    const fx = -Math.sin(rootMotion.hd), fz = -Math.cos(rootMotion.hd);
+    dummy.x = rootMotion.x + fx * 8 * ARENA_M;
+    dummy.z = rootMotion.z + fz * 8 * ARENA_M;
+    const lim = ARENA_HALF - ARENA_M;
+    dummy.x = Math.max(-lim, Math.min(lim, dummy.x));
+    dummy.z = Math.max(-lim, Math.min(lim, dummy.z));
+    dummy.hd = Math.atan2(-(rootMotion.x - dummy.x), -(rootMotion.z - dummy.z));
+  }
   // INFERRED display scale: the SKS skeleton is authored ~1.4× the hero's
   // numeric scale (rest head 45.4 u vs 34.0) with NO normalizing field found
   // in MDL/OBJ (MDL trailing floats hero 12.0 / SKS 5.0 noted but unproven).
@@ -1272,7 +1283,12 @@
       if (/^death/.test(dummy.cur)) {
         dummy.t = d - 0.001; // corpse hold
         dummy.respawnIn -= STEP;
-        if (dummy.respawnIn <= 0) { dummy.hp = dummy.maxHp; dummy.play("spawn"); log("🦴 the legionnaire rises again"); }
+        if (dummy.respawnIn <= 0) {
+          dummy.hp = dummy.maxHp;
+          placeDummyAheadOfHero(); // rise 2 squares ahead of Kratos, facing him
+          dummy.play("spawn");
+          log("🦴 the legionnaire rises again");
+        }
       } else if (dummy.cur === "standIdle" || dummy.cur === DUMMY_WALK) {
         dummy.t %= d;
       } else if (dummy.cur === "hitLaunch" || dummy.cur === "hitBounce") {
@@ -3293,8 +3309,8 @@
     if (dummy) {
       dummy.on = true;
       $("btnDummy").classList.add("latched");
-      dummy.x = 0; dummy.z = -5 * ARENA_M; dummy.hd = Math.PI;
       dummy.kbx = dummy.kbz = 0; dummy.hp = dummy.maxHp; dummy.hits = 0;
+      placeDummyAheadOfHero(); // 8 squares ahead of the (reset) hero
       dummy.play("spawn");
     }
     log("↺ lab reset to defaults");
