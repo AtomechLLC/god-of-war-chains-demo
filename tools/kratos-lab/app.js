@@ -1617,6 +1617,25 @@
   const DUMMY_WALK_SPEED = 3.0 * ARENA_M;
   const DUMMY_RUN_SPEED = 8.0 * ARENA_M;
   const DUMMY_NEAR = 8 * ARENA_M;           // approach until 8 squares away (user)
+  // a move's AUTHORED vertical rise apex (comp-421 channel, REAL data) —
+  // the launcher's 6.2 m "launch-follow" leap is the height KRATOS rides
+  // during blockLauncher, so it is the height the VICTIM must fly to.
+  const riseApexCache = {};
+  function moveRiseApex(move) {
+    if (move in riseApexCache) return riseApexCache[move];
+    let mx = 0;
+    const a = rig && rig.anm.acts.get(move);
+    if (a && rig.rootDispY) {
+      const d0 = rig.rootDispY(move, 0);
+      if (d0 !== null && Number.isFinite(d0)) {
+        for (let k = 0; k <= 60; k++) {
+          const v = rig.rootDispY(move, (k / 60) * (a.duration - 0.001));
+          if (v !== null && Number.isFinite(v)) mx = Math.max(mx, v - d0);
+        }
+      }
+    }
+    return (riseApexCache[move] = mx);
+  }
   const KB_SCALE = 0.42; // units/s per impulse unit — INFERRED scale on the REAL impulses
   // launch vertical: v0 = GroundImpulseUp × this (INFERRED; 3000 → 15.8 m/s
   // → apex 2.5 m under the REAL /GlobGame/ Gravity 50 m/s²)
@@ -1859,14 +1878,12 @@
     // 3000 → ~16 m/s, apex ≈ 2.5 m under the REAL world Gravity 50);
     // radial blasts get a small pop (INFERRED) so the tumble reads.
     if (launch) {
-      // EVERY launch pops AT LEAST as high as KRATOS' JUMP (user spec) —
-      // his v0 + gravity give the 2.0 m apex and 0.65 s hang. Stronger
-      // authored impulses (Impale GroundImpulseUp 3000 → 15.8 m/s) go
-      // higher still, floating at the same jump gravity. The old
-      // "small pop" for radial blasts read as nothing (user report) —
-      // in-game Plume victims fly.
-      const upImp = upImpulse || 0;
-      dummy.vy = Math.max(JUMP_V0, upImp > 0 ? upImp * LAUNCH_V_SCALE : 0);
+      // Launch apex comes from the ATTACK's own authored data (user-
+      // corrected: the victim flies to where the attack sends KRATOS):
+      // the caller passes vy computed from the move's comp-421 rise apex
+      // (blockLauncher: the REAL 6.2 m launch-follow) or from a REAL
+      // authored up-impulse (Impale). Floor: Kratos' plain jump.
+      dummy.vy = Math.max(JUMP_V0, upImpulse || 0);
       dummy.launchG = JUMP_G;
       dummy.y = Math.max(dummy.y, 0.01);
     }
@@ -4393,7 +4410,7 @@
             if (dummy && dummy.on && Math.hypot(dummy.x - cx, dummy.z - cz) <= cd.s * ARENA_M) {
               const dmg = 20 * (weaponLevel >= 5 ? 5 : 1) * COSTUMES[costumeIdx].dmg
                 * DIFFICULTY[difficultyIdx].dmg; // REAL /GlobGame/ difficulty Damage Mult
-              dummyHit(dmg, cx, cz, true, cd.imp, cd.up);
+              dummyHit(dmg, cx, cz, true, cd.imp, cd.up > 0 ? cd.up * LAUNCH_V_SCALE : 0);
             }
           }
         }
@@ -4509,7 +4526,11 @@
                   // damage = base × REAL weapon-level Dmg Mult (1→5) × REAL costume mult
                   const dmg = 8 * (weaponLevel >= 5 ? 5 : 1) * COSTUMES[costumeIdx].dmg
                     * DIFFICULTY[difficultyIdx].dmg; // REAL /GlobGame/ difficulty Damage Mult
-                  dummyHit(dmg, pcx, pcz, isLauncher, isLauncher ? 300 : 0, isLauncher ? -1 : 0); // -1 = Kratos-jump ballistics
+                  // launcher: the victim flies to the move's AUTHORED rise apex
+                  // (comp-421 — blockLauncher's REAL 6.2 m launch-follow leap)
+                  const apexU = isLauncher ? moveRiseApex(machine.st.current) : 0;
+                  dummyHit(dmg, pcx, pcz, isLauncher, isLauncher ? 300 : 0,
+                    apexU > 0 ? Math.sqrt(2 * JUMP_G * apexU) : 0);
                 }
               }
             }
