@@ -51,6 +51,13 @@ with `MAT_MAIswrock1.bin`/`MAT_MAIchunk.bin` ("usual" blend) over
 `GFX/PAL_stone.bin` and `GFX/PAL_specks2.bin`. PlayFX "Hero Impale S/L"
 at x1/x5.
 
+And the explosion SHELL chain: `combo3fexplode.bin` (7-joint object) +
+`ANM_combo3fexplode.bin` (the 0.7 s act) + `MDL_combo3fExplode.bin` +
+`combo3fExplode_0.bin` (350-vert five-pillar ring mesh), `MAT_lambert2.bin` +
+`ANM_lambert2.bin` (additive lava over TXR_sfxlavaflow, downward scroll +
+fade curves), `MAT_Expcloud/MAT_speaks/MAT_debrie.bin` (the composite's real
+per-system materials) and `GFX/PAL_specks.bin`.
+
 ## enemy/ — the target dummy (added 2026-08-13)
 
 Impact-VFX chain (added 2026-08-14, carved from `R_SKS.WAD`): `GFX_blood.bin` +

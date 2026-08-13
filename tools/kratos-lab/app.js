@@ -192,8 +192,66 @@
       debAccel: debP.params[73],            // −300.86 @+0x188 (candidate — debris falls hard)
       fieldAccel: dvG.getFloat32(0x58, true), // −20.0 (the explosion's own gravity field)
     };
+    // the composite's REAL per-system materials (group bindings, R_PERM):
+    // Fcloudpart/fglowpart/Debpart → MAT_debrie ("usual", GFX_specks2) —
+    // the cloud/glow/debris are SMOKE-DEBRIS sprites, NOT additive fire;
+    // the fire look comes from the SHELL below. sparks → MAT_speaks
+    // (usual, GFX_specks — left on the shared ember pass, INFERRED).
+    const [smGfx, smPal] = await Promise.all([
+      Parsers.fetchBuf("../../assets/perm/GFX_specks2.bin"),
+      Parsers.fetchBuf("../../assets/perm/PAL_specks2.bin"),
+    ]);
+    plumeFx.smokeImg = Parsers.decodeTexture(smGfx, smPal);
+    // ---- the explosion SHELL: combo3fExplode_0 — five lava pillars in a
+    // ring (7 joints, NO invBinds → the joint-local static class, same as
+    // the SKS). Its one act ("combo3fExplode", 0.7 s) decodes STATIC —
+    // the whole life is the MATERIAL anim: MAT_lambert2 = ADDITIVE lava
+    // (TXR_sfxlavaflow, blendColor 0.69/0.29/0.16) with ANM_lambert2's
+    // REAL curves (fade 17×f32 @+0x158, scroll step @+0x1d0−0x1cc, here
+    // NEGATIVE − the lava streams DOWN the pillars). Raw ×0.1 → units
+    // (INFERRED, same factor as the fire path, twice-corroborated).
+    const [shObj, shAnm, shMesh, shMat, shMAnm, shGfx, shPal] = await Promise.all([
+      Parsers.fetchBuf("../../assets/perm/combo3fexplode.bin"),
+      Parsers.fetchBuf("../../assets/perm/ANM_combo3fexplode.bin"),
+      Parsers.fetchBuf("../../assets/perm/combo3fExplode_0.bin"),
+      Parsers.fetchBuf("../../assets/perm/MAT_lambert2.bin"),
+      Parsers.fetchBuf("../../assets/perm/ANM_lambert2.bin"),
+      Parsers.fetchBuf("../../assets/perm/GFX_Fire64BScrollUV.bin"),
+      Parsers.fetchBuf("../../assets/perm/PAL_Fire64BScrollUV.bin"),
+    ]);
+    const shRig = GowAnim.makeRig(shObj, shAnm);
+    const shM = Parsers.parseMesh(shMesh);
+    const shSkin = buildSkin(shRig, shM);
+    skinPoseFor(shRig, shSkin, shM, shRig.computePose("combo3fExplode", 0)); // pose is static
+    const shTris = new Float32Array(shM.idx.length * 5);
+    for (let i = 0; i < shM.idx.length; i++) {
+      const vi = shM.idx[i];
+      shTris[i * 5 + 0] = shSkin.out[vi * 3 + 0];
+      shTris[i * 5 + 1] = shSkin.out[vi * 3 + 1];
+      shTris[i * 5 + 2] = shSkin.out[vi * 3 + 2];
+      shTris[i * 5 + 3] = shM.uv[vi * 2 + 0];
+      shTris[i * 5 + 4] = shM.uv[vi * 2 + 1];
+    }
+    const dvSM = new DataView(shMat.buffer, shMat.byteOffset, shMat.byteLength);
+    const dvSA = new DataView(shMAnm.buffer, shMAnm.byteOffset, shMAnm.byteLength);
+    const shFade = [];
+    for (let i = 0; i < 17; i++) shFade.push(dvSA.getFloat32(0x158 + i * 4, true));
+    plumeFx.shell = {
+      tris: shTris,
+      durTicks: Math.round(shRig.anm.acts.get("combo3fExplode").duration * 60), // REAL 0.7 s act
+      fade: shFade,
+      scrollRate: (dvSA.getFloat32(0x1d0, true) - dvSA.getFloat32(0x1cc, true)) * 30, // REAL, negative
+      matColor: [dvSM.getFloat32(8, true), dvSM.getFloat32(12, true), dvSM.getFloat32(16, true)],
+      blendColor: [dvSM.getFloat32(0x60, true), dvSM.getFloat32(0x64, true),
+                   dvSM.getFloat32(0x68, true), dvSM.getFloat32(0x6c, true)],
+      mode: (dvSM.getUint32(0x38, true) & 0x08000000) ? "additive" : "usual",
+      img: Parsers.decodeTexture(shGfx, shPal),
+      RAW_TO_UNIT: 0.1,
+      live: [],
+    };
     console.log("plumeFx:", { flash: plumeFx.flash, cloud: plumeFx.cloud, spark: plumeFx.spark,
-      glow: plumeFx.glow, deb: plumeFx.deb, debAccel: plumeFx.debAccel, fieldAccel: plumeFx.fieldAccel });
+      glow: plumeFx.glow, deb: plumeFx.deb, debAccel: plumeFx.debAccel, fieldAccel: plumeFx.fieldAccel,
+      shellDur: plumeFx.shell.durTicks, shellScroll: +plumeFx.shell.scrollRate.toFixed(3), shellMode: plumeFx.shell.mode });
   } catch (e) { console.warn("plume explosion load", e); }
   // REAL per-move explosion scale (the PlayFX instances above)
   const PLUME_SCALE = { comboLR3: [2, 1.5, 2], combo3F: [1.5, 1, 1.5], combo7A: [1, 0.5, 1] };
@@ -724,6 +782,8 @@
   })();
   // goCombo3fExplode cloud sprite (REAL 128×128 GFX_explosioncloud, R_PERM.WAD)
   if (plumeFx) plumeFx.tex = makeTex(plumeFx.img, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE, filter: true });
+  if (plumeFx && plumeFx.smokeImg) plumeFx.smokeTex = makeTex(plumeFx.smokeImg, { wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE, filter: true });
+  if (plumeFx && plumeFx.shell) plumeFx.shell.tex = makeTex(plumeFx.shell.img, { wrapS: gl.REPEAT, wrapT: gl.REPEAT, filter: true });
   // goFXfirePath lava sheet (REAL GFX_Fire64BScrollUV via TXR_sfxlavaflow) — REPEAT both axes: the
   // strip's V runs past 1 and the REAL ANM scroll pushes it further every frame
   if (firePath) firePath.tex = makeTex(firePath.img, { wrapS: gl.REPEAT, wrapT: gl.REPEAT, filter: true });
@@ -2477,6 +2537,44 @@
         gl.drawArrays(gl.TRIANGLES, 0, mwV.length / 6);
       }
     }
+    // PASS — the Plume explosion SHELL: five posed lava pillars (REAL mesh,
+    // REAL additive lava material + its OWN ANM curves: downward scroll,
+    // 17-sample fade across the act's REAL 0.7 s life).
+    if (plumeFx && plumeFx.shell && plumeFx.shell.tex && plumeFx.shell.live.length) {
+      const sh = plumeFx.shell;
+      const shV = [];
+      for (let li = sh.live.length - 1; li >= 0; li--) {
+        const w = sh.live[li];
+        const age = simStepCount - w.born;
+        if (age > sh.durTicks) { sh.live.splice(li, 1); continue; }
+        // the REAL fade spans the act tail: hold, then the 34-tick curve
+        const fadeTicks = sh.fade.length * 2;
+        let env = 1;
+        if (age > sh.durTicks - fadeTicks) {
+          const fi = Math.min(sh.fade.length - 1, Math.floor((age - (sh.durTicks - fadeTicks)) / 2));
+          env = sh.fade[fi];
+        }
+        const scroll = (age / 60) * sh.scrollRate;
+        const K0 = sh.RAW_TO_UNIT;
+        const T = sh.tris;
+        for (let i = 0; i < T.length; i += 5) {
+          shV.push(w.x + T[i] * K0 * w.sxz, T[i + 1] * K0 * w.sy, w.z + T[i + 2] * K0 * w.sxz,
+                   T[i + 3], T[i + 4] + scroll, env);
+        }
+      }
+      if (shV.length) {
+        Fx.applyMaterial(gl, { name: "fxPlumeShell", mode: sh.mode, disableDepthWrite: true });
+        fxLog.push({ name: "fxPlumeShell", mode: sh.mode, depthWrite: false });
+        gl.uniform1f(fxLocs.uTrailRamp, 0);
+        gl.uniform1f(fxLocs.uGlowGain, 0);
+        gl.uniform1f(fxLocs.uCutoff, 0);
+        gl.uniform3fv(fxLocs.uMaterialColor, sh.matColor);
+        gl.uniform4fv(fxLocs.uLayerColor, sh.blendColor);
+        gl.bindTexture(gl.TEXTURE_2D, sh.tex);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(shV), gl.DYNAMIC_DRAW);
+        gl.drawArrays(gl.TRIANGLES, 0, shV.length / 6);
+      }
+    }
     const EMBER_UV = [0.75, 0.8, 0.25, 0.2];
     // (trail-spark rider batch removed with its spawner — the swoosh decal carries the arc detail)
     // PASS — blade fire (flame3 + flame6, FIRE-01): its OWN batch by texture (D-02).
@@ -2510,12 +2608,15 @@
       drawPool(mvp, view, dummy.blood.tex, { name: "fxBlood", kinds: BLOOD_KINDS, mode: dummy.blood.mode });
     // PASS — Plume explosion cloud/glow: REAL greyscale explosioncloud sprite
     // × the decoded fire color (same source as the blade fire) — additive.
-    if (plumeFx && plumeFx.tex)
-      drawPool(mvp, view, plumeFx.tex, { name: "fxPlumeCloud", kinds: CLOUD_KINDS, tint: db.meta.colorSource.value });
+    // (corrected to the REAL group bindings: Fcloudpart/fglowpart/Debpart
+    // all ride MAT_debrie — "usual"-blended GFX_specks2 smoke-debris; the
+    // additive fire is the SHELL's job)
+    if (plumeFx && plumeFx.smokeTex)
+      drawPool(mvp, view, plumeFx.smokeTex, { name: "fxPlumeCloud", kinds: CLOUD_KINDS, mode: "usual" });
     // PASS — Plume debris: dark chunks, "usual" blend (tint INFERRED — no
     // debris material record; the sprite doubles as the chunk texture).
-    if (plumeFx && plumeFx.tex)
-      drawPool(mvp, view, plumeFx.tex, { name: "fxPlumeDebris", kinds: DEBRIS_KINDS, mode: "usual" });
+    if (plumeFx && plumeFx.smokeTex)
+      drawPool(mvp, view, plumeFx.smokeTex, { name: "fxPlumeDebris", kinds: DEBRIS_KINDS, mode: "usual" });
     // PASS — MAISW rocks + debris: REAL stone/specks textures, REAL "usual"
     // blend (MAT_MAIswrock1 / MAT_MAIchunk bit 26).
     if (mswave && mswave.stoneTex)
@@ -4031,9 +4132,13 @@
               if (flasherTex) fxPool.spawn({ pos: [cx, 6, cz], vel: [0, 0, 0],
                 size: plumeFx.flash * M2W * sxz * 2.4, life: 9 * Loop.STEP,
                 color: [1, 1, 1, 2.6], kind: "hitFlash" });
-              fxPool.spawn({ pos: [cx, 4, cz], vel: [0, 3, 0],   // the big soft glow
+              if (plumeFx.shell && plumeFx.shell.tex) {
+                plumeFx.shell.live.push({ x: cx, z: cz, born: simStepCount, sxz, sy });
+                if (plumeFx.shell.live.length > 4) plumeFx.shell.live.shift();
+              }
+              fxPool.spawn({ pos: [cx, 4, cz], vel: [0, 3, 0],   // the big soft glow (MAT_debrie smoke)
                 size: plumeFx.glow * M2W * sxz, life: 32 * Loop.STEP,
-                color: [1, 1, 1, 0.7], kind: "cloud", gscale: cloudG });
+                color: [0.5, 0.44, 0.38, 0.55], kind: "cloud", gscale: cloudG });
               for (let i = 0; i < 9; i++) {                        // billowing fire cloud
                 const a = (i / 9) * Math.PI * 2 + Math.random();
                 const rr = (2 + Math.random() * 3) * sxz;
@@ -4042,7 +4147,7 @@
                   vel: [Math.cos(a) * (3 + Math.random() * 5) * sxz, (7 + Math.random() * 9) * sy, Math.sin(a) * (3 + Math.random() * 5) * sxz],
                   size: plumeFx.cloud * M2W * sxz * (0.55 + Math.random() * 0.55),
                   life: (30 + Math.random() * 18) * Loop.STEP,
-                  color: [1, 1, 1, 1.3], kind: "cloud", gscale: cloudG });
+                  color: [0.55, 0.47, 0.4, 0.85], kind: "cloud", gscale: cloudG });
               }
               for (let i = 0; i < 16; i++) {                       // spark fountain (existing streak pass)
                 const a = Math.random() * Math.PI * 2;
