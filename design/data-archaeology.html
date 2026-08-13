@@ -122,6 +122,14 @@ duel</td><td>ANM type-10 tracks</td><td class="real">tracks real; context inferr
 <tr><td>Costume 0–5 gameplay table (reach, damage, orb mults)</td><td>/Player/</td><td class="real">real</td></tr>
 <tr><td>"Nominal Particles 36" belongs to the blood emitter, not fire</td><td>/GlobGame/ ("goBloodSpot")</td><td class="dead">reassigned</td></tr>
 <tr><td>Queue/branch/cancel windows</td><td>engine code only</td><td class="dead">no data; modeled</td></tr>
+<tr><td>Hero jump physics (v0/gravity): NO named parameters anywhere — the
+ELF's "Jump&nbsp;Compensation"/"Double&nbsp;Jump&nbsp;Comp" strings belong to
+the <i>camera</i> tweak block (Elevation&nbsp;Constraint / Move&nbsp;Dolly /
+Safe&nbsp;Zones context) and "Fall&nbsp;Time" to the BloodSpots particles;
+the jump constants are anonymous compiled floats. The lab's ballistic jump
+uses what <i>is</i> data: the comp-421 channel's arc shape &amp; timing
+(0.65&nbsp;s) and the model height (28&nbsp;u&nbsp;=&nbsp;2.0&nbsp;m) as the
+apex</td><td>SCUS_973.99 string pool + code float-sweep</td><td class="dead">named params proven absent; arc timing &amp; apex real-anchored</td></tr>
 </table>
 
 <p><a href="../">&larr; back</a> · <a href="twk/index.html">the decoded sheets</a> ·

@@ -2071,12 +2071,15 @@
   // along it; prevTrackX tracks the lateral comp-420 channel (side evades).
   const rootMotion = { on: true, x: 0, z: 0, y: 0, vy: 0, hd: 0, px: 0, pz: 0, prevTrack: null, prevTrackY: null, prevTrackX: null, pendingRebase: false };
   const GRAV_UNITS = 50 * Chain.METERS_TO_WORLD; // REAL /GlobGame/ Gravity 50 m/s² × units bridge
-  // BALLISTIC JUMP (user-corrected, game-files check): no jump-parameter
-  // overrides exist in ANY data bank — the ELF registers 'Jump Compensation' /
-  // 'Double Jump Comp' / 'Fall Time' with compiled defaults, and the clips'
-  // comp-421 channels are animation REFERENCE motion (what the compensation
-  // compensates), not the controller. The engine model is plain ballistics:
-  // instant v0 at takeoff, the REAL Gravity 50 on the way up AND down.
+  // BALLISTIC JUMP (user-corrected; binary-verified 2026-08-12): no named
+  // hero-jump parameters exist ANYWHERE — not in the TWK banks, and the ELF's
+  // 'Jump Compensation'/'Double Jump Comp' strings sit in the CAMERA tweak
+  // block (Elevation Constraint / Move Dolly / Safe Zones context — camera
+  // smoothing during jumps), while 'Fall Time' is the BloodSpots particle
+  // param (3.0 s, already decoded). The hero's v0/g are anonymous compiled
+  // constants; a code float-sweep finds no attributable pair short of full
+  // MIPS disassembly. The model stands on what IS data: ballistic arc shape
+  // (the channel's own curvature), channel arc timing, and the model height.
   // BOTH jump parameters DERIVED from the comp-421 channel itself — the
   // channel is a ballistic arc: its tail deceleration measures ~0.70 u/frame²
   // at 15 Hz = 11.25 m/s² (the JUMP gravity — distinct from the world/
