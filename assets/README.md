@@ -28,6 +28,13 @@ the course context; do not redistribute it outside that context.
 
 ## enemy/ — the target dummy (added 2026-08-13)
 
+Impact-VFX chain (added 2026-08-14, carved from `R_SKS.WAD`): `GFX_blood.bin` +
+`PAL_blood.bin` (the 64x64 greyscale impact-blood sprite), `MAT_blood.bin`
+(material: "usual" alpha blend, linear filter), `FXC_BloodXemitT.bin` +
+`PTC_BloodXpartT.bin` (the goSklBlood emitter/particle pair). These are the
+records behind the MFX "Zombie Flesh" hit response (goSklBlood + SND_BLOODSPURT)
+and the "SKS Blood Top/Mid" PlayFX joint anchors (neck/pelvis).
+
 The undead legionnaire (R_SKS.WAD, extracted via godofwar.toc + part1.pak
 sector addressing): `SKS_0.bin` mesh (3,265 verts), `sks.bin` skeleton object
 (29 joints — note the WAD holds TWO records named `sks`; the first is the

@@ -90,6 +90,9 @@ const Particles = (() => {
         size: p.size,
         color: p.color ? p.color.slice() : [1, 1, 1, 1],
         kind: p.kind,
+        // per-kind gravity scale: 1 = the decoded fire gravity G; blood's
+        // PTC carries its own (stronger) accel — gscale = theirs / G
+        gscale: Number.isFinite(p.gscale) ? p.gscale : 1,
       });
       return true;
     }
@@ -100,8 +103,9 @@ const Particles = (() => {
     // in a single filter pass (bounds lifetime growth).
     function integrate(dt) {
       for (const q of particles) {
+        const gs = q.gscale || 1;
         q.pos[0] += q.vel[0] * dt; q.pos[1] += q.vel[1] * dt; q.pos[2] += q.vel[2] * dt;
-        q.vel[0] += G[0] * dt;     q.vel[1] += G[1] * dt;     q.vel[2] += G[2] * dt;
+        q.vel[0] += G[0] * gs * dt; q.vel[1] += G[1] * gs * dt; q.vel[2] += G[2] * gs * dt;
         q.age += dt;
       }
       particles = particles.filter((q) => q.age <= q.life);          // strict age>life cull

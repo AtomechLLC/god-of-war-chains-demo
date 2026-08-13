@@ -118,6 +118,16 @@ to 7&nbsp;m. Rage of the Gods keeps the blades (its blue-glyph aura = the
 god-mode FX set); the brawl set's context is likely the disarmed Ares
 duel</td><td>ANM type-10 tracks</td><td class="real">tracks real; context inferred</td></tr>
 <tr><td>Impact flash sprite (radial burst)</td><td>GFX_flasher03</td><td class="real">real</td></tr>
+<tr><td>The hit-response system is THREE decoded layers: MFX per-material
+templates ("Zombie Flesh" → effect goSklBlood + sound SND_BLOODSPURT; "Flesh"
+adds goFleshSlice, armor gets goArmorSlice), PlayFX joint anchors ("SKS Blood
+Top" @ neck / "SKS Blood Mid" @ pelvis, decap gibs @ vertebrae2/pelvis), and
+the effect object's own chain (FXC_BloodXemitT → PTC_BloodXpartT → MAT_blood
+"usual"-blend → the 64×64 GREYSCALE puff GFX_blood — color is runtime tint,
+same pattern as the blade fire). Kratos-side: Plume enders bind
+goCombo3fExplode + goFXfirePath, the air Impale goMAISWeffect (×1/×5) — all
+in R_PERM.WAD. The lab's dummy now bleeds through this chain</td>
+<td>R_SKS.WAD in-WAD TWK banks + part1.pak PlayFX + R_PERM.WAD</td><td class="real">bindings real; tint + spray fan inferred</td></tr>
 <tr><td>Fire gravity −43.64 u/s² (identical across both fire systems)</td><td>PTC_BFTpart1/2</td><td class="real">value real, reading inferred</td></tr>
 <tr><td>Costume 0–5 gameplay table (reach, damage, orb mults)</td><td>/Player/</td><td class="real">real</td></tr>
 <tr><td>Difficulty never scales enemy HP — it scales the <i>player's</i> damage:

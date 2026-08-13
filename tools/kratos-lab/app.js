@@ -76,17 +76,53 @@
   let dummy = null;
   try {
     status("raising the target dummy…");
-    const [dMeshBuf, dObjBuf, dAnmBuf, dGfx, dPal] = await Promise.all([
+    const [dMeshBuf, dObjBuf, dAnmBuf, dGfx, dPal, bGfx, bPal, bMat, bFxc, bPtc] = await Promise.all([
       Parsers.fetchBuf("../../assets/enemy/SKS_0.bin"),
       Parsers.fetchBuf("../../assets/enemy/sks.bin"),
       Parsers.fetchBuf("../../assets/enemy/ANM_sks.bin"),
       Parsers.fetchBuf("../../assets/enemy/GFX_SKStextNu.bin"),
       Parsers.fetchBuf("../../assets/enemy/PAL_SKStextNu.bin"),
+      // goSklBlood — HIS decoded impact effect (R_SKS.WAD): the MFX "Zombie
+      // Flesh" hit response plays goSklBlood + SND_BLOODSPURT; the PlayFX
+      // instances anchor it at the NECK ("SKS Blood Top") or PELVIS ("SKS
+      // Blood Mid"). Chain: FXC_BloodXemitT → PTC_BloodXpartT → MAT_blood →
+      // GFX/PAL_blood (64×64 GREYSCALE puff — engine tints at draw).
+      Parsers.fetchBuf("../../assets/enemy/GFX_blood.bin"),
+      Parsers.fetchBuf("../../assets/enemy/PAL_blood.bin"),
+      Parsers.fetchBuf("../../assets/enemy/MAT_blood.bin"),
+      Parsers.fetchBuf("../../assets/enemy/FXC_BloodXemitT.bin"),
+      Parsers.fetchBuf("../../assets/enemy/PTC_BloodXpartT.bin"),
     ]);
     const dMesh = Parsers.parseMesh(dMeshBuf);
     const dRig = GowAnim.makeRig(dObjBuf, dAnmBuf);
     const dImg = Parsers.decodeTexture(dGfx, dPal);
     dummy = { on: true, mesh: dMesh, rig: dRig, img: dImg };
+    {
+      // decode the blood chain (all REAL bytes; interpretations labeled)
+      const bloodImg = Parsers.decodeTexture(bGfx, bPal);
+      const dvM = new DataView(bMat.buffer, bMat.byteOffset, bMat.byteLength);
+      const flags0 = dvM.getUint32(0x38, true);            // layer0 Flags[0]
+      const usual = (flags0 & 0x04000000) !== 0;           // bit 26 = "usual" alpha blend (REAL: 0x44010080 sets it)
+      const ptc = FxParse.parsePtc(bPtc, { dataOff: 0, size: bPtc.byteLength, name: "PTC_BloodXpartT" });
+      const fxc = FxParse.parseFxc(bFxc, { dataOff: 0, size: bFxc.byteLength, name: "FXC_BloodXemitT" });
+      // param +0x1bc (index 86) = −192.0 — the schedule's strong downward
+      // accel; READ as blood gravity (candidate — PTC field semantics are
+      // the known-open problem; fire's −43.64 sits in another slot of its
+      // own schedule). gscale converts to pool-G multiples.
+      const accel = ptc.params[86];
+      // param +0x70 (index 3) = 0.6 — same slot as the fire PTC's 0.1
+      // droplet size; READ as the blood droplet half-size (candidate).
+      const dropSize = ptc.params[3];
+      dummy.blood = {
+        img: bloodImg, mode: usual ? "usual" : "additive",
+        gscale: Number.isFinite(accel) && accel < 0 ? accel / Particles.G[1] : 1,
+        size: Number.isFinite(dropSize) && dropSize > 0 ? dropSize : 0.6,
+        anchor: [fxc.matrix[12], fxc.matrix[13], fxc.matrix[14]], // identity → joint-local origin (REAL)
+      };
+      // REAL PlayFX anchors: "SKS Blood Top" @ neck / "SKS Blood Mid" @ pelvis
+      dummy.jid = {};
+      for (const j of dRig.obj.joints) dummy.jid[j.name] = j.id;
+    }
     console.log(`dummy: ${dMesh.verts} verts, ${dRig.jointCount} joints, ${dRig.anm.acts.size} acts`);
   } catch (e) { console.warn("dummy load", e); }
 
@@ -147,6 +183,7 @@
   const FIRE_KINDS = new Set(["fire3", "fire6"]);
   const SPARK_KINDS = new Set(["spark"]);   // FIRE-02 impact sparks — their own stretched batch
   const HITFLASH_KINDS = new Set(["hitFlash"]); // GFX_flasher03 on-hit radial burst
+  const BLOOD_KINDS = new Set(["blood"]);       // goSklBlood — the legionnaire's REAL impact effect
   // FIRE-02: the impact-spark emitter IS the SAME already-real FXC_BDEsparkemit family as
   // blade fire (A6 — continuous fire and on-hit sparks are one emitter family, differing
   // ONLY by trigger; NO new emitter decode, D-09a). Its decoded blade-local placement
@@ -472,6 +509,7 @@
     dummy.set = makeMeshSet(dummy.mesh, true);
     dummy.skin = buildSkin(dummy.rig, dummy.mesh);
     dummy.tex = makeTex(dummy.img, { wrapS: gl.CLAMP_TO_EDGE });
+    if (dummy.blood) dummy.blood.tex = makeTex(dummy.blood.img, { wrapS: gl.CLAMP_TO_EDGE });
   }
   const bladeTex = blade ? makeTex(blade.bImg) : null;
   const trailTex = blade ? makeTex(blade.trailImg) : null;
@@ -746,14 +784,17 @@
   gl.attachShader(poolProg, shader(gl.FRAGMENT_SHADER, `
     precision mediump float;
     varying vec2 vUV; varying vec4 vColor;
-    uniform sampler2D uTex;
+    uniform sampler2D uTex; uniform float uPremult;
     void main() {
       // alpha-over-1.0 premultiply (CLAUDE.md Part 1): output rgb·alpha128 with
       // alpha128 UNCLAMPED (GS As up to ~1.99), blended ONE,ONE (additivePremult)
       // => Cs·As + Cd — the GS fire/glow additive. The sprite texel modulates the
       // premultiplied color; alpha out = 0 leaves dest alpha untouched.
       vec4 t = texture2D(uTex, vUV);
-      gl_FragColor = vec4(vColor.rgb * vColor.a * t.rgb * t.a, 0.0);
+      // uPremult 1 = the GS additive path above; 0 = straight alpha for
+      // "usual"-blended batches (MAT_blood): rgb modulated, alpha carried.
+      vec4 straight = vec4(vColor.rgb * t.rgb, vColor.a * t.a);
+      gl_FragColor = mix(straight, vec4(vColor.rgb * vColor.a * t.rgb * t.a, 0.0), uPremult);
     }`));
   gl.linkProgram(poolProg);
   const poolLocs = {
@@ -767,6 +808,7 @@
     uCamUp: gl.getUniformLocation(poolProg, "uCamUp"),
     uStretch: gl.getUniformLocation(poolProg, "uStretch"),
     uUVRect: gl.getUniformLocation(poolProg, "uUVRect"),
+    uPremult: gl.getUniformLocation(poolProg, "uPremult"),
     uTex: gl.getUniformLocation(poolProg, "uTex"),
   };
   // ONE interleaved ARRAY_BUFFER (DYNAMIC_DRAW), allocated once at cap size and
@@ -1414,8 +1456,36 @@
     const cy = dummy.lastWorld ? dummy.lastWorld[2 * 16 + 13] : 18;
     const cz = dummy.lastWorld ? dummy.lastWorld[2 * 16 + 14] : dummy.z;
     if (flasherTex) fxPool.spawn({ pos: [cx, cy, cz], vel: [0, 0, 0], size: 5.0, life: 7 * Loop.STEP, color: [1, 1, 1, 2.2], kind: "hitFlash" });
-    fxPool.burst(14, { pos: [cx, cy, cz], vel: [0, 2.2, 0], size: 0.16, life: 20 * Loop.STEP, color: [1, 1, 1, 1.8], kind: "spark" },
-      () => (Math.random() - 0.5) * 5.0); // impact sparks AT the contact, ON the contact tick
+    // goSklBlood — the game's OWN impact effect for him (MFX "Zombie Flesh"
+    // → goSklBlood + SND_BLOODSPURT; the lab has no audio). Anchored at the
+    // REAL PlayFX joints: "SKS Blood Top" @ neck for launches/kills, "SKS
+    // Blood Mid" @ pelvis for body hits — the height SELECTOR is inferred
+    // (the game picks by hit location; our melee model is planar). Droplet
+    // size + gravity are the PTC's own values (candidate readings);
+    // count/life/velocity fan are INFERRED vs footage.
+    if (dummy.blood && dummy.blood.tex) {
+      const top = launch || dummy.hp <= 0 || rootMotion.y > 4; // INFERRED height pick (hp already decremented)
+      const jid = dummy.jid[top ? "neck" : "pelvis"];
+      const j16 = (jid !== undefined ? jid : 2) * 16;
+      const bx = dummy.lastWorld ? dummy.lastWorld[j16 + 12] + dummy.blood.anchor[0] : cx;
+      const by = dummy.lastWorld ? dummy.lastWorld[j16 + 13] + dummy.blood.anchor[1] : cy;
+      const bz = dummy.lastWorld ? dummy.lastWorld[j16 + 14] + dummy.blood.anchor[2] : cz;
+      const ax = dummy.x - fromX, az = dummy.z - fromZ;
+      const al = Math.hypot(ax, az) || 1;
+      for (let i = 0; i < 12; i++) {
+        const sp = 6 + Math.random() * 16;             // INFERRED spray speed fan
+        const tj = (Math.random() - 0.5) * 10;         // tangential scatter
+        fxPool.spawn({
+          pos: [bx + (Math.random() - 0.5) * 3, by + (Math.random() - 0.5) * 3, bz + (Math.random() - 0.5) * 3],
+          vel: [(ax / al) * sp - (az / al) * tj, 5 + Math.random() * 11, (az / al) * sp + (ax / al) * tj],
+          size: dummy.blood.size * Chain.METERS_TO_WORLD * (0.35 + Math.random() * 0.45), // PTC 0.6 read as METERS (units bridge) → ~3-7 u splash
+          life: (28 + Math.random() * 14) * Loop.STEP,          // INFERRED ~0.5-0.7 s
+          color: [0.42, 0.09, 0.05, 0.95],                       // dark undead red (INFERRED tint)
+          kind: "blood",
+          gscale: dummy.blood.gscale,                            // REAL-candidate −192 accel
+        });
+      }
+    }
     if (dmgNumbersOn) {
       // floating damage number: spawns at the impact, rises ~1 m and fades.
       // Slight x/z jitter so rapid multi-contacts don't stack into one glyph;
@@ -1732,8 +1802,12 @@
     // batch (spark riders / blade fire) applies + logs its own pass so fxState()
     // proves the additive/depth-off discipline per family.
     const batchName = (opts && opts.name) || "fxPool";
-    Fx.applyMaterial(gl, { name: batchName, mode: "additivePremult", disableDepthWrite: true });
-    fxLog.push({ name: batchName, mode: "additivePremult", depthWrite: false, count: drawn });
+    // blend from the batch's decoded MAT mode (DEC-01): additivePremult for
+    // the fire/spark/flash families; "usual" for blood (MAT_blood bit 26).
+    const batchMode = (opts && opts.mode) || "additivePremult";
+    gl.uniform1f(poolLocs.uPremult, batchMode === "usual" ? 0 : 1);
+    Fx.applyMaterial(gl, { name: batchName, mode: batchMode, disableDepthWrite: true });
+    fxLog.push({ name: batchName, mode: batchMode, depthWrite: false, count: drawn });
     gl.bindTexture(gl.TEXTURE_2D, batchTex);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, poolIdxBuf);
     gl.drawElements(gl.TRIANGLES, drawn * 6, gl.UNSIGNED_SHORT, 0);
@@ -2176,6 +2250,12 @@
     drawPool(mvp, view, trailTex, { name: "fxImpactSpark", kinds: SPARK_KINDS, tint: db.meta.colorSource.value, stretch: SPARK_STRETCH, uvRect: EMBER_UV });
     // PASS — on-hit flash: the REAL GFX_flasher03 radial burst as its own batch
     if (flasherTex) drawPool(mvp, view, flasherTex, { name: "fxHitFlash", kinds: HITFLASH_KINDS });
+    // PASS — goSklBlood impact blood (REAL sprite GFX_blood + REAL "usual"
+    // blend from MAT_blood bit 26). The 64×64 puff is GREYSCALE by design —
+    // the dark red-brown is a runtime tint (INFERRED vs footage; the undead
+    // bleed dark). Per-particle color carries it; no batch tint.
+    if (dummy && dummy.blood && dummy.blood.tex)
+      drawPool(mvp, view, dummy.blood.tex, { name: "fxBlood", kinds: BLOOD_KINDS, mode: dummy.blood.mode });
     Fx.restoreFxState(gl);
     gl.useProgram(prog);
   }
