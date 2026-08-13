@@ -2071,12 +2071,17 @@
   // along it; prevTrackX tracks the lateral comp-420 channel (side evades).
   const rootMotion = { on: true, x: 0, z: 0, y: 0, vy: 0, hd: 0, px: 0, pz: 0, prevTrack: null, prevTrackY: null, prevTrackX: null, pendingRebase: false };
   const GRAV_UNITS = 50 * Chain.METERS_TO_WORLD; // REAL /GlobGame/ Gravity 50 m/s² × units bridge
-  // HERO fall gravity (INFERRED, ascent-symmetric): the jumpUp channel's own
-  // deceleration is ~14-16 m/s² (1.54 m effective rise dying to zero velocity
-  // over 0.47 s) — a 16 m/s² descent mirrors the authored arc and gives the
-  // GoW float. The decoded Gravity 50 reads as world/projectile gravity; at
-  // 5 g the hero slammed down and the jump felt choppy (user report).
-  const HERO_FALL_G = 16 * Chain.METERS_TO_WORLD;
+  // BALLISTIC JUMP (user-corrected, game-files check): no jump-parameter
+  // overrides exist in ANY data bank — the ELF registers 'Jump Compensation' /
+  // 'Double Jump Comp' / 'Fall Time' with compiled defaults, and the clips'
+  // comp-421 channels are animation REFERENCE motion (what the compensation
+  // compensates), not the controller. The engine model is plain ballistics:
+  // instant v0 at takeoff, the REAL Gravity 50 on the way up AND down.
+  // v0 = sqrt(2·g·h) for a 1.5 m apex (ledge height) = 12.25 m/s — INFERRED
+  // calibration; the double jump re-launches at 0.85·v0 (INFERRED).
+  const JUMP_V0 = Math.sqrt(2 * 50 * 1.5) * Chain.METERS_TO_WORLD;
+  const DJUMP_V0 = 0.85 * JUMP_V0;
+  const PHYS_JUMP = /^(jumpUp|jumpAir|jumpDoubleAir|berJumpAir|berJumpDoubleAir)$/;
   // apply the character root transform to an in-place pose: rotate every joint
   // matrix by the heading about the origin, then translate by the accumulated
   // offsets. The blade track gets the identical treatment (applyRootTrack) so
@@ -2120,21 +2125,7 @@
       track[o + 2] += rootMotion.z;
     }
   }
-  // JUMP GAIN — INFERRED (footage-calibrated, user bar: apex ≈ Kratos' height).
-  // The pure jump clips' comp-421 channels are the authored ANIMATION rise only
-  // (jumpUp+jumpAir apex = 12.2 units = 0.87 m); the engine computes the true
-  // controller arc from ballistic tweaks that are provably uncracked (the
-  // goHero jump sections carry clip names + Tween/Cycle only). Gain 2.3 scales
-  // the REAL curve shape/timing to a ~2.0 m apex. Scripted full-magnitude
-  // channels (comboJump 6.4 m, blockLauncher launch-follow 6.2 m, airImpale)
-  // are NOT gained — their channels are already the whole arc.
-  // 1.7 (was 2.3): the rendered-frame trace showed the FEET clearing 2.13 m —
-  // above Kratos' own height, a superhero hop (user gif). Visual jump height
-  // is feet clearance ≈ the controller apex; 1.7 gives ~1.5 m single /
-  // ~2.8 m double — GoW1 ledge-height feel.
-  const JUMP_GAIN = 1.7;
-  const JUMP_GAIN_CLIPS = /^(jumpUp|jumpAir|jumpDoubleAir|berJumpAir|berJumpDoubleAir)$/;
-  const jumpGain = (move) => (JUMP_GAIN_CLIPS.test(move) ? JUMP_GAIN : 1);
+  let vertPrevMove = "idleCombat"; // takeoff edge detector for the ballistic jump
   let lastState = { name: "idleCombat", t: 0 };
   const machine = Combat.makeMachine((n) => DUR[n], {
     onMove(name, prev, via) {
@@ -2202,9 +2193,8 @@
           yMax = Math.max(yMax, v);
         }
         if (y0 !== null && yMax - y0 > 0.5) {
-          const g = jumpGain(name);
           extra += `jump rise <b>${((yMax - y0) / Chain.METERS_TO_WORLD).toFixed(2)} m</b> (comp-421 vertical channel)` +
-            (g !== 1 ? ` · shown ×${g} <span style="color:#86aed0">(inferred — engine ballistics uncracked)</span>` : "") + `<br>`;
+            (PHYS_JUMP.test(name) ? ` <span style="color:#86aed0">— animation reference; the controller jump is ballistic (Gravity 50 real · v0 12.25 m/s inferred)</span>` : "") + `<br>`;
         }
       }
       const cd = CONCUSSION[name];
@@ -3102,8 +3092,9 @@
     // the landing pose kick in a beat late — the feet visibly bounced. Start
     // the land clip ~0.1 s of fall-speed EARLY so the crouch develops through
     // contact (gravity keeps pulling y to the floor during the land state).
-    const touchLead = Math.max(0, -rootMotion.vy * 0.1);
-    if (rootMotion.on && rootMotion.y <= touchLead && FALL_MOVES.test(machine.st.current)) {
+    const touchLead = Math.max(0, -rootMotion.vy * 0.05);
+    if (rootMotion.on && rootMotion.vy < 0 && rootMotion.y <= touchLead &&
+        (FALL_MOVES.test(machine.st.current) || PHYS_JUMP.test(machine.st.current))) {
       const moving = Math.hypot(padStickL.x, padStickL.y) > 0.2 && (locoVel.x || locoVel.z);
       machine.force(moving && !machine.st.brawl ? "runLand"
         : (Combat.GRAPH[machine.st.current].landTo || (machine.st.brawl ? "berLand" : "land")));
@@ -3153,33 +3144,49 @@
         //     air-combo stall) — height holds through airH1-3 etc.
         //  3. no channel + ground state → fall under the REAL decoded
         //     /GlobGame/ Gravity (50 m/s²) until the floor, e.g. during `land`
-        const rvY = rig.rootDispY(machine.st.current, machine.st.t);
-        const gn = Combat.GRAPH[machine.st.current];
+        const curMove = machine.st.current;
+        const rvY = rig.rootDispY(curMove, machine.st.t);
+        const gn = Combat.GRAPH[curMove];
         const airState = !!(gn && (gn.air || (gn.category && gn.category.includes("air"))));
-        // ground STANCES carry a flat constant 421 (idle-bob boilerplate,
-        // e.g. idleCombat = 0.032) — a channel that must NOT own the height,
-        // or residual air y freezes and Kratos idles floating (caught in
-        // verification). FALL clips carry one too, which held the altitude
-        // through the whole fall and dumped the descent into the land clip
-        // (the user's 'no ground contact blend') — falls ALWAYS take physics.
-        const channelOwns = rvY !== null && (!(gn && gn.loop) || airState) && !FALL_MOVES.test(machine.st.current);
-        if (channelOwns) {
+        const physJump = PHYS_JUMP.test(curMove);
+        // takeoff edge: entering a jump state loads the ballistic v0 — the
+        // instant launch the game has (the clip channels are reference motion)
+        const fromMove = vertPrevMove;
+        vertPrevMove = curMove;
+        if (curMove !== fromMove) {
+          if (curMove === "jumpUp" || (curMove === "berJumpAir" && GROUND_STANCE.test(fromMove))) rootMotion.vy = JUMP_V0;
+          else if (curMove === "jumpDoubleAir" || curMove === "berJumpDoubleAir") rootMotion.vy = DJUMP_V0;
+        }
+        if (physJump || FALL_MOVES.test(curMove)) {
+          // BALLISTIC controller: the REAL Gravity 50 on the way up AND down;
+          // the clips are skins over the arc
+          rootMotion.prevTrackY = null;
+          rootMotion.vy -= GRAV_UNITS * STEP;
+          rootMotion.y = Math.max(0, rootMotion.y + rootMotion.vy * STEP);
+          if (rootMotion.y === 0 && rootMotion.vy < 0) rootMotion.vy = 0;
+        } else if (rvY !== null && (!(gn && gn.loop) || airState)) {
+          // CHANNEL-owned: the scripted full-magnitude leaps (comboJump,
+          // blockLauncher launch-follow, airImpale, evade hops). Ground
+          // stances' flat idle-bob constant is excluded by the loop guard.
           if (!rootMotion.pendingRebase && rootMotion.prevTrackY !== null) {
-            rootMotion.y += (rvY - rootMotion.prevTrackY) * jumpGain(machine.st.current);
+            rootMotion.y += (rvY - rootMotion.prevTrackY);
           }
           rootMotion.prevTrackY = rvY;
           rootMotion.vy = 0;
           if (rootMotion.y < 0) rootMotion.y = 0; // channel never digs below the floor
         } else {
           rootMotion.prevTrackY = null;
-          const falling = FALL_MOVES.test(machine.st.current);
-          if (rootMotion.y > 0 && (!airState || falling)) {
-            rootMotion.vy -= HERO_FALL_G * STEP; // ascent-symmetric hero arc (see decl)
+          if (airState) {
+            rootMotion.vy = 0; // air ATTACK hover — height holds (the GoW stall)
+          } else if (rootMotion.y > 0) {
+            // grounded state with residual height (post-touchdown): finish the
+            // drop under the same real gravity
+            rootMotion.vy -= GRAV_UNITS * STEP;
             rootMotion.y = Math.max(0, rootMotion.y + rootMotion.vy * STEP);
             if (rootMotion.y === 0) rootMotion.vy = 0;
-          } else if (!airState) {
+          } else {
             rootMotion.y = 0; rootMotion.vy = 0;
-          } // air ATTACK without channel: hover — keep y as-is; falls descend
+          }
         }
         // The 16 m teleport-home exists for SCRIPTED playback (combo loops /
         // autoplay drifting off the arena). Free pad play always CLAMPS to the

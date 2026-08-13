@@ -82,7 +82,14 @@ const Combat = (() => {
     // ANIFall="fallv" → ANILand="land". The transition *timing* is the engine's
     // controller (rise channel → gravity), mirrored in app.js; landTo here
     // routes each air stance into its authored fall clip.
-    jumpUp: { next: "jumpAir", branches: [] },
+    jumpUp: { next: "jumpAir", branches: [
+      // the ballistic hop is quick (~0.5 s) — the air moveset must be
+      // reachable from the ASCENT, not only the brief jumpAir float
+      { input: "S", to: "airH1", fancy: "air light chain", tag: "real" },
+      { input: "T", to: "airV1", fancy: "air slam", tag: "real" },
+      { input: "C", to: "airImpale", fancy: "air impale", tag: "inferred" },
+      { input: "X", to: "jumpDoubleAir", fancy: "double jump (✕ ✕)", tag: "real" },
+    ] },
     jumpAir: {
       loop: true, category: "air idle", landTo: "fallV",
       branches: [
