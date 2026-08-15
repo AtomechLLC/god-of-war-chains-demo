@@ -266,7 +266,8 @@ footer .inf { color: #86aed0; }
 
 /* Kratos HP bar (Fight back mode) — REAL Max Hit Points L0 = 100 */
 #heroHp {
-  display: none; position: absolute; left: 14px; top: 34px; width: 170px; height: 11px;
+  /* below the move card (fancy+name+meta ≈ 80px) — was top:34px, ON the title (user report) */
+  display: none; position: absolute; left: 16px; top: 96px; width: 170px; height: 11px;
   background: rgba(0,0,0,.65); border: 1px solid #5a4a28; border-radius: 3px; z-index: 15;
 }
 #heroHp div { height: 100%; width: 100%; border-radius: 2px;
