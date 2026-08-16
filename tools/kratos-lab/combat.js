@@ -208,6 +208,13 @@ const Combat = (() => {
   ] };
   GRAPH.blockReaction = { next: "block", category: "guard", branches: [] };    // authored block-impact flinch
   GRAPH.berBlockHit01 = { next: "berBlockIdle", category: "guard", branches: [] };
+  // guard-state evades (user-identified): the evade stick WHILE blocking
+  // runs the authored block-flip clips - each carries its own REAL root
+  // channels (blockBackFlip even a comp-421 leap arc). Mapping INFERRED:
+  // back -> backflip, forward -> forward flip, sideways -> the 360 spin.
+  GRAPH.blockBackFlip = { next: "block", category: "guard", branches: [] };
+  GRAPH.blockForwardFlip = { next: "block", category: "guard", branches: [] };
+  GRAPH.block360 = { next: "block", category: "guard", branches: [] };
 
   // universal cancel available inside the block-cancel window (block-canceling
   // recovery is a documented GoW mechanic; window extent is the inferred part)
@@ -348,7 +355,9 @@ const Combat = (() => {
       }
       if (st.t >= st.dur) {
         callbacks.onComplete(st.current);
-        if (n.next) start(n.next, null);
+        // a guard-bound next (flinch/flip -> block) honors a RELEASED L1:
+        // if the guard was dropped mid-clip, recover to stance instead
+        if (n.next) start(GRAPH[n.next] && GRAPH[n.next].category === "guard" && !st.l1 ? st.idle() : n.next, null);
         else if (n.air && n.landTo) start(n.landTo, null);
         else start(GRAPH[st.current]?.air ? st.airIdle() : st.idle(), null);
       }

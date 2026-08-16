@@ -1409,7 +1409,7 @@
     RUN_AT: 0.78, WALK_AT: 0.7, // deflection hysteresis (INFERRED)
   };
   const LOCO_STATE = /^(walkBlend[12]|berWalkBlend[12])$/;
-  const GROUND_STANCE = /^(idleCombat2?|berserkIdle|walkBlend[12]|berWalkBlend[12])$/;
+  const GROUND_STANCE = /^(idleCombat2?|berserkIdle|walkBlend[12]|berWalkBlend[12]|block|berBlockIdle)$/;
   const padStickL = { x: 0, y: 0 };
   let padEvade = null;   // one-shot camera-relative flick vector from the right stick
   let locoRun = false;
@@ -1491,9 +1491,16 @@
       const fwdx = -Math.sin(rootMotion.hd), fwdz = -Math.cos(rootMotion.hd);
       const rgtx = Math.cos(rootMotion.hd), rgtz = -Math.sin(rootMotion.hd);
       const df = wx * fwdx + wz * fwdz, dr = wx * rgtx + wz * rgtz;
-      const clip = Math.abs(df) >= Math.abs(dr) ? (df > 0 ? "evadeFront" : "evadeBack") : (dr > 0 ? "evadeRight" : "evadeLeft");
+      // WHILE GUARDING (user-identified): the evade stick runs the authored
+      // block-flips instead of the plain rolls - back/forward flips, 360 spin
+      // sideways - each riding its own REAL channels. Brawl guard has no flip
+      // clips -> plain evades.
+      const inGuard = Combat.GRAPH[st.current] && Combat.GRAPH[st.current].category === "guard";
+      const plain = Math.abs(df) >= Math.abs(dr) ? (df > 0 ? "evadeFront" : "evadeBack") : (dr > 0 ? "evadeRight" : "evadeLeft");
+      const flip = Math.abs(df) >= Math.abs(dr) ? (df > 0 ? "blockForwardFlip" : "blockBackFlip") : "block360";
+      const clip = inGuard && rig.anm.acts.has(flip) ? flip : plain;
       machine.force(clip);
-      log(`🌀 ${clip} (right-stick evade — REAL roll channel)`);
+      log("\ud83c\udf00 " + clip + " (right-stick evade" + (inGuard ? " from GUARD" : "") + " - REAL channel)");
       return;
     }
     const mag = Math.hypot(padStickL.x, padStickL.y);
