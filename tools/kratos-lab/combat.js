@@ -192,9 +192,26 @@ const Combat = (() => {
   GRAPH.evadeLeft = { branches: [] };
   GRAPH.evadeRight = { branches: [] };
 
+  // GUARD: a true block STATE on the authored clips (the article's gap the
+  // lab lacked). Hold L1 = guard; strikes that land are blocked (app.js
+  // hurtKratos) and play the authored blockReaction flinch. From guard the
+  // L1-modified specials + the launcher + jump remain available — matching
+  // GoW's L1+button layer. Branch topology INFERRED; clips REAL.
+  GRAPH.block = { loop: true, category: "guard", branches: [
+    { input: "S", mod: "L1", to: "dashMultiStab", fancy: "Cyclone of Chaos", tag: "inferred" },
+    { input: "T", mod: "L1", to: "blockSlam", fancy: "block slam", tag: "inferred" },
+    { input: "T", mod: "hold", to: "blockLauncher", fancy: "launcher", tag: "inferred" },
+    { input: "X", to: "jumpUp", fancy: "jump out of guard", tag: "inferred" },
+  ] };
+  GRAPH.berBlockIdle = { loop: true, category: "guard", branches: [
+    { input: "X", to: "jumpUp", fancy: "jump out of guard", tag: "inferred" },
+  ] };
+  GRAPH.blockReaction = { next: "block", category: "guard", branches: [] };    // authored block-impact flinch
+  GRAPH.berBlockHit01 = { next: "berBlockIdle", category: "guard", branches: [] };
+
   // universal cancel available inside the block-cancel window (block-canceling
   // recovery is a documented GoW mechanic; window extent is the inferred part)
-  const CANCEL = { input: "L1", to: "block", fancy: "block-cancel recovery", tag: "inferred" };
+  const CANCEL = { input: "L1", to: "block", fancy: "block-cancel into guard", tag: "inferred" };
 
   function makeMachine(clipDur, callbacks, hitSpan) {
     // Flat fallback windows for moves with NO derived hit span (stances,
@@ -209,6 +226,7 @@ const Combat = (() => {
       current: "idleCombat", t: 0, dur: clipDur("idleCombat") || 1.4,
       queued: null, rage: false, brawl: false, l1: false, hits: 0, special: false,
       idle: () => (st.brawl ? "berserkIdle" : "idleCombat"),
+      guard: () => (st.brawl ? "berBlockIdle" : "block"),
       airIdle: () => (st.brawl ? "berJumpAir" : "jumpAir"),
     };
 
@@ -238,7 +256,7 @@ const Combat = (() => {
       st.queued = null;
       // L1/hold entries are SPECIALS — they lock until post-hit (article)
       st.special = !!(viaInput && (viaInput.mod === "L1" || viaInput.mod === "hold"));
-      if (!GRAPH[name]?.loop && name !== "block") st.hits += 1;
+      if (!GRAPH[name]?.loop && GRAPH[name]?.category !== "guard") st.hits += 1;
       callbacks.onMove(name, prev, viaInput);
     }
 
@@ -246,6 +264,7 @@ const Combat = (() => {
       callbacks.onInput(input, st.l1);
       const n = node();
       if (n.loop) {
+        if (input === "L1" && n.category !== "guard") { start(st.guard(), CANCEL); return; } // raise guard
         const b = pickBranch(n, input);
         if (b) start(b.to, b);
         return;
@@ -259,7 +278,7 @@ const Combat = (() => {
         // No-span moves keep the old 0.50 window.
         const ok = sp ? (!st.special || frac >= sp.b) : frac >= windows.cancel;
         if (ok) {
-          start(st.idle(), CANCEL); // represent block-cancel as return to stance
+          start(st.guard(), CANCEL); // cancel INTO guard — the real GoW block-cancel
           callbacks.onCancel();
         }
         return;
@@ -289,6 +308,10 @@ const Combat = (() => {
         if (b.mod === "L1" && mods === "L1") break;
       }
       return best;
+    }
+
+    function release(input) { // L1 up: lower the guard back to stance
+      if (input === "L1" && node().category === "guard" && node().loop) start(st.idle(), null);
     }
 
     function holdPress(input) { // long-press triggers "hold" branches from idle
@@ -363,7 +386,7 @@ const Combat = (() => {
     }
 
     return {
-      cancelInfo, st, windows, GRAPH, press, holdPress, tick, setRage, setBrawl, visibleBranches, isIdle, force };
+      cancelInfo, release, st, windows, GRAPH, press, holdPress, tick, setRage, setBrawl, visibleBranches, isIdle, force };
   }
 
   return { GRAPH, GLYPH, makeMachine };

@@ -1917,8 +1917,21 @@
   // reaction (his REAL hit suite), flash, damage float, HP, death.
   function hurtKratos(dmg, fromX, fromZ) {
     if (heroDeadAt) return;
-    // L1 block stops a legionnaire strike (GoW block rule)
-    if (/^block/.test(machine.st.current)) {
+    // the guard STATE blocks frontal strikes (GoW block rule); attacks
+    // from behind still land — the arc (±75°) is INFERRED
+    const gn = Combat.GRAPH[machine.st.current];
+    const guarding = (gn && gn.category === "guard") || /^block/.test(machine.st.current);
+    let frontal = true;
+    if (guarding) {
+      const ax = fromX - rootMotion.x, az = fromZ - rootMotion.z;
+      const al = Math.hypot(ax, az) || 1;
+      frontal = (ax / al) * -Math.sin(rootMotion.hd) + (az / al) * -Math.cos(rootMotion.hd) > 0.26;
+    }
+    if (guarding && frontal) {
+      // authored impact flinch: blockReaction (armed) / berBlockHit01
+      // (brawl) — returns to the guard loop by itself
+      const flinch = machine.st.brawl ? "berBlockHit01" : "blockReaction";
+      if (machine.isIdle() && rig.anm.acts.has(flinch)) machine.force(flinch);
       // GoW block visual: a flash pop at the guard (REAL flasher03 sprite)
       if (flasherTex && skin && skin.lastWorld) {
         const j = (JID.lWeapIH !== undefined ? JID.lWeapIH : 0) * 16;
@@ -3634,7 +3647,7 @@
   $("btnL1").addEventListener("click", () => {
     machine.st.l1 = !machine.st.l1;
     $("btnL1").classList.toggle("latched", machine.st.l1);
-    machine.press("L1");
+    if (machine.st.l1) machine.press("L1"); else machine.release("L1");
   });
   $("btnRage").addEventListener("click", () => {
     const on = !machine.st.rage;
@@ -3670,7 +3683,7 @@
   window.addEventListener("keyup", (e) => {
     const k = e.key.toLowerCase();
     if (k === "k") { const held = performance.now() - kDown; if (held > 350 && machine.holdPress("T")) log("▶ △ (hold) launcher"); else input("T"); }
-    if (k === "shift") { machine.st.l1 = false; $("btnL1").classList.remove("latched"); }
+    if (k === "shift") { machine.st.l1 = false; $("btnL1").classList.remove("latched"); machine.release("L1"); }
   });
 
   // ---- gamepad support (usability): the PS2 pad, on a real pad -------------
@@ -3774,7 +3787,7 @@
     if (edge(M.T)) triDown();
     if (!down(M.T) && prev[M.T]) triUp();
     if (edge(M.L1)) { machine.st.l1 = true; $("btnL1").classList.add("latched"); machine.press("L1"); }
-    if (!down(M.L1) && prev[M.L1]) { machine.st.l1 = false; $("btnL1").classList.remove("latched"); }
+    if (!down(M.L1) && prev[M.L1]) { machine.st.l1 = false; $("btnL1").classList.remove("latched"); machine.release("L1"); }
     if ((edge(M.L3) && down(M.R3)) || (edge(M.R3) && down(M.L3))) $("btnRage").click(); // L3+R3 — the real activation
     if (edge(M.SEL)) $("btnBrawl").click();
     if (edge(M.ST)) $("btnPause").click();
