@@ -196,11 +196,18 @@ const Combat = (() => {
   // recovery is a documented GoW mechanic; window extent is the inferred part)
   const CANCEL = { input: "L1", to: "block", fancy: "block-cancel recovery", tag: "inferred" };
 
-  function makeMachine(clipDur, callbacks) {
+  function makeMachine(clipDur, callbacks, hitSpan) {
+    // Flat fallback windows for moves with NO derived hit span (stances,
+    // traversal). Moves WITH a span use the HIT-FRAME-ANCHORED model
+    // below (Derek Daniels, "Combat Cancelled": GoW normals cancel
+    // PRE-hit-frame; L1/hold specials only POST-hit — the anti-lockdown
+    // rule; block is an instant cancel). Structure = the designer's own
+    // description; the derived spans remain sweep-derived (engine truth
+    // is compiled code — documented).
     const windows = { queue: 0.20, branch: 0.70, cancel: 0.50 }; // fractions of clip
     const st = {
       current: "idleCombat", t: 0, dur: clipDur("idleCombat") || 1.4,
-      queued: null, rage: false, brawl: false, l1: false, hits: 0,
+      queued: null, rage: false, brawl: false, l1: false, hits: 0, special: false,
       idle: () => (st.brawl ? "berserkIdle" : "idleCombat"),
       airIdle: () => (st.brawl ? "berJumpAir" : "jumpAir"),
     };
@@ -218,12 +225,19 @@ const Combat = (() => {
       return rows;
     }
 
+    // the current move's hit span {a, b} (clip fractions) or null
+    function span() { return hitSpan ? hitSpan(st.current) : null; }
+    // where a buffered branch fires: post-hit (span end) when known
+    function fireFrac() { const sp = span(); return sp ? sp.b : windows.branch; }
+
     function start(name, viaInput) {
       const prev = st.current;
       st.current = name;
       st.t = 0;
       st.dur = clipDur(name) || 0.8;
       st.queued = null;
+      // L1/hold entries are SPECIALS — they lock until post-hit (article)
+      st.special = !!(viaInput && (viaInput.mod === "L1" || viaInput.mod === "hold"));
       if (!GRAPH[name]?.loop && name !== "block") st.hits += 1;
       callbacks.onMove(name, prev, viaInput);
     }
@@ -236,16 +250,31 @@ const Combat = (() => {
         if (b) start(b.to, b);
         return;
       }
-      // during a move: cancel first, else queue
-      if (input === "L1" && st.t / st.dur >= windows.cancel) {
-        start(st.idle(), CANCEL); // represent block-cancel as return to stance
-        callbacks.onCancel();
+      // during a move — the hit-frame-anchored cancel model:
+      const frac = st.t / st.dur;
+      const sp = span();
+      if (input === "L1") {
+        // BLOCK: instant cancel across the whole animation on normals;
+        // specials unlock only after their hit frames (anti-lockdown).
+        // No-span moves keep the old 0.50 window.
+        const ok = sp ? (!st.special || frac >= sp.b) : frac >= windows.cancel;
+        if (ok) {
+          start(st.idle(), CANCEL); // represent block-cancel as return to stance
+          callbacks.onCancel();
+        }
         return;
       }
-      if (st.t / st.dur >= windows.queue) {
-        const b = pickBranch(n, input);
-        if (b) { st.queued = b; callbacks.onQueue(b); }
+      const b = pickBranch(n, input);
+      if (!b) return;
+      if (sp && !st.special && frac < sp.a) {
+        // PRE-HIT-FRAME CANCEL (GoW's rule for normals): the wind-up
+        // aborts into the new attack immediately.
+        start(b.to, b);
+        return;
       }
+      // otherwise BUFFER — fires post-hit (see tick). No-span moves keep
+      // the old early-press gate.
+      if (sp || frac >= windows.queue) { st.queued = b; callbacks.onQueue(b); }
     }
 
     function pickBranch(n, input) {
@@ -289,7 +318,7 @@ const Combat = (() => {
       }
       st.t += dt;
       const frac = st.t / st.dur;
-      if (st.queued && frac >= windows.branch) {
+      if (st.queued && frac >= fireFrac()) { // post-hit for spanned moves
         const b = st.queued;
         start(b.to, b);
         return;
@@ -327,7 +356,14 @@ const Combat = (() => {
       return true;
     }
 
-    return { st, windows, GRAPH, press, holdPress, tick, setRage, setBrawl, visibleBranches, isIdle, force };
+    // timeline introspection: the current move's anchored windows
+    function cancelInfo() {
+      const sp = span();
+      return { span: sp, special: st.special, fire: fireFrac() };
+    }
+
+    return {
+      cancelInfo, st, windows, GRAPH, press, holdPress, tick, setRage, setBrawl, visibleBranches, isIdle, force };
   }
 
   return { GRAPH, GLYPH, makeMachine };

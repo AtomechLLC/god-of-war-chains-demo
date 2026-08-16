@@ -3164,6 +3164,14 @@
     },
     onCancel() { log("✂ block-cancel"); },
     onInput(input, l1) {},
+  }, (name) => {
+    // hit-frame anchor for the cancel model: first→last derived strike
+    // segment (blade-sweep / fist speed) + the authored concussion window
+    const hw = hitWindows(name);
+    let a = null, b = null;
+    for (const [s0, e0] of hw.segs) { a = a === null ? s0 : Math.min(a, s0); b = b === null ? e0 : Math.max(b, e0); }
+    if (hw.conc) { a = a === null ? hw.conc[0] : Math.min(a, hw.conc[0]); b = b === null ? hw.conc[1] : Math.max(b, hw.conc[1]); }
+    return a === null ? null : { a, b };
   });
 
   function updateMoveCard() {
@@ -3385,15 +3393,22 @@
     const { t, dur } = machine.st;
     const w = machine.windows;
     const pct = (x) => `${Math.max(0, Math.min(100, x * 100))}%`;
-    $("tlQueue").style.left = pct(w.queue);
-    $("tlQueue").style.width = pct(1 - w.queue);
-    $("tlCancel").style.left = pct(w.cancel);
-    $("tlCancel").style.width = pct(1 - w.cancel);
+    // hit-frame-anchored zones (Daniels model): normals cancel pre-hit
+    // (instant) and buffer from the hit onward, firing post-hit; specials
+    // buffer all clip and unlock post-hit; block = instant on normals.
+    const ci = machine.cancelInfo ? machine.cancelInfo() : null;
+    const sp = ci && ci.span;
+    const qFrom = sp ? (ci.special ? 0 : sp.a) : w.queue;
+    const cFrom = sp ? (ci.special ? sp.b : 0) : w.cancel;
+    $("tlQueue").style.left = pct(qFrom);
+    $("tlQueue").style.width = pct(1 - qFrom);
+    $("tlCancel").style.left = pct(cFrom);
+    $("tlCancel").style.width = pct(1 - cFrom);
     const c = CLIP[machine.st.current];
     const blendFrac = c && c.blend && c.blend < dur ? c.blend / dur : 0;
     $("tlBlend").style.left = "0";
     $("tlBlend").style.width = pct(blendFrac);
-    $("tlBranch").style.left = pct(w.branch);
+    $("tlBranch").style.left = pct(ci ? ci.fire : w.branch); // post-hit fire point
     $("tlHead").style.left = pct(t / dur);
     // concussion-trigger marker: the tick where the move's comp-422 displacement
     // completes and the authored AoE fires (concussionTime) — only on mapped moves
@@ -3512,6 +3527,12 @@
     // half-spawned target read wrong; skipped when the dummy is disabled
     if (dummy && dummy.on && dummy.cur === "spawn") return;
     if (autoplay.wait > 0) { autoplay.wait--; return; }
+    // scripted inputs BUFFER, never pre-hit-cancel (the demo shows full
+    // moves; pre-hit cancels are a PLAYER expression — Daniels model)
+    if (!machine.isIdle()) {
+      const ci = machine.cancelInfo();
+      if (ci.span && machine.st.t / machine.st.dur < ci.span.a) return; // wait for the hit window
+    }
     autoPress(autoplay.seq[autoplay.i++ % autoplay.seq.length]);
     autoplay.wait = autoplay.gap; // sim steps between inputs (26 ≈ 0.43s @60Hz)
   }
@@ -3941,7 +3962,12 @@
     // mid-move: press once, just after the queue window opens; if the machine
     // queued it the entry is consumed, else retry from stance after recovery
     if (combo.pressed) return;
-    if (st.t / st.dur < Math.min(machine.windows.queue + 0.05, 0.95)) return;
+    // press at BUFFERED timing (past the hit-window start) so scripted
+    // playback never pre-hit-cancels the move it is showcasing
+    const ciC = machine.cancelInfo();
+    const gate = ciC.span ? Math.max(machine.windows.queue + 0.05, ciC.span.a + 0.02)
+                          : machine.windows.queue + 0.05;
+    if (st.t / st.dur < Math.min(gate, 0.95)) return;
     combo.pressed = true;
     const qBefore = st.queued;
     autoPress(key);
