@@ -3109,6 +3109,15 @@
   // locomotion turns it, and ALL root motion (channels + movement) advances
   // along it; prevTrackX tracks the lateral comp-420 channel (side evades).
   const rootMotion = { on: true, x: 0, z: 0, y: 0, vy: 0, hd: 0, px: 0, pz: 0, prevTrack: null, prevTrackY: null, prevTrackX: null, pendingRebase: false };
+  // ROOT-MOTION TWEEN (Eric Williams' note, the GoW combat designer:
+  // "all animation branching uses a tween value to blend the animations
+  // / root motion" — the branch stutters were the un-blended channel).
+  // While a branch blends, the OUTGOING clip's controller channel keeps
+  // advancing and its deltas crossfade into the incoming clip's over the
+  // same tween window the pose uses (the decoded per-clip " Tween" record
+  // family is this mechanism's data; those records' base names never
+  // shipped, so the window length uses the clip blend-in).
+  let rootTween = null; // { from, t, prevV, prevVX, dur, left }
   const GRAV_UNITS = 50 * Chain.METERS_TO_WORLD; // REAL /GlobGame/ Gravity 50 m/s² × units bridge
   // BALLISTIC JUMP (user-corrected; binary-verified 2026-08-12): no named
   // hero-jump parameters exist ANYWHERE — not in the TWK banks, and the ELF's
@@ -3191,7 +3200,7 @@
           !(gFrom && (gFrom.category || "").includes("guard"))) guardRaisedTick = simStepCount;
       heat = machine.st.rage ? 0.75 : 0.35;
       rootMotion.pendingRebase = true; // re-base the incoming clip at the current root (chaining)
-      if (skin && prev) {
+      {
         let bl = CLIP[name] && CLIP[name].blend > 0 && CLIP[name].blend <= 0.5 ? CLIP[name].blend : 0.08;
         // touchdown blends widen (INFERRED — soften ground contact): the land
         // clips ship blend 0, and a fall→land cut at 0.08 s read as a pop
@@ -3199,10 +3208,21 @@
         // the jump chain transitions fast (0.33-0.47 s clips) — widen so each
         // link cross-fades through motion instead of cutting (user report)
         if (/^(jumpUp|jumpAir|jumpDoubleAir|fallV|berJumpAir|berFallN|walkBlend|berWalkBlend)/.test(name)) bl = Math.max(bl, 0.12);
-        skin.prevAct = prev;
-        skin.prevTime = lastState.t;
-        skin.blendDur = bl;
-        skin.blendLeft = bl;
+        if (skin && prev) {
+          skin.prevAct = prev;
+          skin.prevTime = lastState.t;
+          skin.blendDur = bl;
+          skin.blendLeft = bl;
+        }
+        // root-motion tween: carry the OUTGOING clip's channel through the
+        // blend so branch travel never hitches (the designer-identified gap)
+        if (rootMotion.on && prev && rig) {
+          const v0 = rig.rootDisp(prev, lastState.t);
+          const x0 = rig.rootDispX(prev, lastState.t);
+          rootTween = (v0 !== null || x0 !== null)
+            ? { from: prev, t: lastState.t, prevV: v0, prevVX: x0, dur: bl, left: bl }
+            : null;
+        }
       }
       pushBranchBlock(name);
       updateMoveCard();
@@ -3668,7 +3688,7 @@
     rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = 0; // return home on toggle
     rootMotion.y = rootMotion.vy = rootMotion.hd = 0;
     locoVel.x = locoVel.z = 0;
-    rootMotion.prevTrack = rootMotion.prevTrackY = rootMotion.prevTrackX = null;
+    rootMotion.prevTrack = rootMotion.prevTrackY = rootMotion.prevTrackX = null; rootTween = null;
     $("btnRootMo").classList.toggle("latched", rootMotion.on);
   });
   // Replay controls: pause / frame-step / slow-mo (dev/QA capture aid).
@@ -4147,7 +4167,7 @@
     else {
       rootMotion.x = rootMotion.z = rootMotion.px = rootMotion.pz = rootMotion.y = rootMotion.vy = rootMotion.hd = 0;
       locoVel.x = locoVel.z = 0;
-      rootMotion.prevTrack = rootMotion.prevTrackY = rootMotion.prevTrackX = null;
+      rootMotion.prevTrack = rootMotion.prevTrackY = rootMotion.prevTrackX = null; rootTween = null;
     }
     if (weaponLevel !== 1) $("btnWpnLv").click();
     if (costumeIdx !== 0) {
@@ -4258,6 +4278,23 @@
         let dZ = 0, dX = 0;
         if (!rootMotion.pendingRebase && rv !== null && rootMotion.prevTrack !== null) dZ = rv - rootMotion.prevTrack;
         if (!rootMotion.pendingRebase && rvX !== null && rootMotion.prevTrackX !== null) dX = rvX - rootMotion.prevTrackX;
+        // TWEEN: crossfade the outgoing clip's channel deltas into the
+        // incoming clip's over the blend window (weight 0 to 1). The rebase
+        // tick — previously a dead tick — now carries the outgoing motion.
+        if (rootTween && rootTween.left > 0) {
+          const w = 1 - rootTween.left / rootTween.dur;
+          rootTween.t += STEP;
+          const v1 = rig.rootDisp(rootTween.from, rootTween.t);
+          const x1 = rig.rootDispX(rootTween.from, rootTween.t);
+          let oDZ = 0, oDX = 0;
+          if (v1 !== null && rootTween.prevV !== null) oDZ = v1 - rootTween.prevV;
+          if (x1 !== null && rootTween.prevVX !== null) oDX = x1 - rootTween.prevVX;
+          rootTween.prevV = v1; rootTween.prevVX = x1;
+          dZ = oDZ * (1 - w) + dZ * w;
+          dX = oDX * (1 - w) + dX * w;
+          rootTween.left -= STEP;
+          if (rootTween.left <= 0) rootTween = null;
+        }
         if (dZ || dX) {
           const c = Math.cos(rootMotion.hd), s = Math.sin(rootMotion.hd);
           rootMotion.x += c * dX + s * dZ;
