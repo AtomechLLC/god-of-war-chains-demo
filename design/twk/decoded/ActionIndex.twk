@@ -1,0 +1,113 @@
+; =====================================================================
+; ActionIndex.twk — the goHero NAVIGATION ACTION INDEX (God of War 1)
+; Source: TWK_goHero (R_HERO0.WAD) /Animation/goHero/Navigation — two
+;         banks of 100 slots, each aligned IN ORDER with the ELF's
+;         ANI* action vocabulary (SCUS_973.99 @0x19e3f0). The engine
+;         fills action slot N with the clip named in slot N — this is
+;         the game's own action → clip binding table. ALL REAL.
+; Bank 0 = the primary (armed) moveset; Bank 1 = the alternate bank
+;         (context set — the two differ on jump/land/walk families).
+; =====================================================================
+
+ACTION SLOT             BANK 0 CLIP         BANK 1 CLIP         NOTES
+------------------------------------------------------------------------------------
+ANIStand                standidle           berserkIdle          [banks differ]
+ANITurnOnSpot           standidle           berserkIdle          [banks differ]
+ANIWalk                 bwalk               berwalk             lab: stick locomotion [banks differ]
+ANIStrafeF              front               front               
+ANIStrafeR              right               right               
+ANIStrafeB              rear                rear                
+ANIStrafeL              left                left                
+ANIFlyH                 hover               hover               
+ANIFlyF                 flyforward          flyforward          
+ANIFlyR                 flyright            flyright            
+ANIFlyB                 flyback             flyback             
+ANIFlyL                 flyleft             flyleft             
+ANIWallHang             WallhangI           WallhangI           
+ANIWallHangCatch        WallhangCatch       WallhangCatch       
+ANIWallHangR            WallhangR           WallhangR           
+ANIWallHangL            WallhangL           WallhangL           
+ANIJump                 jumpAir             berJumpAir          lab: air stance [banks differ]
+ANIVJump                jumpUp              berJumpAir          lab: jump (X) [banks differ]
+ANIWJump                jumpwall            jumpwall            
+ANIDblJump              jumpdoubleair       berJumpDoubleAir    lab: double jump [banks differ]
+ANIVDblJump             jumpdoubleair       berJumpDoubleAir     [banks differ]
+ANIFall                 fallv               berFallN            lab: fall physics [banks differ]
+ANIDblFall              fallv               berFallN             [banks differ]
+ANIHighFall             combatfall          berFallN            lab: high fall [banks differ]
+ANIVFall                fallv               berFallN             [banks differ]
+ANIVDblFall             fallv               berFallN             [banks differ]
+ANILand                 land                berLand             lab: landing [banks differ]
+ANIVLand                land                berLand              [banks differ]
+ANIHighLand             highFallLand        berLand             lab: high landing [banks differ]
+ANIClimb                bclimb              bclimb              
+ANIClimbIdle            wallclimbidle       wallclimbidle       
+ANIClimbAL              wallClimbAL         wallClimbAL         
+ANIClimbAR              wallClimbAR         wallClimbAR         
+ANIClimbALIdle          wallClimbALIdle     wallClimbALIdle     
+ANIClimbARIdle          wallClimbARIdle     wallClimbARIdle     
+ANIClimbCL              wallClimbCL         wallClimbCL         
+ANIClimbCR              wallClimbCR         wallClimbCR         
+ANISlide                fallv               slide                [banks differ]
+ANISwim                 swim                swim                
+ANISwimIdle             swimidle            swimidle            
+ANITread                tread               tread               
+ANITreadSwim            treadswim           treadswim           
+ANIDiveDashC            swimDashPU          swimDashPU          
+ANIDiveDashCI           swimDashidle        swimDashidle        
+ANIDiveDash             swimdash            swimdash            
+ANIDive1                swimdive            swimdive            
+ANIDive2                swimdive1           swimdive1           
+ANIBalanceWalk          balwalk             balwalk             
+ANIBalanceCatch         balancebeamcatch    balancebeamcatch    
+ANIBalancePullupL       balancebeampullup   balancebeampullup   
+ANIBalancePullupR       balancebeampullup2  balancebeampullup2  
+ANIWallCatch            wallcatch           wallcatch           
+ANIWallPullup           wallpullup          wallpullup          
+ANIWallFront            wallFrontI          wallFrontI          
+ANIWallFrontR           wallFrontR          wallFrontR          
+ANIWallFrontL           wallFrontL          wallFrontL          
+ANIWallBack             wallBackI           wallBackI           
+ANIWallBackR            wallBackR           wallBackR           
+ANIWallBackL            wallBackL           wallBackL           
+ANIRope                 ropeidle            ropeidle            
+ANIRopeU                ropeUp              ropeUp              
+ANIRopeD                ropeDown            ropeDown            
+ANIRopeSWStart          ropeswingstart      ropeswingstart      
+ANIRopeSW1              ropeswingmidtofrnt  ropeswing            [banks differ]
+ANIRopeSW2              ropeswingfrnttomid  ropeswing2           [banks differ]
+ANIRopeSW3              ropeswingmidtoback  ropeswing3           [banks differ]
+ANIRopeSW4              ropeswingbacktomid  ropeswing4           [banks differ]
+ANIRopeIdle             ropeswingidle       ropeswingidle       
+ANIRSlide               ropeslide           ropeslide           
+ANIBRope                ropehohi            ropehohi            
+ANIBRopeF               ropehoh             ropehoh             
+ANIZipLine              zipline             zipline             
+ANILadder               LadderUp            ladderidle           [banks differ]
+ANILadderU              ladderUp            ladderUp            
+ANILadderD              ladderDown          ladderDown          
+ANILDis1                dismount1           dismount1           
+ANILDis2                dismount2           dismount2           
+ANILSlide               ladderslide         ladderslide         
+ANIPushI                pushIdle            pushIdle            
+ANIPushL                PullL               PullL               
+ANIPushR                PullR               PullR               
+ANIPushF                Push                Push                
+ANIPushB                Pull                Pull                
+ANIStartKickBox         KickBox1            KickBox1            
+ANIKickBoxIdle          KickBox3            KickBox3            
+ANIKickBox              KickBox2            KickBox2            
+ANICrankIdle            crankIdle           crankIdle           
+ANICrankPush            Push                CrankPushR           [banks differ]
+ANICrankPull            Pull                CrankPullR           [banks differ]
+ANICrankPushL           CrankPushL          CrankPushL          
+ANICrankPullL           CrankPullL          CrankPullL          
+ANICrankPushR           CrankPushR          CrankPushR          
+ANICrankPullR           CrankPullR          CrankPullR          
+ANILever                leverpull           leverpull           
+ANIUWLever              leverPullUW         leverPullUW         
+ANITandF1               TridentPull01       TridentPull01       
+ANITandF2               TridentPull02       TridentPull02       
+ANITandF3               TridentPull03       TridentPull03       
+ANICSM1                 chestGrab           chestGrab           
+ANICSM2                 chestOpen           chestOpen           

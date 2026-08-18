@@ -130,6 +130,14 @@ in R_PERM.WAD. The lab's dummy now bleeds through this chain</td>
 <td>R_SKS.WAD in-WAD TWK banks + part1.pak PlayFX + R_PERM.WAD</td><td class="real">bindings real; tint + spray fan inferred</td></tr>
 <tr><td>Fire gravity −43.64 u/s² (identical across both fire systems)</td><td>PTC_BFTpart1/2</td><td class="real">value real, reading inferred</td></tr>
 <tr><td>Costume 0–5 gameplay table (reach, damage, orb mults)</td><td>/Player/</td><td class="real">real</td></tr>
+<tr><td>The NAVIGATION ACTION INDEX: two banks of 100 slots in TWK_goHero align
+IN ORDER with the ELF's ANI* action vocabulary — the game's own action→clip
+binding table (ANIVJump→jumpUp, ANIFall→fallv …). Bank 1 is the BARE-HANDED
+moveset (berJumpAir/berFallN/berLand/berwalk) — independent corroboration of
+the rage≠berserk finding. Combat has NO action slots — combat clip selection
+is compiled by act index (no string/hash anchors exist; verified by exhaustive
+negative search). Full table: design/twk/decoded/ActionIndex.twk</td>
+<td>TWK_goHero + ELF @0x19e3f0</td><td class="real">real</td></tr>
 <tr><td>The Sold enemy stat template is a flat struct whose floats are
 HALFWORD-SWAPPED (middle-endian). Cross-enemy comparison identified Max Hit
 Points (SKS = 100), Run Speed (8 m/s) and Walk Speed (3 m/s) — the last two
