@@ -1393,7 +1393,7 @@
   const FIST_MOVES = /^ber(Combo|Air)/;
   // fall clips (ANIFall="fallv" in the Navigation action bank): airborne but
   // DESCENDING — they take the gravity path, never the air-attack hover
-  const FALL_MOVES = /^(fallV|berFallN)$/;
+  const FALL_MOVES = /^(fallV|berFallN|airBlock)$/; // airBlock guards the FALL — full gravity + touchdown
   // ---- GoW1 stick locomotion + evades --------------------------------------
   // Left stick moves Kratos camera-relative, analog walk → run. Ground speeds
   // are DERIVED FROM THE CLIPS (the planted foot backslides at exactly the
@@ -1927,7 +1927,7 @@
     // the guard STATE blocks frontal strikes (GoW block rule); attacks
     // from behind still land — the arc (±75°) is INFERRED
     const gn = Combat.GRAPH[machine.st.current];
-    const guarding = (gn && gn.category === "guard") || /^block/.test(machine.st.current);
+    const guarding = (gn && (gn.category || "").includes("guard")) || /^block/.test(machine.st.current);
     let frontal = true;
     if (guarding) {
       const ax = fromX - rootMotion.x, az = fromZ - rootMotion.z;

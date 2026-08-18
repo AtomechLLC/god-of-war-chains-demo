@@ -82,7 +82,7 @@ const Combat = (() => {
     // ANIFall="fallv" → ANILand="land". The transition *timing* is the engine's
     // controller (rise channel → gravity), mirrored in app.js; landTo here
     // routes each air stance into its authored fall clip.
-    jumpUp: { next: "jumpAir", branches: [
+    jumpUp: { next: "jumpAir", air: true, branches: [
       // the ballistic hop is quick (~0.5 s) — the air moveset must be
       // reachable from the ASCENT, not only the brief jumpAir float
       { input: "S", to: "airH1", fancy: "air light chain", tag: "real" },
@@ -215,6 +215,11 @@ const Combat = (() => {
   GRAPH.blockBackFlip = { next: "block", category: "guard", branches: [] };
   GRAPH.blockForwardFlip = { next: "block", category: "guard", branches: [] };
   GRAPH.block360 = { next: "block", category: "guard", branches: [] };
+  // AIR BLOCK: L1 while airborne guards the fall (the authored airBlock
+  // clip). Category carries BOTH markers: "air" (falls, lands) and
+  // "guard" (negates frontal strikes). hold=true exempts it from the
+  // one-loop air settle — it guards until touchdown or L1 release.
+  GRAPH.airBlock = { loop: true, hold: true, category: "air guard", landTo: "land", branches: [] };
 
   // universal cancel available inside the block-cancel window (block-canceling
   // recovery is a documented GoW mechanic; window extent is the inferred part)
@@ -271,7 +276,11 @@ const Combat = (() => {
       callbacks.onInput(input, st.l1);
       const n = node();
       if (n.loop) {
-        if (input === "L1" && n.category !== "guard") { start(st.guard(), CANCEL); return; } // raise guard
+        if (input === "L1" && !(n.category || "").includes("guard")) {
+          // raise guard — the AIR guard when the stance is airborne
+          start((n.category || "").includes("air") ? "airBlock" : st.guard(), CANCEL);
+          return;
+        }
         const b = pickBranch(n, input);
         if (b) start(b.to, b);
         return;
@@ -285,7 +294,8 @@ const Combat = (() => {
         // No-span moves keep the old 0.50 window.
         const ok = sp ? (!st.special || frac >= sp.b) : frac >= windows.cancel;
         if (ok) {
-          start(st.guard(), CANCEL); // cancel INTO guard — the real GoW block-cancel
+          // cancel INTO guard — the AIR guard when the move is airborne
+          start(n.air || (n.category || "").includes("air") ? "airBlock" : st.guard(), CANCEL);
           callbacks.onCancel();
         }
         return;
@@ -318,7 +328,9 @@ const Combat = (() => {
     }
 
     function release(input) { // L1 up: lower the guard back to stance
-      if (input === "L1" && node().category === "guard" && node().loop) start(st.idle(), null);
+      const n = node();
+      if (input === "L1" && (n.category || "").includes("guard") && n.loop)
+        start((n.category || "").includes("air") ? st.airIdle() : st.idle(), null);
     }
 
     function holdPress(input) { // long-press triggers "hold" branches from idle
@@ -338,7 +350,7 @@ const Combat = (() => {
         // else straight to the moveset's land. (st.brawl, not st.rage —
         // rage is a buff and keeps the normal set.)
         if (st.t >= st.dur) {
-          if (n.category && n.category.includes("air")) {
+          if (!n.hold && n.category && n.category.includes("air")) {
             start(n.landTo || (st.brawl ? "berLand" : "land"), null);
             return;
           }
