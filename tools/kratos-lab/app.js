@@ -1589,6 +1589,8 @@
   const HERO_MAX_HP = 100;
   let heroHp = HERO_MAX_HP;
   let heroFlashT = 0;     // same hit-flash envelope as the dummy's
+  let guardRaisedTick = -9999; // sim tick the guard was RAISED (parry timing)
+  let parryAlt = false;        // alternate parry01/parry02
   let heroDeadAt = 0;     // sim tick of death; restores after 3 s
   let dummyAggro = false; // the Fight back toggle
   // floating damage numbers (user): one DOM element per landed hit, spawned
@@ -1933,6 +1935,31 @@
       const ax = fromX - rootMotion.x, az = fromZ - rootMotion.z;
       const al = Math.hypot(ax, az) || 1;
       frontal = (ax / al) * -Math.sin(rootMotion.hd) + (az / al) * -Math.cos(rootMotion.hd) > 0.26;
+    }
+    // PARRY (INFERRED window; documented GoW1 timed-block): guard raised
+    // within ~0.15 s before the strike lands → the authored deflect
+    // flourish (parry01/02 alternating), the blow is turned aside, and
+    // the ATTACKER staggers off it.
+    const PARRY_WINDOW = 9; // ticks
+    if (guarding && frontal && simStepCount - guardRaisedTick <= PARRY_WINDOW &&
+        rig.anm.acts.has("parry01")) {
+      parryAlt = !parryAlt;
+      machine.force(parryAlt ? "parry01" : "parry02");
+      guardRaisedTick = -9999; // one deflect per raise — re-raise to parry again
+      if (flasherTex && skin && skin.lastWorld) {
+        const j = (JID.lWeapIH !== undefined ? JID.lWeapIH : 0) * 16;
+        fxPool.spawn({ pos: [skin.lastWorld[j + 12] + rootMotion.x, skin.lastWorld[j + 13], skin.lastWorld[j + 14] + rootMotion.z],
+          vel: [0, 0, 0], size: 7.0, life: 8 * Loop.STEP, color: [1, 1, 1, 2.8], kind: "hitFlash" });
+      }
+      if (dummy && dummy.on && dummy.rig.anm.acts.has("hitStagger")) {
+        dummy.play("hitStagger");           // the deflect staggers him
+        const ax = dummy.x - rootMotion.x, az = dummy.z - rootMotion.z;
+        const al = Math.hypot(ax, az) || 1;
+        dummy.kbx = (ax / al) * 2.2 * Chain.METERS_TO_WORLD; // small recoil (INFERRED)
+        dummy.kbz = (az / al) * 2.2 * Chain.METERS_TO_WORLD;
+      }
+      log("\u2694\ufe0f PARRIED \u2014 the strike is turned aside");
+      return;
     }
     if (guarding && frontal) {
       // authored impact flinch: blockReaction (armed) / berBlockHit01
@@ -3157,6 +3184,11 @@
   let lastState = { name: "idleCombat", t: 0 };
   const machine = Combat.makeMachine((n) => DUR[n], {
     onMove(name, prev, via) {
+      // parry timing: the tick the guard came UP (a guard state entered
+      // from a non-guard state — includes block-cancels into guard)
+      const gTo = Combat.GRAPH[name], gFrom = Combat.GRAPH[prev];
+      if (gTo && (gTo.category || "").includes("guard") &&
+          !(gFrom && (gFrom.category || "").includes("guard"))) guardRaisedTick = simStepCount;
       heat = machine.st.rage ? 0.75 : 0.35;
       rootMotion.pendingRebase = true; // re-base the incoming clip at the current root (chaining)
       if (skin && prev) {
@@ -4705,6 +4737,7 @@
   // test hooks (used by automated verification; harmless in normal use)
   window.KratosLab = {
     machine, mesh, rig, skin, camGround, rootMotion, get dummy() { return dummy; },
+    hurt: (d, x, z) => hurtKratos(d, x, z), // test hook: a strike on Kratos from (x,z)
     get dmgFloats() { return dmgFloats; }, get simTick() { return simStepCount; },
     // step(): exactly ONE fixed sim step + one render + timeline — the
     // deterministic pump for automated verification (hidden tabs get no rAF

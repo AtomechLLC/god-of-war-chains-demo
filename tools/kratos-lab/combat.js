@@ -220,6 +220,12 @@ const Combat = (() => {
   // "guard" (negates frontal strikes). hold=true exempts it from the
   // one-loop air settle — it guards until touchdown or L1 release.
   GRAPH.airBlock = { loop: true, hold: true, category: "air guard", landTo: "land", branches: [] };
+  // PARRY: the timed block (authored parry01/02 deflect flourishes,
+  // 0.33/0.57 s). Raising the guard within the parry window before a
+  // strike lands turns it aside and staggers the attacker (app.js
+  // hurtKratos). Deflects flow back into the guard loop.
+  GRAPH.parry01 = { next: "block", category: "guard", branches: [] };
+  GRAPH.parry02 = { next: "block", category: "guard", branches: [] };
 
   // universal cancel available inside the block-cancel window (block-canceling
   // recovery is a documented GoW mechanic; window extent is the inferred part)
