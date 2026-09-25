@@ -1,6 +1,8 @@
-# Game disc contents — copyrighted, multi-GB, re-derivable from user's own disc.
-# NEVER push game data to the public repo. The ISO and BIOS are never committed
+# SOURCE MEDIA — disc images, disc folder trees, and BIOS are NEVER committed
 # under any circumstances — no exception exists or will be added.
+# (Policy clarified 2026-09-25: the never-distribute line applies to SOURCE
+# files — ISOs / disc contents / BIOS. Carved-out EXTRACTED records may be
+# tracked deliberately; see the extracted/ block below.)
 God of War (USA).iso
 God of War (USA)/
 God of War III (USA, Canada) (v02.00)/
@@ -11,8 +13,10 @@ ps2bios/
 # study set (weapon records, R_WPN0_0.WAD, extracted Kratos set) for the
 # educational program — decision 2026-07-24, see assets/README.md.
 
-# Extracted game assets (models/textures/animations from the disc) — copyrighted
-# game content; local-only. The extraction docs (README) stay tracked.
+# Extracted records (carved from the disc): DISTRIBUTABLE per the 2026-09-25
+# policy ruling — but kept ignored BY DEFAULT so bulk multi-GB extractions
+# never flood the repo. Track individual records deliberately (git add -f),
+# as with the 124 files already tracked here and the curated assets/ set.
 extracted/**
 !extracted/README.md
 extracted-gow3/**

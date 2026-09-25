@@ -18,3 +18,16 @@
   acknowledge them as intentionally tracked. Untracking 123 files is an
   architectural/policy decision (Rule 4 territory) and far outside this quick
   task's "commit only .gitignore" scope.
+
+## RESOLVED — 2026-09-25, user ruling
+
+> "never distribute source files, only extracted ones"
+
+The never-distribute line applies to **source media** (ISOs, disc folder trees,
+BIOS). **Extracted records are distributable** — the 123 tracked-but-ignored
+files under `extracted/` are RATIFIED as intentionally tracked. No untracking,
+no history rewrite. `.gitignore` comments updated to encode the clarified
+policy; the `extracted/**` ignore RULE stays as a bulk-extraction guard only
+(deliberate `git add -f` tracks individual records). Ignore rules themselves
+unchanged — verified: tracked-ignored list still 123, disc folders still
+blocked.
