@@ -3,6 +3,7 @@
 # under any circumstances — no exception exists or will be added.
 God of War (USA).iso
 God of War (USA)/
+God of War III (USA, Canada) (v02.00)/
 ps2bios/
 *.iso
 
@@ -14,6 +15,8 @@ ps2bios/
 # game content; local-only. The extraction docs (README) stay tracked.
 extracted/**
 !extracted/README.md
+extracted-gow3/**
+!extracted-gow3/README.md
 
 node_modules/
 
