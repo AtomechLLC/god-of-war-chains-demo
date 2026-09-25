@@ -106,6 +106,10 @@ Recent decisions affecting current work:
 - [Phase ?]: (06-07) Leak guard: uGlowGain>0.0 is the premult-branch flag (mirrors uTrailRamp>0.5); reset at drawFx top + off in the trail pass so the fxProg flag is deterministic per frame (T-06-07-01); drawFx still ends with Fx.restoreFxState; uFxMode-enum consolidation stays DEFERRED (WARNING-6)
 - [Phase 06]: (06-08) Per-blade warm point lights land in the mesh shader from REAL FxParse.parseLight values (color 1.0/0.622/0.288, intensity 2.5, range 160, anchor -0.32/-8.0/1.0 — not hardcoded, D-06/D-09b): vWorld world-space varying + fragment Lambert + linear range attenuation (atten=max(0,1-d/range)), summed for L/R, no shadows; light world pos = anchor × live bladeSim[key].mat × modelMat per frame (rides the blade), range ×s0 mesh→world, missing-blade guard zeroes intensity (no NaN, T-06-08-01). REND-02 complete; Phase 6 done. — REND-02 final slice; data-first vertex-lit point light per D-06
 
+### Roadmap Evolution
+
+- Phase 8 added (2026-09-25): God of War III Data Breakdown — PS3 big-endian track (PSARC + PS3_BE WAD tooling, R_HERO set decode, extracted-gow3/ study set, GoW3 archaeology page). Independent of Phase 7. Prompted by the user adding the GoW3 disc data; container stack cracked the same day (PSARC reader, 64-byte WAD record walk byte-exact on R_HERO00.WAD).
+
 ### Pending Todos
 
 None yet.

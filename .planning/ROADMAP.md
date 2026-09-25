@@ -20,6 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: FX Record Decode** - MSH/PTC/FXC differential decode with evidence tables, type-5 blade-state descriptor, GS-dump blend confirmation (completed 2026-07-26)
 - [x] **Phase 6: Particle Runtime — Fire, Sparks & Trails** - World-space particle pool rendering flames, sparks, dual trails, state glow, and blade lights from decoded values (completed 2026-07-26)
 - [ ] **Phase 7: Side-by-Side Validation & Inferred Tuning** - In-tool comparison harness vs reference captures; 80–90% in-motion verdict
+- [ ] **Phase 8: God of War III Data Breakdown** - PS3 big-endian track: PSARC + PS3_BE WAD tooling, R_HERO set decode, extracted-gow3/ study set, GoW3 archaeology page (independent of Phase 7)
 
 ## Phase Details
 
@@ -236,6 +237,17 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 | 5. FX Record Decode | 5/5 | Complete   | 2026-07-26 |
 | 6. Particle Runtime — Fire, Sparks & Trails | 8/8 | Complete   | 2026-07-26 |
 | 7. Side-by-Side Validation & Inferred Tuning | 0/TBD | Not started | - |
+
+### Phase 8: God of War III Data Breakdown
+
+**Goal:** Open a second reverse-engineering track on God of War III (PS3, big-endian) — the successor engine's data — and document it with the same data-first rigor as the GoW1 work: a PSARC container reader plus the PS3_BE WAD record walker (64-byte headers; cracked 2026-09-25, R_HERO00.WAD walks byte-exact), decode the R_HERO00–08 hero set (ANM_hero act table and its readable `att*` combat vocabulary, MAT records still opening with magic 8, DDS-named textures, the shipped `dbg_` hash-dictionary records, and the readable string-keyed "Tween" property system that replaced the hashed TWK containers), curate a tracked `extracted-gow3/` study set, and publish a GoW3 data-archaeology page mirroring `design/data-archaeology.html`.
+**Requirements**: GOW3-01 (containers + record walk), GOW3-02 (hero set decode), GOW3-03 (archaeology page) — to be formalized in REQUIREMENTS.md
+**Depends on:** Nothing in Phases 4–7 (independent track); reuses Phase 2/5 decode tooling as lineage
+**Constraints:** Source media (the disc folder and `.dec.iso`) is never committed; extracted records are distributable per the 2026-09-25 policy ruling. Extractions land in `extracted-gow3/` (default-ignored; tracked deliberately).
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 8 to break down)
 
 ---
 *Created: 2026-07-24 — 7 phases, 17/17 v1 requirements mapped*
