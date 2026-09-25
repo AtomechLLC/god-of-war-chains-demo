@@ -221,23 +221,6 @@ Plans:
 **Plans**: TBD
 **UI hint**: yes
 
-## Progress
-
-**Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
-
-Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode track (Phase 5) are parallel-capable; Phase 6 requires Phase 5; Phase 7 requires everything.
-
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Reference Pipeline & Validation Criteria | 2/4 | In Progress|  |
-| 2. WAD/MAT Decode & Render-Pass Foundation | 4/4 | Complete    | 2026-07-25 |
-| 3. Chain Link Ribbon & Glow | 2/2 | Complete   | 2026-07-25 |
-| 4. Chain Motion | 0/TBD | Not started | - |
-| 5. FX Record Decode | 5/5 | Complete   | 2026-07-26 |
-| 6. Particle Runtime — Fire, Sparks & Trails | 8/8 | Complete   | 2026-07-26 |
-| 7. Side-by-Side Validation & Inferred Tuning | 0/TBD | Not started | - |
-
 ### Phase 8: God of War III Data Breakdown
 
 **Goal:** Open a second reverse-engineering track on God of War III (PS3, big-endian) — the successor engine's data — and document it with the same data-first rigor as the GoW1 work: a PSARC container reader plus the PS3_BE WAD record walker (64-byte headers; cracked 2026-09-25, R_HERO00.WAD walks byte-exact), decode the R_HERO00–08 hero set (ANM_hero act table and its readable `att*` combat vocabulary, MAT records still opening with magic 8, DDS-named textures, the shipped `dbg_` hash-dictionary records, and the readable string-keyed "Tween" property system that replaced the hashed TWK containers), curate a tracked `extracted-gow3/` study set, and publish a GoW3 data-archaeology page mirroring `design/data-archaeology.html`.
@@ -249,6 +232,26 @@ Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode t
 Plans:
 - [ ] TBD (run /gsd-plan-phase 8 to break down)
 
+## Progress
+
+**Execution Order:**
+Phases 1–7 execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7. Phase 8 (God of War III Data Breakdown) is an independent track with no dependency on Phases 4–7 and runs in parallel with Phase 7.
+
+Parallelism note: after Phase 2, the chain track (Phases 3–4) and the decode track (Phase 5) are parallel-capable; Phase 6 requires Phase 5; Phase 7 requires everything; Phase 8 is parallel to Phase 7 (reuses Phase 2/5 decode tooling as lineage only).
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Reference Pipeline & Validation Criteria | 2/4 | In Progress|  |
+| 2. WAD/MAT Decode & Render-Pass Foundation | 4/4 | Complete    | 2026-07-25 |
+| 3. Chain Link Ribbon & Glow | 2/2 | Complete   | 2026-07-25 |
+| 4. Chain Motion | 0/TBD | Not started | - |
+| 5. FX Record Decode | 5/5 | Complete   | 2026-07-26 |
+| 6. Particle Runtime — Fire, Sparks & Trails | 8/8 | Complete   | 2026-07-26 |
+| 7. Side-by-Side Validation & Inferred Tuning | 0/TBD | Not started | - |
+| 8. God of War III Data Breakdown | 0/TBD | Not started | - |
+
+**Ad-hoc work (Aug 2026, pre-GSD):** 126 commits (2026-08-10 → 2026-09-24, 2ee193c…e670303) shipped outside any phase before GSD enforcement — TWK decode campaign, root motion + controller channels, hit volumes, the R_SKS target dummy + hit-response VFX, difficulty, the combat/guard model, and the GoW3 container crack. They are not attributed to any phase; see REQUIREMENTS.md § "Ad-hoc delivered (pre-GSD, Aug 2026)".
+
 ---
 *Created: 2026-07-24 — 7 phases, 17/17 v1 requirements mapped*
 *Phase 1 planned: 2026-07-24 — 4 plans, 3 waves*
@@ -256,3 +259,4 @@ Plans:
 *Phase 3 planned: 2026-07-25 — 2 plans, 2 waves (sequential — share app.js/index.html)*
 *Phase 5 planned: 2026-07-26 — 5 plans, 5 waves (sequential — share fxparse.js/fxdb.test.js)*
 *Phase 6 planned: 2026-07-26 — 8 plans, 7 waves (Wave 1 parallel; Waves 2-7 sequential — render slices share app.js)*
+*Phase 8 added: 2026-09-25 — GoW3 track (unplanned); docs reconciled 2026-09-25 (quick 260924-vax)*

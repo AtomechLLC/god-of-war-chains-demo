@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-24)
 
 **Core value:** A GoW1 attack in kratos-lab reads 80–90% identical to real gameplay footage — chains, glow, and fire use the game's own decoded textures, particle definitions, colors, and values, not approximations.
-**Current focus:** Phase 7 — side by side validation & inferred tuning
+**Current focus:** Two open tracks — Phase 7 (side-by-side validation & inferred tuning, blocked on Phase 1 captures) and Phase 8 (God of War III data breakdown, independent and parallel to Phase 7). 126 ad-hoc commits (2026-08-10 → 2026-09-24, pre-GSD) are catalogued in REQUIREMENTS.md § Ad-hoc delivered, not attributed to any phase.
 
 ## Current Position
 
@@ -105,6 +105,8 @@ Recent decisions affecting current work:
 - [Phase ?]: (06-07) additivePremult reached via a synthesized mat-like {name,mode:'additivePremult',disableDepthWrite:true} so the DEC-01 assert holds and the blend switch stays ONLY in fx.js (no hardcoded blendFunc, D-07); glow color stays the in-WAD decoded chainglowTex (identity material/blend, Pitfall 4); FXC_CNGemit standalone-only, NOT a runtime input (D-08 in-test corroboration)
 - [Phase ?]: (06-07) Leak guard: uGlowGain>0.0 is the premult-branch flag (mirrors uTrailRamp>0.5); reset at drawFx top + off in the trail pass so the fxProg flag is deterministic per frame (T-06-07-01); drawFx still ends with Fx.restoreFxState; uFxMode-enum consolidation stays DEFERRED (WARNING-6)
 - [Phase 06]: (06-08) Per-blade warm point lights land in the mesh shader from REAL FxParse.parseLight values (color 1.0/0.622/0.288, intensity 2.5, range 160, anchor -0.32/-8.0/1.0 — not hardcoded, D-06/D-09b): vWorld world-space varying + fragment Lambert + linear range attenuation (atten=max(0,1-d/range)), summed for L/R, no shadows; light world pos = anchor × live bladeSim[key].mat × modelMat per frame (rides the blade), range ×s0 mesh→world, missing-blade guard zeroes intensity (no NaN, T-06-08-01). REND-02 complete; Phase 6 done. — REND-02 final slice; data-first vertex-lit point light per D-06
+- (ad-hoc 2026-08-15→18, pre-GSD): combat model = hit-frame-anchored cancel model (Daniels 'Combat Cancelled': normals cancel pre-hit, L1 specials post-hit only, block instant — structure sourced, window spans INFERRED), true block STATE on authored guard clips, guard-evade flips (user-identified), airBlock on the authored air-guard clip, PARRY (timed block, 9-tick window INFERRED), Navigation ACTION INDEX decoded (design/twk/decoded/ActionIndex.twk, REAL; combat has no action slots), root-motion TWEEN through branches (Eric Williams confirmation; root channel comp-422 REAL). None belongs to a planned phase.
+- (2026-09-25, user ruling): distribution policy — source media (ISOs / disc folders / BIOS) never; carved-out extracted records distributable; 123 tracked extracted/ files ratified; extracted/** rule kept only as a bulk-extraction guard (track via git add -f).
 
 ### Roadmap Evolution
 
