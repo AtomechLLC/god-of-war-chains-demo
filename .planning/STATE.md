@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 Phase: 7
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-25 - Completed quick task 260924-pl8: Add God of War III disc folder to .gitignore (never-commit disc policy)
+Last activity: 2026-09-25 - Completed quick task 260924-vax: Reconcile planning docs with the ad-hoc Aug-2026 work and Phase 8
 
 Progress: [█████████░] 91%
 
@@ -133,6 +133,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260924-pl8 | Add God of War III disc folder to .gitignore (never-commit disc policy) | 2026-09-25 | 5e2ded8 | [260924-pl8-add-god-of-war-iii-disc-folder-to-gitign](./quick/260924-pl8-add-god-of-war-iii-disc-folder-to-gitign/) |
+| 260924-vax | Reconcile planning docs with the ad-hoc Aug-2026 work and Phase 8 | 2026-09-25 | 993c0fc | [260924-vax-reconcile-planning-docs-with-the-ad-hoc-](./quick/260924-vax-reconcile-planning-docs-with-the-ad-hoc-/) |
 
 ## Deferred Items
 
