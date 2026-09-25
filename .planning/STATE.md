@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 Phase: 7
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-07-26
+Last activity: 2026-09-25 - Completed quick task 260924-pl8: Add God of War III disc folder to .gitignore (never-commit disc policy)
 
 Progress: [█████████░] 91%
 
@@ -121,6 +121,12 @@ None yet.
 - Phase 4 chain-motion mechanism is footage-inferred, not data-backed — plan a short footage-measurement study from Phase-1 captures
 - TRL-02 dual-trail theory (BFT fire + BGT swoosh) is MEDIUM confidence — Phase 5 PTC decode confirms; fallback is a single crimson trail
 - **Tooling added (03-02 checkpoint, commits 05fbb8d + 672e5de):** KratosLab.autoplay + on-screen Autoplay/FX-only buttons + window.__fxOnly/__fxBright — dev/QA capture aids (?v now =23). Useful for the fast-tracked particle work's visual checks.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260924-pl8 | Add God of War III disc folder to .gitignore (never-commit disc policy) | 2026-09-25 | 5e2ded8 | [260924-pl8-add-god-of-war-iii-disc-folder-to-gitign](./quick/260924-pl8-add-god-of-war-iii-disc-folder-to-gitign/) |
 
 ## Deferred Items
 
